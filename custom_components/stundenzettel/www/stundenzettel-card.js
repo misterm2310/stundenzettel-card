@@ -799,9 +799,14 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .kgl ha-icon { --mdc-icon-size:16px; }
 .kgf input[type=time] { width:100%; min-width:0; box-sizing:border-box; font-size:1.35em; font-weight:600; border:0; background:transparent; color:var(--primary-text-color); font-variant-numeric:tabular-nums; padding:4px 2px; }
 .kg.ghost .kgf input { color:var(--secondary-text-color); font-weight:400; }
-.kg.running .kgf:first-child { border-color:var(--kc-green); }
 .kgh { margin:-4px 4px 10px; }
-@media (max-width:420px) { .kg { grid-template-columns:1fr; } }
+.kgf.in { --kgc:var(--kc-green); } .kgf.out { --kgc:var(--kc-red); }
+.kgf.in, .kgf.out { background:color-mix(in srgb, var(--kgc) 12%, transparent); border-color:color-mix(in srgb, var(--kgc) 45%, transparent); }
+.kgf .kgl, .kgf .kgl ha-icon { color:var(--kgc, var(--secondary-text-color)); font-weight:600; }
+.kgf .iconbtn { background:var(--kgc, var(--pc)); color:#fff; border-radius:10px; align-items:center; gap:3px; line-height:1; padding:8px 10px; font-size:.85em; font-weight:600; }
+.kg.ghost .kgf { background:color-mix(in srgb, var(--kgc) 6%, transparent); }
+.kg.running .kgf.in { border-width:2px; }
+@media (max-width:420px) { .kg { gap:6px; } .kgf { padding:5px 4px 5px 8px; } .kgf input[type=time] { font-size:1.1em; } .kgf .iconbtn { padding:6px; } .kgf .iconbtn .lbl { display:none; } }
 .zr.sub { font-size:.8em; color:var(--secondary-text-color); padding-top:0; }
 .wizbox.payslip { border-color:#43a047; }
 .statsel { font-size:1em; padding:6px 10px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); background:var(--card-background-color, transparent); color:var(--primary-text-color); }
@@ -1248,7 +1253,7 @@ class StundenzettelCard extends HTMLElement {
     const ghost = !e && !stamp;
     const a = stamp ? stamp.in : e?.start || p[0] || "";
     const b = stamp ? "" : e?.end || p[1] || "";
-    const f = (k, icon, label, val, title, ro) => `<div class="kgf"><span class="kgl">${ic(icon)}${label}</span><input type="time" step="300" data-a="kg" data-v="${k}" value="${esc(val)}" aria-label="${label}" ${ro ? "readonly" : ""}><button class="iconbtn" data-a="kgnow" data-v="${k}" title="${title}">${ic("timer-outline")}<span class="lbl">jetzt</span></button></div>`;
+    const f = (k, icon, label, val, title, ro) => `<div class="kgf ${k === "start" ? "in" : "out"}"><span class="kgl">${ic(icon)}${label}</span><input type="time" step="300" data-a="kg" data-v="${k}" value="${esc(val)}" aria-label="${label}" ${ro ? "readonly" : ""}><button class="iconbtn" data-a="kgnow" data-v="${k}" title="${title}">${ic("timer-outline")}<span class="lbl">jetzt</span></button></div>`;
     return `<div class="kg ${ghost ? "ghost" : ""} ${stamp ? "running" : ""}">${f("start", "login-variant", "Kommen", a, stamp ? "Läuft schon" : "Kommen jetzt – einstempeln", !!stamp)}${f("end", "logout-variant", "Gehen", b, stamp ? "Gehen jetzt – ausstempeln" : "Gehen jetzt", false)}</div>
       ${stamp ? `<div class="stamp"><span class="since">⏱️ Eingestempelt seit ${esc(stamp.in)} – ⏱️ bei „Gehen“ stempelt aus.</span><button class="btn small" data-a="cancelstamp" title="Stempeln abbrechen (nichts eintragen)">${ic("close")}Abbrechen</button></div>`
         : ghost ? `<p class="small kgh">Vorschlag aus deinem normalen Tag – ändere eine Uhrzeit oder tippe ⏱️, dann ist der Tag eingetragen.</p>` : ""}`;
