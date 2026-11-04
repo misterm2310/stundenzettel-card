@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 import voluptuous as vol
@@ -21,7 +22,7 @@ def _m(hass: HomeAssistant):
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
-    for cmd in (ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check, ws_pdf_store):
+    for cmd in (ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check, ws_pdf_store, ws_cal_write_range):
         websocket_api.async_register_command(hass, cmd)
 
 
@@ -179,3 +180,21 @@ def ws_pdf_store(hass: HomeAssistant, connection: websocket_api.ActiveConnection
         connection.send_error(msg["id"], "invalid", str(err))
         return
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/cal_write_range", vol.Required("from"): str, vol.Required("to"): str})
+@callback
+def ws_cal_write_range(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """📤 Alle Arbeitstage von–bis in den Kalender schreiben."""
+    m = _m(hass)
+    if m is None:
+        connection.send_error(msg["id"], "not_ready", NOT_READY)
+        return
+    try:
+        first, last = date.fromisoformat(msg["from"]), date.fromisoformat(msg["to"])
+        user = connection.user.name if connection.user else None
+        connection.send_result(msg["id"], {"queued": m.cal_write_range(first, last, user)})
+    except ValueError:
+        connection.send_error(msg["id"], "bad_date", "Datum bitte so: 2026-11-04")
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "cal_failed", str(err))

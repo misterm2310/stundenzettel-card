@@ -65,8 +65,9 @@ DEFAULT_SETTINGS: dict = {
     "labels": False,
     "log_on": True,
     "mascot": False,            # ⏰ Maskottchen (Wecker) oben links – Standard aus, wie bei den anderen Karten
-    "veil": False,              # 🙈 Überstunden & Summen verschleiern (antippen = kurz zeigen)
-    "view": {},                 # 👁️ Reiter ausblenden: {"monat": False} / {"jahr": False}
+    "veil": False,
+    "payslip_hint": True,       # 💶 am Monatsanfang erinnern: „Lohnabrechnung da? Ü.-Alt eintragen“              # 🙈 Überstunden & Summen verschleiern (antippen = kurz zeigen)
+    "view": {},                 # 👁️ Reiter ausblenden: {"monat": False} / {"jahr": False} / {"stat": False}
     # 🔒 Schutz
     "lock_all": False,          # ganze Karte mit PIN sperren (sonst nur ⚙️)
 }

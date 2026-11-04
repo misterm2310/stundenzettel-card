@@ -40,7 +40,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(/Std\. diesen Monat/.test(await txt()) && /Überstunden-Konto/.test(await txt()), "Heute: darunter Monat und Überstunden-Konto");
   const order = await card(page).locator("ha-card").evaluate((el) => { const t = el.innerText; return [t.indexOf("Heute, Mittwoch"), t.indexOf("Überstunden-Konto")]; });
   ok(order[0] >= 0 && order[0] < order[1], "Heute: Stunden heute stehen VOR dem Überstunden-Konto");
-  ok(/Gehen – ausstempeln/.test(await txt()), "Heute: eingestempelt → Gehen-Knopf");
+  ok(await card(page).locator(".kg.running input[data-v='start']").inputValue() !== "" && /Eingestempelt seit/.test(await txt()), "Heute: eingestempelt → Felder Kommen/Gehen, Kommen läuft");
   await shot(page, "1-heute");
   await click(page, '[data-a="tab"][data-v="monat"]');
   ok(/Stand heute/.test(await txt()) && /Soll bis heute/.test(await txt()), "Monat (läuft noch): Soll nur bis heute");
@@ -91,9 +91,30 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(/So funktioniert der Stundenzettel/.test(await txt()), "Anleitung öffnet sich");
   await shot(page, "6-anleitung");
   await click(page, '[data-a="tab"][data-v="heute"]');
-  await click(page, '[data-a="out"]');
+  await click(page, '[data-a="kgnow"][data-v="end"]');
   await page.waitForTimeout(100);
-  ok(/Kommen – einstempeln/.test(await txt()), "Ausstempeln → Kommen-Knopf");
+  ok(await card(page).locator(".kg.running").count() === 0 && await card(page).locator(".kg input[data-v='end']").inputValue() !== "", "⏱️ bei Gehen stempelt aus – Gehen-Feld ist gefüllt");
+  await card(page).locator(".kg input[data-v='end']").fill("16:15");
+  await card(page).locator(".kg input[data-v='end']").dispatchEvent("change");
+  await page.waitForTimeout(150);
+  const kgOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(kgOps.some((o) => o.type === "day_set" && o.date === "2026-11-04" && o.end === "16:15" && o.start), "Gehen-Feld ändern trägt den Tag ein (day_set)");
+  // 📈 Statistik
+  await click(page, '[data-a="tab"][data-v="stat"]');
+  ok(/Überstunden-Konto/i.test(await txt()) && /Wochentage/i.test(await txt()) && /Rekorde/i.test(await txt()) && /Urlaub & Krank pro Jahr/i.test(await txt()) && await card(page).locator(".chart svg polyline").count() === 2, "Statistik: Kurve, Wochentage, Urlaub & Krank, Rekorde");
+  await shot(page, "7-statistik");
+  await card(page).locator('select[data-a="statyear"]').selectOption("2026");
+  await page.waitForTimeout(150);
+  ok(/Stunden pro Monat/i.test(await txt()) && await card(page).locator(".vb").count() >= 2, "Statistik: Jahr 2026 zeigt Monats-Balken");
+  // 💶 Lohnabrechnung
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '[data-a="monthform"]');
+  ok(await card(page).locator('form[data-form="month"] input[name="alt"]').count() === 1, "Monat: Feld „Ü.-Alt laut Lohnabrechnung“");
+  await card(page).locator('form[data-form="month"] input[name="alt"]').fill("31");
+  await click(page, 'form[data-form="month"] button[type="submit"]');
+  await page.waitForTimeout(150);
+  const mOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(mOps.some((o) => o.type === "month_set" && o.alt === 31), "Lohnabrechnung speichern schickt month_set mit alt");
   // ↩️ Tag löschen → Rückgängig
   await click(page, '[data-a="tab"][data-v="monat"]');
   await click(page, '.dayrow[data-d="2026-11-02"]');
@@ -106,8 +127,8 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   // 📴 ohne Netz: Postausgang
   await page.evaluate(() => window.setOnline(false));
   await click(page, '[data-a="tab"][data-v="heute"]');
-  await click(page, '[data-a="in"]');
-  ok(/1 wartet/.test(await card(page).locator(".topbar").innerText()) && /Gehen – ausstempeln/.test(await txt()), "Ohne Netz: Einstempeln landet im Postausgang und wirkt sofort");
+  await click(page, '[data-a="kgnow"][data-v="start"]');
+  ok(/wartet/.test(await card(page).locator(".topbar").innerText()) && await card(page).locator(".kg.running").count() === 1, "Ohne Netz: Einstempeln landet im Postausgang und wirkt sofort");
   await shot(page, "8-offline-postausgang");
   const before = await page.evaluate(() => fake.msgs.length);
   await page.evaluate(() => window.setOnline(true));
@@ -151,7 +172,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await page.waitForTimeout(500);
   ok(await card(page).locator(".mascotbox svg.mascot").count() === 1, "Maskottchen: Wecker oben links");
   const t = await card(page).locator("ha-card").innerText();
-  ok(/Today, Wednesday/.test(t) && /Overtime balance/.test(t) && /Leave – clock out/.test(t), "Englisch: Heute-Ansicht übersetzt");
+  ok(/Today, Wednesday/.test(t) && /Overtime balance/.test(t) && /Arrive/.test(t) && /Leave/.test(t), "Englisch: Heute-Ansicht übersetzt");
   ok(!/Überstunden|Kommen|einstempeln/.test(t), "Englisch: keine deutschen Reste auf Heute");
   await shot(page, "10-englisch-maskottchen");
   ok(!errors.length, "Englisch: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));

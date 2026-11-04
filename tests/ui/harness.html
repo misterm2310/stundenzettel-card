@@ -42,7 +42,7 @@ const hass = () => ({
         if (o.type === "day_set") { const e = { kind: o.kind, source: "card", ...(o.start ? { start: o.start, end: o.end } : {}), ...(o.note ? { note: o.note } : {}), ...(o.pause != null ? { pause: o.pause } : {}) }; const r = hours(e); d.days[o.date] = typeof r === "object" ? { ...e, hours: r.h, pause: r.p } : { ...e, hours: r }; }
         if (o.type === "day_delete") delete d.days[o.date];
         if (o.type === "set") d.settings[o.key] = o.value;
-        if (o.type === "stamp_out") d.stamp = null;
+        if (o.type === "stamp_out" || o.type === "stamp_cancel") d.stamp = null;
         if (o.type === "stamp_in") d.stamp = { in: "06:30", date: d.today };
       }
       setTimeout(send, 5);

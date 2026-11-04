@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.3";
+const SZ_VERSION = "0.2.0-beta.4";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["0.2.0-beta.4", "📊 Neuer Reiter <b>Statistik</b>: Überstunden-Kurve, Stunden pro Monat mit Soll-Linie, Wochentage, Urlaub & Krank pro Jahr und Rekorde – für ein Jahr oder alle Jahre · ⏱️ Heute oben zwei Felder <b>Kommen</b> und <b>Gehen</b> (antippen, Uhrzeit ändern, fertig) mit ⏱️ „jetzt“ · 💶 <b>Ü.-Alt laut Lohnabrechnung</b> pro Monat eintragen – die Karte rechnet dann mit der Zahl vom Chef weiter und zeigt die Abweichung · 📥 Import übernimmt auch die Monatswerte (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) genau wie im alten Zettel · 📅 Fehlt ein Termin im Kalender (z. B. gelöscht), legt die Karte ihn wieder an · Knopf „Alle Tage in den Kalender schreiben“ · 🥪 „8 Stunden und →“ zählt jetzt ohne Pause – wie auf dem Zettel"],
   ["0.2.0-beta.3", "📤 <b>Drucken & Teilen</b> für Monat und Jahr: als PDF (WhatsApp, Mail, Drucker – auch auf dem iPhone), Drucken oder als Text · ☕ Pause wahlweise <b>nach Uhrzeit beim Gehen</b> (z. B. bis 12 Uhr 0,25 – danach 0,50) · 💶 Bezahlte Stunden: oben die aktuellen, darunter „bis Dezember 2019: 160“ · 🐞 Tag bearbeiten: das Pausen-Feld bleibt leer (= nach Regel) statt eine 0 vorzufüllen"],
   ["0.2.0-beta.2", "🐞 Überstunden-Konto: Schon eingetragener Urlaub in einem späteren Monat (z. B. Dezember) zählt erst, wenn der Monat dran ist – vorher wurde fälschlich das volle Soll abgezogen · 🔮 Kommende Monate zeigen nur, was schon eingetragen ist · 🧳 Resturlaub aus dem Vorjahr (⚙️ → Urlaub, Krank & Co.) zählt zum Resturlaub dazu · Blaue Knöpfe „In HACS öffnen“ und „Integration hinzufügen“ in der Anleitung auf GitHub"],
   ["0.2.0", "Heute zeigt oben groß die <b>Stunden von heute</b> (beim Stempeln läuft die Zeit mit), darunter Monat und Überstunden-Konto · 🔒 PIN-Sperre für ⚙️ oder die ganze Karte (geht auch ohne Netz) · 📱 Offline-App fürs Handy: stempeln ohne Netz, wird später nachgeschickt · Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol · 🌍 Englisch · ⏰ Maskottchen: ein kleiner Wecker mit Laune und Jahreszeiten-Kostüm · 🙈 Überstunden verschleiern · ↩️ Rückgängig nach dem Löschen · 🧘 Ruhiger Modus · Reiter ausblenden · Neues Symbol"],
@@ -257,7 +258,7 @@ function szApplyLocal(d, op) {
     d.days[iso] = { ...e, ...szDayHours(e, st) };
     d.stamp = null;
   } else if (op.type === "set") d.settings = { ...st, [op.key]: op.value };
-  else if (op.type === "month_set") d.months_meta = { ...(d.months_meta || {}), [op.month]: { adjust: op.adjust, paid: op.paid, note: op.note } };
+  else if (op.type === "month_set") { const old = { ...((d.months_meta || {})[op.month] || {}) }; for (const k of ["adjust", "paid", "note", "alt"]) if (k in op) old[k] = op[k]; if ("sheet" in op && !op.sheet) delete old.sheet; d.months_meta = { ...(d.months_meta || {}), [op.month]: old }; }
 }
 
 // ---------------------------------------------------------------- ⏰ Maskottchen: der kleine Wecker (wie Einkaufswagen, Sparschwein und Kegelfigur)
@@ -792,6 +793,47 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 @keyframes szblink { 50% { opacity:.15; } }
 :host(.calm) .hero.running .big::after { animation:none; }
 .dayrow .tag.wait { background:color-mix(in srgb, #fb8c00 18%, transparent); }
+.kg { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 2px 10px; }
+.kgf { display:grid; grid-template-columns:1fr auto; grid-template-rows:auto auto; align-items:center; column-gap:4px; background:var(--secondary-background-color, rgba(127,127,127,.06)); border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:14px; padding:6px 6px 6px 10px; min-width:0; }
+.kgl { grid-column:1 / -1; display:flex; align-items:center; gap:4px; font-size:.8em; color:var(--secondary-text-color); white-space:nowrap; }
+.kgl ha-icon { --mdc-icon-size:16px; }
+.kgf input[type=time] { width:100%; min-width:0; box-sizing:border-box; font-size:1.35em; font-weight:600; border:0; background:transparent; color:var(--primary-text-color); font-variant-numeric:tabular-nums; padding:4px 2px; }
+.kg.ghost .kgf input { color:var(--secondary-text-color); font-weight:400; }
+.kg.running .kgf:first-child { border-color:var(--kc-green); }
+.kgh { margin:-4px 4px 10px; }
+@media (max-width:420px) { .kg { grid-template-columns:1fr; } }
+.zr.sub { font-size:.8em; color:var(--secondary-text-color); padding-top:0; }
+.wizbox.payslip { border-color:#43a047; }
+.statsel { font-size:1em; padding:6px 10px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); background:var(--card-background-color, transparent); color:var(--primary-text-color); }
+.chart { margin:4px 2px 8px; }
+.chart svg { width:100%; height:150px; display:block; }
+.chart .zero { stroke:var(--divider-color, rgba(127,127,127,.4)); stroke-width:1; stroke-dasharray:4 4; vector-effect:non-scaling-stroke; }
+.chart .line { fill:none; stroke:#43a047; stroke-width:2.5; vector-effect:non-scaling-stroke; stroke-linejoin:round; }
+.chart .area { fill:color-mix(in srgb, #43a047 14%, transparent); stroke:none; }
+.chart .dot { fill:#43a047; }
+.vbars { display:flex; align-items:flex-end; gap:3px; height:150px; margin:4px 2px 4px; overflow-x:auto; }
+.vb { flex:1 0 18px; display:flex; flex-direction:column; align-items:center; height:100%; min-width:18px; }
+.vb small { font-size:.62em; color:var(--secondary-text-color); margin-top:2px; white-space:nowrap; }
+.vbt { position:relative; flex:1; width:100%; }
+.vbf { position:absolute; bottom:0; left:12%; right:12%; background:#1e88e5; border-radius:6px 6px 2px 2px; }
+.vbf.under { background:#fb8c00; }
+.vbs { position:absolute; left:0; right:0; height:2px; background:var(--primary-text-color); opacity:.55; }
+.hbars { display:flex; flex-direction:column; gap:6px; margin:4px 2px 8px; }
+.hbar { display:grid; grid-template-columns:44px 1fr auto; align-items:center; gap:8px; font-size:.9em; }
+.hbar.sel { font-weight:700; }
+.hl { color:var(--secondary-text-color); font-variant-numeric:tabular-nums; }
+.ht { position:relative; height:12px; border-radius:6px; background:var(--secondary-background-color, rgba(127,127,127,.1)); overflow:hidden; display:flex; flex-direction:column; align-items:flex-start; }
+.ht.two { height:16px; gap:2px; background:transparent; }
+.hf { display:block; height:100%; background:#fb8c00; border-radius:6px; }
+.ht.two .hf { height:7px; }
+.hf.u { background:#00897b; } .hf.k { background:#e53935; }
+.hv { font-variant-numeric:tabular-nums; white-space:nowrap; }
+.hv small { color:var(--secondary-text-color); }
+.recs { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:6px; margin:4px 2px 10px; }
+.rec { display:flex; gap:8px; align-items:center; background:var(--secondary-background-color, rgba(127,127,127,.06)); border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:14px; padding:8px 10px; min-width:0; }
+.rec .n { display:flex; flex-direction:column; min-width:0; }
+.rec small { font-size:.72em; color:var(--secondary-text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rec b { font-variant-numeric:tabular-nums; }
 .stamp { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 2px 10px; }
 .stamp .btn.main { flex:1 1 180px; min-height:48px; font-size:1.05em; justify-content:center; }
 .stamp .since { flex:1 1 100%; font-size:.85em; color:var(--secondary-text-color); }
@@ -1108,7 +1150,7 @@ class StundenzettelCard extends HTMLElement {
     if (locked && this._pad?.step !== "unlock") this._pad = { purpose: "unlock", step: "unlock", buf: "", back: "heute" };
     if (!locked && this._pad?.step === "unlock") this._pad = null;
     const vw = this._st.view || {};
-    if ((this._view === "monat" && vw.monat === false) || (this._view === "jahr" && vw.jahr === false)) this._view = "heute";
+    if ((this._view === "monat" && vw.monat === false) || (this._view === "jahr" && vw.jahr === false) || (this._view === "stat" && vw.stat === false)) this._view = "heute";
     let body;
     if (!d) {
       body = this._err ? `<div class="empty">⚠️ ${esc(this._err)}</div>` : `<div class="empty">⏳ Lade …</div>`;
@@ -1128,12 +1170,12 @@ class StundenzettelCard extends HTMLElement {
       body = `<div class="head"><div class="title">${logo}${title ? `<span data-noicon>${title}</span>` : ""}${this._lockAll ? "" : badge}</div>${tools}</div>`;
       body += this._updHtml(d);
       if (!page && this._view !== "set" && !this._share) {
-        const tabs = [["heute", "calendar-today", "Heute"], ...(vw.monat === false ? [] : [["monat", "calendar-month-outline", "Monat"]]), ...(vw.jahr === false ? [] : [["jahr", "chart-bar", "Jahr"]])];
+        const tabs = [["heute", "calendar-today", "Heute"], ...(vw.monat === false ? [] : [["monat", "calendar-month-outline", "Monat"]]), ...(vw.jahr === false ? [] : [["jahr", "chart-bar", "Jahr"]]), ...(vw.stat === false ? [] : [["stat", "chart-line", "Statistik"]])];
         if (tabs.length > 1) body += `<div class="tabs">${tabs.map(([k, i, l]) => `<button class="tab ${this._view === k ? "active" : ""}" data-a="tab" data-v="${k}">${ic(i)}${l}</button>`).join("")}</div>`;
       }
       if (!locked) pinTouch();
       body += page ? `<div class="sec pagehost"><div class="sechead"><span class="ic" style="--ic:${page.color}">${ic(page.icon)}</span><h3>${page.title}</h3></div><div class="pagebody">${page.html}</div></div>`
-        : this._view === "set" ? this._setView() : this._view === "monat" ? this._monthView() : this._view === "jahr" ? this._yearView() : this._todayView();
+        : this._view === "set" ? this._setView() : this._view === "monat" ? this._monthView() : this._view === "jahr" ? this._yearView() : this._view === "stat" ? this._statView() : this._todayView();
     }
     this.shadowRoot.innerHTML = `<style>${CSS}</style>${top}<ha-card>${body}</ha-card>
       ${this._lockAll ? "" : `<div class="foot"><button class="${this._view === "guide" ? "on" : ""}" data-a="tab" data-v="${this._view === "guide" ? "heute" : "guide"}">${ic("book-open-page-variant-outline")}<span>Anleitung</span></button></div>`}
@@ -1173,10 +1215,9 @@ class StundenzettelCard extends HTMLElement {
         <li>Alten Zettel? <b>Einfach als Text einfügen</b> → <button class="btn small" data-a="sheet" data-v="imp">📥 Import</button></li></ol>
         <p class="small">Du kannst auch sofort loslegen: unten auf <b>Kommen</b> drücken oder den heutigen Tag eintragen. 💪</p></div>`;
     }
+    h += this._payslipHint(cur);
     h += this._todayHero(d, iso);
-    h += d.stamp
-      ? `<div class="stamp"><button class="btn main" data-a="out">${ic("logout-variant")}Gehen – ausstempeln</button><button class="btn small" data-a="cancelstamp" title="Stempeln abbrechen (nichts eintragen)">${ic("close")}Abbrechen</button></div>`
-      : `<div class="stamp"><button class="btn main" data-a="in">${ic("login-variant")}Kommen – einstempeln</button></div>`;
+    h += this._kgHtml(d, iso);
     h += `<div class="ghead"><span class="gdot" style="--gc:#1e88e5">${ic("calendar-today")}</span><span>Eintrag für heute</span></div>`;
     h += this._dayRows([iso], true);
     if (!d.days[iso] && this._open !== iso) {
@@ -1197,6 +1238,30 @@ class StundenzettelCard extends HTMLElement {
       <div class="tile ${jahr ? "click" : ""}" ${jahr}><b>${s.sick_days ?? 0}</b><span>${ic("emoticon-sick-outline")}Kranktage ${y}</span></div></div>`;
     h += this._calLine();
     return h;
+  }
+  // ⏱️ Zwei Felder „Kommen“ und „Gehen“ – antippen, Uhrzeit ändern, fertig (⏱️ = jetzt)
+  _kgHtml(d, iso) {
+    const e = d.days[iso];
+    const stamp = d.stamp && d.stamp.date === iso ? d.stamp : null;
+    if (e && e.kind !== "work" && !stamp) return "";
+    const p = this._plan(iso) || ["", ""];
+    const ghost = !e && !stamp;
+    const a = stamp ? stamp.in : e?.start || p[0] || "";
+    const b = stamp ? "" : e?.end || p[1] || "";
+    const f = (k, icon, label, val, title, ro) => `<div class="kgf"><span class="kgl">${ic(icon)}${label}</span><input type="time" step="300" data-a="kg" data-v="${k}" value="${esc(val)}" aria-label="${label}" ${ro ? "readonly" : ""}><button class="iconbtn" data-a="kgnow" data-v="${k}" title="${title}">${ic("timer-outline")}<span class="lbl">jetzt</span></button></div>`;
+    return `<div class="kg ${ghost ? "ghost" : ""} ${stamp ? "running" : ""}">${f("start", "login-variant", "Kommen", a, stamp ? "Läuft schon" : "Kommen jetzt – einstempeln", !!stamp)}${f("end", "logout-variant", "Gehen", b, stamp ? "Gehen jetzt – ausstempeln" : "Gehen jetzt", false)}</div>
+      ${stamp ? `<div class="stamp"><span class="since">⏱️ Eingestempelt seit ${esc(stamp.in)} – ⏱️ bei „Gehen“ stempelt aus.</span><button class="btn small" data-a="cancelstamp" title="Stempeln abbrechen (nichts eintragen)">${ic("close")}Abbrechen</button></div>`
+        : ghost ? `<p class="small kgh">Vorschlag aus deinem normalen Tag – ändere eine Uhrzeit oder tippe ⏱️, dann ist der Tag eingetragen.</p>` : ""}`;
+  }
+  // 💶 Am Monatsanfang: „Lohnabrechnung da? Ü.-Alt eintragen“
+  _payslipHint(cur) {
+    const d = this._d, st = this._st;
+    if (st.payslip_hint === false || !cur || cur.alt || Number(d.today.slice(8, 10)) > 20) return "";
+    if (store.get("sz_payslip_no", "") === cur.month) return "";
+    const [y, m] = cur.month.split("-").map(Number);
+    const prev = monthName(`${m === 1 ? y - 1 : y}-${pad2(m === 1 ? 12 : m - 1)}`);
+    return `<div class="wizbox payslip"><b>💶 Lohnabrechnung für ${esc(prev)} da?</b><p class="small" style="margin:4px 0 8px">Trag den Überstunden-Stand vom Chef als <b>Ü.-Alt</b> für ${esc(monthName(cur.month))} ein – dann rechnet die Karte genau mit seiner Zahl weiter.</p>
+      <div class="btnrow"><button class="btn small main" data-a="payslip" data-v="${cur.month}">${ic("cash-check")}Jetzt eintragen</button><button class="btn small" data-a="payslipno" data-v="${cur.month}">${ic("close")}Später</button></div></div>`;
   }
   // ⏱️ Ganz oben: die Stunden von heute (beim Stempeln läuft die Uhr mit)
   _todayHero(d, iso) {
@@ -1281,17 +1346,29 @@ class StundenzettelCard extends HTMLElement {
     let h = `<div class="yearnav"><button class="iconbtn" data-a="mon" data-v="-1" title="Monat zurück">${ic("chevron-left")}</button><b>${monthName(this._month)}</b><button class="iconbtn" data-a="mon" data-v="1" title="Monat vor">${ic("chevron-right")}</button></div>`;
     h += this._dayRows(isos);
     h += this._zettel(row);
-    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Korrektur / Soll</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button></div>`;
+    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Lohnabrechnung / Korrektur</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button></div>`;
     if (this._monthForm) {
       const meta = (d.months_meta || {})[this._month] || {};
       h += `<form class="edit" data-form="month"><b>🗓️ ${monthName(this._month)}</b><div class="f">
+        <label class="wide">💶 Ü.-Alt laut Lohnabrechnung<input name="alt" inputmode="decimal" value="${meta.alt != null ? esc(String(meta.alt).replace(".", ",")) : ""}" placeholder="leer = Stand vom Vormonat (${row ? hs(row.calc_old ?? row.old) : "–"})"></label>
         <label>Korrektur (Std.)<input name="adjust" inputmode="decimal" value="${meta.adjust != null ? esc(String(meta.adjust).replace(".", ",")) : ""}" placeholder="z. B. −20 ausgezahlt"></label>
         <label>Soll nur diesen Monat<input name="paid" inputmode="decimal" value="${meta.paid != null ? esc(String(meta.paid).replace(".", ",")) : ""}" placeholder="${row ? h2(row.paid) : ""}"></label>
         <label class="wide">Notiz<input name="note" value="${esc(meta.note || "")}" placeholder="z. B. 20 Überstunden ausgezahlt"></label></div>
+        <p class="small">💶 <b>Ü.-Alt laut Lohnabrechnung</b> = der Überstunden-Stand, den dein Chef auf der Abrechnung vom Vormonat stehen hat. Dann rechnet die Karte ab diesem Monat mit seiner Zahl weiter.</p>
         <p class="small">💡 <b>Korrektur</b> = Stunden, die nicht aus den Tagen kommen (ausgezahlt = Minus, geschenkt = Plus). <b>Soll</b> leer = normal (${h2(this._st.paid_hours)}).</p>
         <div class="btnrow end"><button type="button" class="btn" data-a="monthform">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>`;
     }
     return h;
+  }
+  _altRow(row, r) {
+    const off = row.old - (row.calc_old ?? row.old);
+    const line = r("history", row.alt ? "Ü.-Alt (Lohnabrechnung)" : "Ü.-Alt (Vormonat)", this._mv(hs(row.old), "old" + row.month));
+    return row.alt && Math.abs(off) > 0.004 ? line + `<div class="zr sub"><span>Karte hätte ${this._mv(hs(row.calc_old), "co" + row.month)}</span><span class="${off < 0 ? "vneg" : "vpos"}">${this._mv(hs(off), "cd" + row.month)}</span></div>` : line;
+  }
+  _sheetNote(row) {
+    if (!row?.sheet) return "";
+    const dh = Math.abs((row.calc_hours ?? row.hours) - row.hours) > 0.004;
+    return `<p class="small">📥 Zahlen genau wie auf deinem alten Zettel${dh ? ` (die einzelnen Tage ergeben zusammen ${h2(row.calc_hours)} Std.)` : ""}. <a href="#" data-a="unsheet">Mit der Karte neu rechnen</a></p>`;
   }
   _zettel(row) {
     if (!row) return `<div class="empty">In diesem Monat steht noch nichts. ✍️</div>`;
@@ -1302,7 +1379,7 @@ class StundenzettelCard extends HTMLElement {
       ${r("sigma", "Summe bisher", `${h2(row.hours)} Std.`)}
       ${r("cash", `Soll bis heute <small>(ganzer Monat ${h2(row.paid)})</small>`, `−${h2(row.paid_today)} Std.`)}
       ${r("plus-minus-variant", "Plus/Minus bisher", `<span class="${diff < 0 ? "vneg" : "vpos"}">${hs(diff)}</span>`)}
-      ${r("history", "Ü.-Alt (Vormonat)", this._mv(hs(row.old), "old" + row.month))}
+      ${this._altRow(row, r)}
       ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, hs(row.adjust)) : ""}
       ${r("scale-balance", "Stand heute", this._mv(`${hs(row.now)} Std.`, "now"), "tot")}
       ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}
@@ -1320,11 +1397,11 @@ class StundenzettelCard extends HTMLElement {
       ${r("sigma", "Summe", `${h2(row.hours)} Std.`)}
       ${r("cash", "Bezahlt (Soll)", `−${h2(row.paid)} Std.`)}
       ${r("plus-minus-variant", "Plus/Minus", `<span class="${row.diff < 0 ? "vneg" : "vpos"}">${hs(row.diff)}</span>`)}
-      ${r("history", "Ü.-Alt (Vormonat)", this._mv(hs(row.old), "old" + row.month))}
+      ${this._altRow(row, r)}
       ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, hs(row.adjust)) : ""}
       ${r("scale-balance", "Ü.-Gesamt", this._mv(`${hs(row.total)} Std.`, "tot" + row.month), "tot")}
             ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}
-      ${r("food-variant", `${h2(this._st.long_day).replace(",00", "")} Stunden und →`, row.long)}${row.euro ? r("cash", "Pauschal", eur(row.euro)) : ""}</div>`;
+      ${r("food-variant", `${h2(this._st.long_day).replace(",00", "")} Stunden und →`, row.long)}${row.euro ? r("cash", "Pauschal", eur(row.euro)) : ""}</div>${this._sheetNote(row)}`;
   }
 
   // ---------------------------------------------------------------- 📊 Jahr
@@ -1343,6 +1420,73 @@ class StundenzettelCard extends HTMLElement {
     h += `<div class="tiles" style="margin-top:12px"><div class="tile"><b>${sum("urlaub")} / ${vac}</b><span>${ic("beach")}Urlaub genommen</span></div><div class="tile"><b>${sum("krank")}</b><span>${ic("emoticon-sick-outline")}Kranktage</span></div><div class="tile"><b>${sum("long")}</b><span>${ic("food-variant")}Tage ab ${h2(this._st.long_day).replace(",00", "")} Std.</span></div></div>`;
     h += `<div class="btnrow"><button class="btn small" data-a="share" data-v="year">${ic("share-variant-outline")}Drucken & Teilen</button></div>`;
     h += `<p class="small">U = Urlaubstage · K = Kranktage · Konto = Ü.-Gesamt am Monatsende (laufender Monat: Stand heute, Soll bis heute). Grau = Monat ohne Einträge (zählt nicht mit). 🔮 = Monat kommt erst noch. Antippen öffnet den Monat.</p>`;
+    return h;
+  }
+
+  // ---------------------------------------------------------------- 📈 Statistik (wie beim Kegelclub): ein Jahr oder alle Jahre
+  _statView() {
+    const d = this._d, st = this._st;
+    const all = (d.months || []).filter((m) => !m.future && m.tracked).map((m) => (m.now != null ? { ...m, paid: m.paid_today, diff: m.hours - m.paid_today, total: m.now } : m));
+    const years = [...new Set(all.map((m) => m.month.slice(0, 4)))].sort();
+    if (!years.length) return `<div class="empty">Noch keine Daten für eine Statistik. 📊 Trag ein paar Tage ein oder importiere deinen alten Zettel.</div>`;
+    let sel = this._statYear || (years.length === 1 ? years[0] : "all");
+    if (sel !== "all" && !years.includes(sel)) sel = "all";
+    const rows = all.filter((m) => sel === "all" || m.month.startsWith(sel));
+    const days = Object.entries(d.days || {}).filter(([iso]) => iso <= d.today && (sel === "all" || iso.startsWith(sel)));
+    const sec = (icon, color, title, body) => `<div class="ghead"><span class="gdot" style="--gc:${color}">${ic(icon)}</span><span>${title}</span></div>${body}`;
+    let h = `<div class="yearnav"><select data-a="statyear" class="statsel" aria-label="Zeitraum"><option value="all" ${sel === "all" ? "selected" : ""}>Alle Jahre (${years[0]}–${years[years.length - 1]})</option>${[...years].reverse().map((y) => `<option value="${y}" ${sel === y ? "selected" : ""}>${y}</option>`).join("")}</select></div>`;
+    // ⚖️ Konto-Kurve
+    const vals = rows.map((m) => Number(m.total) || 0);
+    const W = 600, H = 170, P = 6;
+    const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), span = hi - lo || 1;
+    const X = (i) => P + (vals.length < 2 ? (W - 2 * P) / 2 : (i * (W - 2 * P)) / (vals.length - 1)), Y = (v) => P + ((hi - v) * (H - 2 * P)) / span;
+    const pts = vals.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+    const last = vals[vals.length - 1] ?? 0, maxI = vals.indexOf(Math.max(...vals)), minI = vals.indexOf(Math.min(...vals));
+    const lbl = (m) => (sel === "all" ? `${MONTHS[Number(m.month.slice(5)) - 1].slice(0, 3)} ${m.month.slice(0, 4)}` : MONTHS[Number(m.month.slice(5)) - 1]);
+    h += sec("scale-balance", "#43a047", "Überstunden-Konto", `<div class="chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Überstunden-Konto">
+      <line x1="0" x2="${W}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="zero"/>
+      <polyline points="${P},${Y(0).toFixed(1)} ${pts} ${X(vals.length - 1).toFixed(1)},${Y(0).toFixed(1)}" class="area"/>
+      <polyline points="${pts}" class="line"/>${vals.length ? `<circle cx="${X(vals.length - 1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="4" class="dot"/>` : ""}</svg></div>
+      <div class="tiles"><div class="tile"><b>${this._mv(`<span class="${last < 0 ? "vneg" : "vpos"}">${hs(last)}</span>`, "st-last")}</b><span>${ic("flag-checkered")}zuletzt</span></div><div class="tile"><b>${this._mv(hs(vals[maxI]), "st-max")}</b><span>${ic("arrow-up-bold")}höchster · ${esc(lbl(rows[maxI]))}</span></div><div class="tile"><b>${this._mv(hs(vals[minI]), "st-min")}</b><span>${ic("arrow-down-bold")}tiefster · ${esc(lbl(rows[minI]))}</span></div></div>`);
+    // 📊 Stunden pro Monat (bzw. pro Jahr) mit Soll-Linie
+    const groups = sel === "all"
+      ? years.map((y) => { const r = all.filter((m) => m.month.startsWith(y)); return { k: y, hours: r.reduce((a, m) => a + (Number(m.hours) || 0), 0) / (r.length || 1), soll: r.reduce((a, m) => a + (Number(m.paid) || 0), 0) / (r.length || 1) }; })
+      : rows.map((m) => ({ k: MONTHS[Number(m.month.slice(5)) - 1].slice(0, 3), hours: Number(m.hours) || 0, soll: Number(m.paid) || 0 }));
+    const gmax = Math.max(1, ...groups.map((g) => Math.max(g.hours, g.soll)));
+    h += sec("chart-bar", "#1e88e5", sel === "all" ? "Stunden pro Monat (Schnitt je Jahr)" : "Stunden pro Monat", `<div class="vbars">${groups.map((g) => `<div class="vb" title="${esc(g.k)}: ${h2(g.hours)} Std. · Soll ${h2(g.soll)}"><div class="vbt"><div class="vbf ${g.hours + 0.004 < g.soll ? "under" : ""}" style="height:${((g.hours / gmax) * 100).toFixed(1)}%"></div><div class="vbs" style="bottom:${((g.soll / gmax) * 100).toFixed(1)}%"></div></div><small>${esc(g.k)}</small></div>`).join("")}</div>
+      <p class="small">Balken = gearbeitet (inkl. Urlaub, Krank, Feiertag) · Strich = Soll${sel === "all" ? " · pro Jahr der Schnitt eines Monats" : ""}.</p>`);
+    // 📅 Wochentage
+    const wd = Array.from({ length: 8 }, () => ({ n: 0, h: 0, ends: {} }));
+    for (const [iso, e] of days) {
+      if (e.kind !== "work" || !(Number(e.hours) > 0)) continue;
+      const w = wd[wdOf(iso)]; w.n++; w.h += Number(e.hours) || 0;
+      if (e.end) w.ends[e.end] = (w.ends[e.end] || 0) + 1;
+    }
+    const wmax = Math.max(1, ...wd.map((w) => (w.n ? w.h / w.n : 0)));
+    const wrows = [1, 2, 3, 4, 5, 6, 7].filter((i) => wd[i].n).map((i) => { const w = wd[i], avg = w.h / w.n, end = Object.entries(w.ends).sort((a, b) => b[1] - a[1])[0]?.[0]; return `<div class="hbar"><span class="hl">${WD[i]}</span><span class="ht"><span class="hf" style="width:${((avg / wmax) * 100).toFixed(1)}%"></span></span><span class="hv">${h2(avg)} Std.<small>${end ? ` · meist bis ${esc(end)}` : ""} · ${w.n}×</small></span></div>`; }).join("");
+    h += sec("calendar-week", "#fb8c00", "Wochentage", wrows ? `<div class="hbars">${wrows}</div><p class="small">Schnitt der gearbeiteten Stunden je Wochentag (ohne Pause) und die häufigste Feierabend-Zeit.</p>` : `<p class="small">Noch keine Arbeitstage.</p>`);
+    // 🏖️ Urlaub & Krank pro Jahr
+    const yu = years.map((y) => { const r = all.filter((m) => m.month.startsWith(y)); return { y, u: r.reduce((a, m) => a + (m.urlaub || 0), 0), k: r.reduce((a, m) => a + (m.krank || 0), 0) }; });
+    const umax = Math.max(1, ...yu.map((x) => Math.max(x.u, x.k)));
+    h += sec("beach", "#00897b", "Urlaub & Krank pro Jahr", `<div class="hbars">${[...yu].reverse().map((x) => `<div class="hbar ${sel === x.y ? "sel" : ""}"><span class="hl">${x.y}</span><span class="ht two"><span class="hf u" style="width:${((x.u / umax) * 100).toFixed(1)}%"></span><span class="hf k" style="width:${((x.k / umax) * 100).toFixed(1)}%"></span></span><span class="hv">🏖️ ${x.u} · 🤒 ${x.k}</span></div>`).join("")}</div><p class="small">Oberer Balken = Urlaubstage, unterer = Kranktage.</p>`);
+    // 🏆 Rekorde
+    const work = days.filter(([, e]) => e.kind === "work" && Number(e.hours) > 0);
+    const best = (arr, f, cmp) => arr.reduce((b, x) => (b == null || cmp(f(x), f(b)) ? x : b), null);
+    const longD = best(work, ([, e]) => Number(e.hours), (a, b) => a > b);
+    const early = best(work.filter(([, e]) => e.start), ([, e]) => szMin(e.start), (a, b) => a < b);
+    const late = best(work.filter(([, e]) => e.end), ([, e]) => szMin(e.end), (a, b) => a > b);
+    const done = rows.filter((m) => m.now == null);
+    const bm = best(done, (m) => m.diff + (m.adjust || 0), (a, b) => a > b), wm = best(done, (m) => m.diff + (m.adjust || 0), (a, b) => a < b);
+    const day = (x) => `${WD[wdOf(x[0])]} ${dm(x[0])}${x[0].slice(0, 4)}`;
+    const rec = [
+      longD && ["timer-sand-full", "Längster Tag", `${h2(longD[1].hours)} Std.`, `${day(longD)} · ${esc(longD[1].start || "")}–${esc(longD[1].end || "")}`],
+      early && ["weather-sunset-up", "Frühester Start", `${esc(early[1].start)} Uhr`, day(early)],
+      late && ["weather-night", "Spätester Feierabend", `${esc(late[1].end)} Uhr`, day(late)],
+      bm && ["trophy-outline", "Bester Monat", hs(bm.diff + (bm.adjust || 0)), monthName(bm.month)],
+      wm && ["emoticon-sad-outline", "Schwächster Monat", hs(wm.diff + (wm.adjust || 0)), monthName(wm.month)],
+      ["sigma", "Stunden gesamt", `${h2(rows.reduce((a, m) => a + (Number(m.hours) || 0), 0))} Std.`, `${rows.length} Monate`],
+    ].filter(Boolean);
+    h += sec("trophy-outline", "#8e24aa", "Rekorde", `<div class="recs">${rec.map(([i, t, v, sub]) => `<div class="rec"><span class="kd" style="--kc:#8e24aa">${ic(i)}</span><div class="n"><small>${t}</small><b>${v}</b><small>${sub}</small></div></div>`).join("")}</div>`);
     return h;
   }
 
@@ -1438,6 +1582,8 @@ class StundenzettelCard extends HTMLElement {
         ${!(st.paid_until || []).length && !(st.paid_periods || []).length ? `<p class="small">Keine – es gilt immer das Soll oben.</p>` : ""}
         ${this._addPeriod ? `<form class="edit" data-form="period"><div class="f"><label>Bis einschließlich<input type="month" name="until" required></label><label>Stunden pro Monat<input name="hours" inputmode="decimal" required placeholder="160"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addperiod">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : ""}
         <p class="small">Beispiel: Bis Dezember 2019 waren es 160 Stunden, seitdem 175 → oben 175 eintragen und hier „bis Dezember 2019: 160“.</p>
+        ${this._sw("payslip_hint", "bell-ring-outline", "An die Lohnabrechnung erinnern", "am Monatsanfang unter Heute: „Ü.-Alt eintragen“", st.payslip_hint !== false)}
+        <p class="small">💶 Die Zahl vom Chef trägst du unter <b>Monat → Lohnabrechnung / Korrektur</b> als <b>Ü.-Alt</b> ein.</p>
         ${this._num("start_balance", "piggy-bank-outline", "Überstunden, bevor es losging", st.start_balance, "Std.")}
         <p class="small">💡 Tipp: Unter <b>📥 Import</b> → <b>„Konto stellen“</b> kannst du sagen „Ende Oktober stand das Konto bei 32“ – die Karte rechnet die Korrektur selbst aus.</p>` },
       pause: { icon: "coffee-outline", color: "#6d4c41", title: "Pausen-Regeln", info: (st.pause_rules || []).map((r) => (st.pause_by === "ende" ? `nach ${szClock(r.from)} → ${h2(r.pause)}` : `ab ${h2(r.from).replace(",00", "")} Std. → ${h2(r.pause)}`)).join(" · ") || "keine Pause", html: () => `
@@ -1457,7 +1603,7 @@ class StundenzettelCard extends HTMLElement {
         <div class="switch"><span>${ic("briefcase-outline")}Resturlaub aus ${this._year - 1} (für ${this._year})</span><span><input data-a="setcarry" data-v="${this._year}" inputmode="decimal" value="${esc(String((st.vacation_carry || {})[this._year] ?? 0).replace(".", ","))}" style="width:90px;text-align:right"> Tage</span></div>
         <p class="small">🧳 Übrige Urlaubstage vom Vorjahr kommen zum Anspruch dazu. Für ein anderes Jahr: oben unter Jahr das Jahr wählen, dann hier eintragen.</p>
         ${this._num("long_day", "food-variant", "„… Stunden und →“ zählt Tage ab", st.long_day, "Std.")}
-        <p class="small">„8 Stunden und →“ zählt die Tage, an denen du mindestens so lange weg warst (Anfang bis Ende, mit Pause) – praktisch z. B. für die Verpflegungspauschale in der Steuererklärung.</p>` },
+        <p class="small">„8 Stunden und →“ zählt die Tage, an denen du mindestens so viele Stunden gearbeitet hast (ohne Pause gerechnet – wie auf dem Zettel).</p>` },
       cal: { icon: "calendar-sync-outline", color: "#3949ab", title: "Kalender", info: st.calendar ? `${st.calendar} · „${st.event_title}“` : "nicht verbunden", html: () => `
         <p class="small">In deinem Kalender steht jeden Tag ein Termin <b>„${esc(st.event_title || "Arbeiten")}“</b> mit Anfang und Ende? Dann holt die Karte ihn sich alle 15 Minuten.</p>
         <div class="switch"><span>${ic("calendar-outline")}Kalender</span>${this._entSel("calendar", "calendar", st.calendar)}</div>
@@ -1465,7 +1611,11 @@ class StundenzettelCard extends HTMLElement {
         ${this._sw("cal_read", "calendar-import", "Termine in die Liste holen", "die letzten 40 Tage, alle 15 Minuten", st.cal_read !== false)}
         ${this._sw("cal_write", "calendar-export", "Änderungen in den Kalender schreiben", "Karte ist die Chefin: deine Zeiten landen im Termin", !!st.cal_write)}
         ${st.cal_write ? `<div class="switch"><span>${ic("map-marker-outline")}Ort im Termin</span><input data-a="sets" data-v="location" value="${esc(st.location || "")}" placeholder="leer = keiner" style="width:180px"></div>
-        <p class="small">✍️ Was du in der Karte einträgst (oder stempelst), schreibt sie als Termin „${esc(st.event_title)}“ mit <code>[9,25 Stunden (+0,50 h Pause)]</code> in den Kalender. Krank/Urlaub/Frei → der Arbeits-Termin des Tages wird gelöscht. <b>Google</b> kann Termine über Home Assistant nicht ändern, nur löschen und neu anlegen – das macht die Karte dann automatisch.</p>` : ""}
+        <p class="small">✍️ Was du in der Karte einträgst (oder stempelst), schreibt sie als Termin „${esc(st.event_title)}“ mit <code>[9,25 Stunden (+0,50 h Pause)]</code> in den Kalender. Krank/Urlaub/Frei → der Arbeits-Termin des Tages wird gelöscht. <b>Google</b> kann Termine über Home Assistant nicht ändern, nur löschen und neu anlegen – das macht die Karte dann automatisch.</p>
+        <p class="small">🔁 Fehlt bei einem deiner Arbeitstage der Termin (z. B. aus Versehen im Kalender gelöscht), legt die Karte ihn beim nächsten Abgleich wieder an – für die letzten 40 Tage. Doppelte Termine gibt es nicht.</p>
+        <div class="ghead"><span class="gdot" style="--gc:#3949ab">${ic("calendar-export")}</span><span>Alle Tage in den Kalender schreiben</span></div>
+        <form class="edit" data-form="calrange"><div class="f"><label>Von<input type="date" name="from" required value="${esc(d.today.slice(0, 8) + "01")}"></label><label>Bis<input type="date" name="to" required value="${esc(d.today)}"></label></div><div class="btnrow end"><button class="btn main" type="submit">${ic("calendar-export")}Jetzt schreiben</button></div></form>
+        <p class="small">Schreibt jeden Arbeitstag im Zeitraum als Termin „${esc(st.event_title)}“ (höchstens gut ein Jahr auf einmal). Was schon richtig drinsteht, bleibt wie es ist.</p>` : ""}
         <div class="switch"><span>${ic("party-popper")}Feiertage automatisch</span>${this._entSel("holiday_calendar", "calendar", st.holiday_calendar, "– aus –")}</div>
         <p class="small">🎌 Tipp: Die Integration „Feiertage“ (z. B. <code>calendar.deutschland_nw</code>) kennt genau die Feiertage deines Bundeslandes.</p>
         <p class="small">✋ Was du in der Karte selbst änderst, überschreibt der Kalender nie wieder.</p>
@@ -1480,11 +1630,11 @@ class StundenzettelCard extends HTMLElement {
       imp: { icon: "database-import-outline", color: "#1e88e5", title: "Import & Sicherung", info: "alter Zettel, Konto stellen, Sicherung", html: () => this._importHtml(admin) },
       log: { icon: "history", color: "#5e35b1", title: "Verlauf", info: `${(d.log || []).length} Einträge`, html: () => `${this._sw("log_on", "history", "Verlauf führen", "wer hat wann was geändert", st.log_on !== false)}
         ${(d.log || []).map((l) => `<div class="logrow small" style="margin:6px 4px"><b>${new Date(l.ts).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</b> ${esc(l.text)}${l.user ? ` · ${esc(l.user)}` : ""}</div>`).join("") || `<p class="small">Noch nichts passiert.</p>`}` },
-      view: { icon: "eye-outline", color: "#00897b", title: "Ansicht – für alle", info: [st.labels ? "Beschriftungen an" : "", st.veil ? "verschleiert" : "", (st.view || {}).monat === false || (st.view || {}).jahr === false ? "Reiter ausgeblendet" : ""].filter(Boolean).join(" · ") || "alles sichtbar", html: () => `
+      view: { icon: "eye-outline", color: "#00897b", title: "Ansicht – für alle", info: [st.labels ? "Beschriftungen an" : "", st.veil ? "verschleiert" : "", (st.view || {}).monat === false || (st.view || {}).jahr === false || (st.view || {}).stat === false ? "Reiter ausgeblendet" : ""].filter(Boolean).join(" · ") || "alles sichtbar", html: () => `
         <p class="small">Gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>
         ${this._sw("labels", "format-text", "Beschriftungen unter den Symbolen", "auch ohne: lange auf ein Symbol drücken", !!st.labels)}
         ${this._sw("veil", "eye-off-outline", "Überstunden verschleiern", "PC: Maus drüber · Handy: antippen = 4 Sekunden sichtbar", !!st.veil)}
-        ${[["monat", "calendar-month-outline", "Reiter „Monat“", "Tage, Zettel, Drucken"], ["jahr", "chart-bar", "Reiter „Jahr“", "Übersicht pro Monat"]].map(([k, i, t, sub]) => `<label class="switch"><span>${ic(i)}<span class="vt"><b>${t}</b><small>${sub}</small></span></span><input type="checkbox" class="swchk" data-a="setview" data-v="${k}" ${(st.view || {})[k] !== false ? "checked" : ""}></label>`).join("")}
+        ${[["monat", "calendar-month-outline", "Reiter „Monat“", "Tage, Zettel, Drucken"], ["jahr", "chart-bar", "Reiter „Jahr“", "Übersicht pro Monat"], ["stat", "chart-line", "Reiter „Statistik“", "Kurven, Wochentage, Rekorde"]].map(([k, i, t, sub]) => `<label class="switch"><span>${ic(i)}<span class="vt"><b>${t}</b><small>${sub}</small></span></span><input type="checkbox" class="swchk" data-a="setview" data-v="${k}" ${(st.view || {})[k] !== false ? "checked" : ""}></label>`).join("")}
         <p class="small">🌍 <b>Sprache:</b> Die Karte spricht automatisch wie dein Home Assistant (Deutsch oder Englisch). Fest einstellen: Karte bearbeiten → „Sprache / Language“.</p>
         <p class="small">📌 Den Stundenzettel gibt's auch als eigenen Eintrag in der <b>Seitenleiste</b>: Einstellungen → Geräte & Dienste → Stundenzettel → Konfigurieren.</p>` },
       mascot: { icon: "alarm", color: "#ec407a", title: "Maskottchen", info: st.mascot ? "Wecker ist da" : "aus", html: () => `
@@ -1526,11 +1676,11 @@ class StundenzettelCard extends HTMLElement {
   _importHtml(admin) {
     const p = this._impPrev;
     const lastKey = (this._d.months || []).filter((m) => m.tracked && m.month < this._d.today.slice(0, 7)).map((m) => m.month).pop() || "";
-    return `<p class="small"><b>📥 Alter Zettel</b> – markiere in deiner Tabelle (Google Tabellen, Excel oder PDF) einfach alles, kopiere es und füge es hier ein. Die Karte sucht sich Zeilen wie <code>15.03.2012  7:00 - 17:00  9,5</code>, <code>02.08.2012 Urlaub 8</code> oder <code>14.04.2012 8:00 - 11:00 33,00 Euro</code> selbst raus. Die Stunden vom Zettel werden genau übernommen (die Pause passt sich an).</p>
+    return `<p class="small"><b>📥 Alter Zettel</b> – markiere in deiner Tabelle (Google Tabellen, Excel oder PDF) einfach alles, kopiere es und füge es hier ein. Die Karte sucht sich Zeilen wie <code>15.03.2012  7:00 - 17:00  9,5</code>, <code>02.08.2012 Urlaub 8</code> oder <code>14.04.2012 8:00 - 11:00 33,00 Euro</code> selbst raus. Die Stunden vom Zettel werden genau übernommen (die Pause passt sich an). Kopierst du aus Google Tabellen oder Excel, kommen auch die <b>Monatswerte</b> mit: Summe, Ü.-Alt (Lohnabrechnung), Ü.-Gesamt und „8 Stunden und →“ – genau so, wie sie im Zettel stehen.</p>
       <textarea id="imptext" rows="6" placeholder="Hier einfügen …">${esc(this._impText || "")}</textarea>
       ${this._sw("_overwrite", "file-replace-outline", "Schon vorhandene Tage überschreiben", "aus = nur fehlende Tage ergänzen", !!this._overwrite)}
       <div class="btnrow"><button class="btn" data-a="impprev">${ic("magnify")}Vorschau</button>${p && p.found ? `<button class="btn main" data-a="impgo">${ic("check")}${p.found} Tage übernehmen</button>` : ""}</div>
-      ${p ? `<p class="small">${p.found ? `🔎 Gefunden: <b>${p.found} Tage</b> (${p.first ? dm(p.first) + p.first.slice(0, 4) : ""} bis ${p.last ? dm(p.last) + p.last.slice(0, 4) : ""}) · neu: ${p.new} · schon da: ${p.clash}${p.skipped ? ` · übersprungen: ${p.skipped} (z. B. Wochenende)` : ""}` : "🤷 Nichts gefunden – sind Datum und Uhrzeit drin?"}${p.applied != null ? ` · ✅ <b>${p.applied} übernommen</b>` : ""}</p>` : ""}
+      ${p ? `<p class="small">${p.found ? `🔎 Gefunden: <b>${p.found} Tage</b> (${p.first ? dm(p.first) + p.first.slice(0, 4) : ""} bis ${p.last ? dm(p.last) + p.last.slice(0, 4) : ""}) · neu: ${p.new} · schon da: ${p.clash}${p.months ? ` · Monatswerte: <b>${p.months} Monate</b>` : ""}${p.skipped ? ` · übersprungen: ${p.skipped} (z. B. Wochenende)` : ""}` : "🤷 Nichts gefunden – sind Datum und Uhrzeit drin?"}${p.applied != null ? ` · ✅ <b>${p.applied} übernommen</b>` : ""}</p>` : ""}
       <div class="ghead"><span class="gdot" style="--gc:#fb8c00">${ic("target")}</span><span>Konto stellen</span></div>
       <p class="small">Auf deinem alten Zettel stand am Ende eines Monats ein anderer Überstunden-Stand (z. B. weil mal welche ausgezahlt wurden)? Sag der Karte einfach, was da stand – sie trägt die Korrektur selbst ein.</p>
       <form class="edit" data-form="fix"><div class="f"><label>Monat<input type="month" name="month" value="${esc(lastKey)}" required></label><label>Ü.-Gesamt laut Zettel<input name="value" inputmode="decimal" required placeholder="z. B. 32"></label></div><div class="btnrow end"><button class="btn main" type="submit">${ic("target")}Konto stellen</button></div></form>
@@ -1562,13 +1712,15 @@ class StundenzettelCard extends HTMLElement {
     const sec = (emo, title, sub, body) => `<details class="elg-sec"><summary><span class="elg-ic">${emo}</span><span class="elg-tt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span></summary><div>${body}</div></details>`;
     const G = [
       ["🚀", "Los geht's", "in 2 Minuten eingerichtet", `<p>1. ⚙️ → <b>Kalender</b>: deinen Kalender wählen, in dem jeden Tag ein Termin „Arbeiten“ steht.<br>2. ⚙️ → <b>Bezahlte Stunden</b>: wie viele Stunden dein Chef pro Monat bezahlt (z. B. 175).<br>3. Fertig. 🎉 Ab jetzt rechnet die Karte dein Überstunden-Konto.</p>`],
-      ["⏱", "Kommen & Gehen", "stempeln per Knopf oder Handy", `<p>Morgens <b>Kommen</b>, abends <b>Gehen</b> – die Karte trägt den Tag ein und zieht die Pause ab. Noch bequemer: ⚙️ → <b>Stempeln per Handy</b>, dann macht das dein Handy, sobald du in die Zone „Arbeit“ kommst bzw. sie verlässt.</p>`],
-      ["📅", "Der Kalender", "lesen und zurückschreiben", `<p>Die Karte holt sich alle 15 Minuten den Termin „Arbeiten“ (Anfang, Ende, Notiz und „(+0,50 h Pause)“). Mit <b>„Änderungen in den Kalender schreiben“</b> geht es auch andersrum: Was du in der Karte einträgst, landet im Termin. Krank oder Urlaub? Dann verschwindet der Arbeits-Termin.</p><p>✋ Einen Tag, den du in der Karte geändert hast, fasst der Kalender nie wieder an.</p>`],
+      ["⏱", "Kommen & Gehen", "zwei Felder, ⏱️ oder Handy", `<p>Unter <b>Heute</b> stehen oben zwei Felder: <b>Kommen</b> und <b>Gehen</b>. Antippen, Uhrzeit ändern – fertig, der Tag ist eingetragen und die Pause abgezogen. ⏱️ neben „Kommen“ stempelt jetzt ein (die Stunden laufen mit), ⏱️ neben „Gehen“ stempelt aus. Noch bequemer: ⚙️ → <b>Stempeln per Handy</b>, dann macht das dein Handy, sobald du in die Zone „Arbeit“ kommst bzw. sie verlässt.</p>`],
+      ["📅", "Der Kalender", "lesen und zurückschreiben", `<p>Die Karte holt sich alle 15 Minuten den Termin „Arbeiten“ (Anfang, Ende, Notiz und „(+0,50 h Pause)“). Mit <b>„Änderungen in den Kalender schreiben“</b> geht es auch andersrum: Was du in der Karte einträgst, landet im Termin. Krank oder Urlaub? Dann verschwindet der Arbeits-Termin. Fehlt ein Termin, legt die Karte ihn wieder an, und mit <b>„Alle Tage in den Kalender schreiben“</b> holst du einen ganzen Zeitraum nach.</p><p>✋ Einen Tag, den du in der Karte geändert hast, fasst der Kalender nie wieder an.</p>`],
       ["✍", "Tag eintragen oder ändern", "antippen, ändern, speichern", `<p>Tippe auf einen Tag (unter <b>Heute</b> oder <b>Monat</b>). Oben wählst du die Art: <b>Arbeit, Urlaub, Krank, Feiertag, Frei</b> oder <b>Pauschal</b> (z. B. Samstag für feste Euro – zählt nicht zu den Stunden). Pause leer lassen = automatisch.</p>`],
       ["⚖", "So rechnet das Konto", "wie auf dem Papier-Zettel", `<p><b>Summe</b> aller Stunden im Monat − <b>Bezahlt</b> (z. B. 175) = <b>Plus/Minus</b>.<br><b>Ü.-Alt</b> (Stand vom Vormonat) + Plus/Minus + Korrektur = <b>Ü.-Gesamt</b>.</p><p>Im laufenden Monat zeigt <b>„Konto heute“</b> den fairen Stand: Das Soll wird nur für die Arbeitstage bis heute gerechnet. Monate ganz ohne Einträge zählen nicht mit.</p>`],
       ["☕", "Pausen", "automatisch nach Regel", `<p>⚙️ → <b>Pausen-Regeln</b>. Standard: mehr als 0 Std. da → 0,25 Pause, mehr als 6 Std. → 0,50 Pause. Also 6:30–12:00 = 5,25 Std. und 6:30–16:15 = 9,25 Std.</p><p>Oder <b>nach Uhrzeit beim Gehen</b>: z. B. gehen bis 12:00 → 0,25 Pause, gehen nach 12:00 → 0,50 Pause. Beim Umschalten stellt die Karte die Standard-Regeln passend um.</p>`],
+      ["💶", "Lohnabrechnung", "Ü.-Alt vom Chef eintragen", `<p>Unter <b>Monat → Lohnabrechnung / Korrektur</b> trägst du bei <b>Ü.-Alt laut Lohnabrechnung</b> den Überstunden-Stand vom Chef ein. Ab dann rechnet die Karte mit seiner Zahl weiter. Im Zettel siehst du klein, was die Karte selbst gerechnet hätte und wie groß die Abweichung ist.</p><p>Am Monatsanfang erinnert dich die Karte unter Heute daran (abschaltbar unter ⚙️ → Bezahlte Stunden).</p>`],
+      ["📊", "Statistik", "Kurven, Wochentage, Rekorde", `<p>Der Reiter <b>Statistik</b> zeigt dein Überstunden-Konto als Kurve, die Stunden pro Monat mit Soll-Linie, deine Wochentage (wie lange im Schnitt, wann meistens Feierabend), Urlaub und Krank pro Jahr und deine Rekorde. Oben wählst du ein Jahr oder <b>Alle Jahre</b>.</p>`],
       ["🗓", "Korrektur & Soll", "ausgezahlt, geschenkt, anderer Monat", `<p>Unter <b>Monat</b> → <b>Korrektur / Soll</b>: z. B. „−20, ausgezahlt“. Oder für genau diesen Monat ein anderes Soll. Früher wurden weniger Stunden bezahlt? ⚙️ → <b>Bezahlte Stunden</b> → <b>Früher anders</b>.</p>`],
-      ["📥", "Alten Zettel übernehmen", "einfach Text einfügen", `<p>⚙️ → <b>Import</b>: In Google Tabellen alles markieren, kopieren, einfügen, <b>Vorschau</b>, <b>Übernehmen</b>. Danach mit <b>„Konto stellen“</b> den Stand eines Monats so einstellen, wie er auf dem Zettel stand.</p>`],
+      ["📥", "Alten Zettel übernehmen", "einfach Text einfügen", `<p>⚙️ → <b>Import</b>: In Google Tabellen alles markieren, kopieren, einfügen, <b>Vorschau</b>, <b>Übernehmen</b>. Aus Google Tabellen oder Excel kommen auch die Monatswerte mit (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) – jeder alte Monat sieht dann genau so aus wie auf dem Zettel. Fehlen die, stellst du mit <b>„Konto stellen“</b> den Stand eines Monats ein.</p>`],
       ["🖨", "Drucken, Teilen & CSV", "für den Chef oder die Steuer", `<p>Unter <b>Monat</b> oder <b>Jahr</b> → <b>Drucken & Teilen</b>: als PDF (z. B. per WhatsApp oder Mail, auf dem iPhone über Teilen → Drucken), direkt drucken oder als Text. <b>CSV</b> (für Excel) gibt es unter Monat. Unter ⚙️ → Import & Sicherung gibt es <b>alles</b> als CSV.</p>`],
       ["📱", "Offline-App", "stempeln ohne Netz", `<p>⚙️ → <b>App & Info → Offline-App</b>: Adresse aufs Handy, einmal anmelden, „Zum Startbildschirm hinzufügen“. Ohne Netz landet alles im <b>Postausgang</b> (oben „⏳ 1 wartet“) und geht raus, sobald wieder Netz da ist – mit der Uhrzeit vom Knopfdruck.</p>`],
       ["🔒", "PIN & Schloss", "⚙️ oder alles sperren", `<p>⚙️ → <b>App & Info → Schutz</b>: PIN festlegen. Dann fragt ⚙️ nach der PIN, mit <b>„Ganze Karte sperren“</b> sogar alles. Das Schloss oben rechts sperrt sofort, nach 10 Minuten ohne Tippen sperrt es von selbst.</p>`],
@@ -1804,6 +1956,27 @@ class StundenzettelCard extends HTMLElement {
       case "year": this._year += Number(v); return this._redraw();
       case "gomonth": this._month = v; this._view = "monat"; return this._redraw();
       case "monthform": this._monthForm = !this._monthForm; return this._redraw();
+      case "payslip": this._month = v; this._view = "monat"; this._monthForm = true; this._open = null; return this._redraw();
+      case "payslipno": store.put("sz_payslip_no", v); return this._redraw();
+      case "unsheet": if (szConfirm("Diesen Monat mit den Tagen in der Karte neu rechnen statt mit den Zahlen vom alten Zettel?")) this._send({ type: "month_set", month: this._month, sheet: null }); return;
+      case "statyear": this._statYear = el.value; return this._redraw();
+      case "kg": {
+        const root = this.shadowRoot, iso = d.today, e = d.days[iso];
+        const a = root.querySelector('input[data-a="kg"][data-v="start"]')?.value, b = root.querySelector('input[data-a="kg"][data-v="end"]')?.value;
+        if (!a || !b) return this._toast("⚠️ Bitte Kommen und Gehen eintragen");
+        const op = { type: "day_set", date: iso, kind: "work", start: a, end: b, note: e?.note || "" };
+        if (e?.kind === "work" && e.pause_set && e.source !== "calendar") op.pause = e.pause;
+        const ops = d.stamp ? [{ type: "stamp_cancel" }, op] : [op];
+        if (await this._send(...ops)) this._toast(`✅ Heute ${a}–${b} eingetragen`);
+        return;
+      }
+      case "kgnow": {
+        if (v === "start") { if (!d.stamp) { this._send({ type: "stamp_in", ts: Date.now() }); this._toast("⏱️ Eingestempelt – schönen Arbeitstag!"); } return; }
+        if (d.stamp) { this._send({ type: "stamp_out", ts: Date.now() }); this._toast("🏁 Ausgestempelt – Feierabend!"); return; }
+        const t = new Date(), rd = Number(st.round) || 0; let m = t.getHours() * 60 + t.getMinutes(); if (rd) m = Math.round(m / rd) * rd;
+        const inp = this.shadowRoot.querySelector('input[data-a="kg"][data-v="end"]'); if (inp) inp.value = szHhmm(Math.min(m, 1439));
+        return this._act({ dataset: { a: "kg" } });
+      }
       case "print": return this._print();
       case "share": this._share = v === "year" ? { kind: "year", key: String(this._year) } : { kind: "month", key: this._month }; return this._redraw();
       case "shprint": return this._sharePrint();
@@ -1873,8 +2046,8 @@ class StundenzettelCard extends HTMLElement {
       if (k === "pauschal") op.amount = toNum(fd.amount) || 0;
       if (await this._send(op)) { this._open = null; this._fkind = null; this._redraw(); }
     } else if (kind === "month") {
-      const op = { type: "month_set", month: this._month, adjust: toNum(fd.adjust), paid: toNum(fd.paid), note: fd.note || "" };
-      if (Number.isNaN(op.adjust) || Number.isNaN(op.paid)) return this._toast("⚠️ Bitte Zahlen eintragen");
+      const op = { type: "month_set", month: this._month, alt: toNum(String(fd.alt || "").replace("−", "-")), adjust: toNum(fd.adjust), paid: toNum(fd.paid), note: fd.note || "" };
+      if (Number.isNaN(op.alt) || Number.isNaN(op.adjust) || Number.isNaN(op.paid)) return this._toast("⚠️ Bitte Zahlen eintragen");
       if (await this._send(op)) { this._monthForm = false; this._redraw(); }
     } else if (kind === "rule") {
       const r = { from: /^\d{1,2}:\d{2}$/.test(fd.from || "") ? szMin(fd.from) / 60 : toNum(fd.from), pause: toNum(fd.pause) };
@@ -1888,6 +2061,9 @@ class StundenzettelCard extends HTMLElement {
       const plan = {};
       for (let w = 1; w <= 7; w++) if (f.querySelector(`[name=on${w}]`).checked) plan[String(w)] = [fd[`a${w}`], fd[`b${w}`]];
       if (await this._set("plan", plan)) this._toast("✅ Gespeichert");
+    } else if (kind === "calrange") {
+      if (!fd.from || !fd.to) return this._toast("⚠️ Von und Bis eintragen");
+      try { const r = await this._hass.callWS({ type: "stundenzettel/cal_write_range", from: fd.from, to: fd.to }); this._toast(`📤 ${r.queued} Tage werden in den Kalender geschrieben – das dauert einen Moment`); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
     } else if (kind === "fix") {
       const value = toNum(fd.value);
       if (!fd.month || value == null || Number.isNaN(value)) return this._toast("⚠️ Monat und Stand eintragen");

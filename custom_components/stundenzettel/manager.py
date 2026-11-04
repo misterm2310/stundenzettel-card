@@ -188,12 +188,20 @@ def compute_months(days: dict[str, dict[str, Any]], months_meta: dict[str, dict[
             h = day_hours(e, st)
             tot += h["hours"]
             cnt[e.get("kind", "work")] = cnt.get(e.get("kind", "work"), 0) + 1
-            if e.get("kind", "work") == "work" and long_day and h["brutto"] + 1e-9 >= long_day:
+            if e.get("kind", "work") == "work" and long_day and h["hours"] + 1e-9 >= long_day:  # 🥪 wie auf dem Zettel: ohne Pause gerechnet
                 long_n += 1
             if e.get("kind") == "pauschal":
                 euro += float(e.get("amount") or 0)
         future = key > cur  # 🔮 Monat kommt erst noch (z. B. schon eingetragener Urlaub) → anzeigen, aber nicht ins Konto
-        tracked = (bool(items) or "adjust" in meta or key == cur) and not future
+        sheet = meta.get("sheet") if isinstance(meta.get("sheet"), dict) and key < cur else None  # 📥 Werte 1:1 aus dem alten Zettel
+        alt = None if future else num(meta.get("alt"))  # 💶 Ü.-Alt laut Lohnabrechnung
+        calc_hours, calc_long = tot, long_n
+        if sheet:
+            if num(sheet.get("sum")) is not None:
+                tot = float(sheet["sum"])
+            if num(sheet.get("long")) is not None:
+                long_n = int(sheet["long"])
+        tracked = (bool(items) or "adjust" in meta or alt is not None or bool(sheet) or key == cur) and not future
         soll = paid_for(key, st) if (items or key == cur or meta.get("paid") is not None) else 0.0
         if meta.get("paid") is not None:
             soll = float(meta["paid"])
@@ -201,13 +209,18 @@ def compute_months(days: dict[str, dict[str, Any]], months_meta: dict[str, dict[
             soll = 0.0
         diff = tot - soll
         adjust = 0.0 if future else float(meta.get("adjust") or 0)
-        old = bal
-        bal = bal + diff + adjust if tracked else bal
+        calc_old = bal
+        old = alt if alt is not None else bal
+        calc_total = old + diff + adjust
+        if sheet and num(sheet.get("ges")) is not None:
+            calc_total = float(sheet["ges"])  # 🧾 genau die Zahl vom Zettel (auch wenn er sich mal verrechnet hat)
+        bal = calc_total if tracked else bal
         row = {
             "month": key, "hours": r2(tot), "paid": r2(soll), "diff": r2(diff), "adjust": r2(adjust),
             "old": r2(old), "total": r2(bal), "urlaub": cnt["urlaub"], "krank": cnt["krank"], "feiertag": cnt["feiertag"],
             "work": cnt["work"], "long": long_n, "euro": r2(euro), "days": len(items), "tracked": tracked, "note": meta.get("note", ""),
-            "future": future,
+            "future": future, "alt": alt is not None, "calc_old": r2(calc_old), "sheet": bool(sheet),
+            "calc_hours": r2(calc_hours), "calc_long": calc_long,
         }
         if key == cur:  # 📍 laufender Monat: Soll nur anteilig bis heute → „Konto heute“
             wd_all = workdays(y, m, st) or 1
@@ -295,6 +308,60 @@ def parse_import(text: str) -> tuple[dict[str, dict[str, Any]], int]:
                 continue
         found[iso] = e
     return found, skipped
+
+
+_MONTH_NAMES = {n: i + 1 for i, n in enumerate(("januar", "februar", "märz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"))}
+_MONTH_NAMES["maerz"] = 3
+
+
+def parse_import_months(text: str) -> dict[str, dict[str, float]]:
+    """🧾 Monatswerte aus der alten Tabelle (Strg+A aus Google Sheets/Excel = Spalten mit Tabs).
+
+    Pro Monatsblock: Überschrift „Oktober | 2026“, darunter die Tage, dann Summe, „Bezahlt“,
+    „Ü.-Alt“, „Ü.-Gesamt“, „Urlaubstage“, „Kranktage“, „8 Stunden und ->“ – jeweils zwei Spalten weiter rechts die Zahl.
+    """
+    if "\t" not in text:
+        return {}
+    grid = [line.split("\t") for line in text.splitlines()]
+
+    def cell(r: int, c: int) -> str:
+        return grid[r][c].strip() if 0 <= r < len(grid) and 0 <= c < len(grid[r]) else ""
+
+    def val(r: int, c: int) -> float | None:
+        try:
+            return num(cell(r, c))
+        except HomeAssistantError:
+            return None
+
+    labels = {"ü.-alt": "alt", "ü.-gesamt": "ges", "urlaubstage": "urlaub", "kranktage": "krank"}
+    out: dict[str, dict[str, float]] = {}
+    for r, row in enumerate(grid):
+        for c, x in enumerate(row):
+            mon = _MONTH_NAMES.get(x.strip().lower())
+            year = cell(r, c + 1)
+            if not mon or not (year.isdigit() and len(year) == 4):
+                continue
+            key = f"{year}-{mon:02d}"
+            vals: dict[str, float] = {}
+            for rr in range(r + 1, min(r + 70, len(grid))):
+                lab = cell(rr, c).lower()
+                if _MONTH_NAMES.get(lab) and cell(rr, c + 1).isdigit():
+                    break  # nächster Monatsblock
+                if lab == "bezahlt" and "sum" not in vals:
+                    v = val(rr - 1, c + 2)
+                    if v is not None:
+                        vals["sum"] = v
+                if lab in labels:
+                    v = val(rr, c + 2)
+                    if v is not None:
+                        vals[labels[lab]] = v
+                elif lab.startswith("8 stunden") or lab.startswith("8 std"):
+                    v = val(rr, c + 2)
+                    if v is not None:
+                        vals["long"] = v
+            if "alt" in vals or "ges" in vals:
+                out[key] = vals
+    return out
 
 
 def new_id() -> str:
@@ -669,7 +736,9 @@ class StundenzettelManager:
             if not _MONTH_RE.match(key):
                 raise HomeAssistantError("Monat fehlt (so geht's: 2026-11)")
             meta = dict(self.data["months"].get(key) or {})
-            for f in ("adjust", "paid"):
+            if "sheet" in op and not op.get("sheet"):
+                meta.pop("sheet", None)  # 🧮 „Mit Karte neu rechnen“
+            for f in ("adjust", "paid", "alt"):
                 if f in op:
                     v = num(op[f])
                     if v is None:
@@ -684,7 +753,7 @@ class StundenzettelManager:
                 self.data["months"][key] = meta
             else:
                 self.data["months"].pop(key, None)
-            self._log(user, f"🗓️ {key}: Korrektur {de_num(meta.get('adjust', 0))} Std.")
+            self._log(user, f"🗓️ {key}: Korrektur {de_num(meta.get('adjust', 0))} Std." + (f" · Ü.-Alt laut Lohnabrechnung {de_num(meta['alt'])}" if "alt" in meta else ""))
         elif t == "balance_fix":
             # 🎯 „Laut Zettel stand das Konto Ende Monat X bei Y“ → Korrektur so setzen, dass es passt
             key = str(op.get("month", ""))
@@ -695,7 +764,10 @@ class StundenzettelManager:
             if row is None:
                 raise HomeAssistantError(f"Für {key} gibt es keine Einträge")
             meta = dict(self.data["months"].get(key) or {})
-            meta["adjust"] = r2(float(meta.get("adjust") or 0) + want - row["total"])
+            if row.get("sheet"):  # 📥 Monat kommt 1:1 vom alten Zettel → dort die Zahl ersetzen
+                meta["sheet"] = {**meta["sheet"], "ges": r2(want)}
+            else:
+                meta["adjust"] = r2(float(meta.get("adjust") or 0) + want - row["total"])
             self.data["months"][key] = meta
             self._log(user, f"🎯 {key}: Konto auf {de_num(want)} Std. gestellt")
         elif t == "clear_log":
@@ -744,7 +816,7 @@ class StundenzettelManager:
                     out[str(y)] = r2(v)
             return out
         if key == "view":
-            return {k: bool(v) for k, v in (value or {}).items() if k in ("monat", "jahr")}
+            return {k: bool(v) for k, v in (value or {}).items() if k in ("monat", "jahr", "stat")}
         if key == "plan":
             plan = {}
             for wd, se in (value or {}).items():
@@ -855,6 +927,12 @@ class StundenzettelManager:
                         if cur.get("source") == "calendar" and start.date().isoformat() <= iso < end.date().isoformat() and iso not in seen_days:
                             del self.data["days"][iso]
                             changed = True
+                    if st.get("cal_write"):  # 📤 Karte ist die Chefin: fehlt ein Termin (z. B. im Kalender gelöscht) → neu anlegen
+                        for iso, cur in self.data["days"].items():
+                            if (start.date().isoformat() <= iso <= today.isoformat() and iso not in seen_days and cur.get("source") != "calendar"
+                                    and cur.get("kind") == "work" and cur.get("start") and cur.get("end")):
+                                self._dirty_cal.add(iso)
+                                res["write"] = res.get("write", 0) + 1
                 except Exception as err:  # noqa: BLE001
                     self.cal_status = {**self.cal_status, "ok": False, "error": f"Kalender lesen ging nicht: {err}"}
                     self._err(self.cal_status["error"])
@@ -876,7 +954,25 @@ class StundenzettelManager:
                     self._err(f"Feiertage lesen ging nicht: {err}")
         if changed:
             self._save()
+        self._flush_calendar()
         return res
+
+    def cal_write_range(self, first: date, last: date, user: str | None = None) -> int:
+        """📤 Alle Arbeitstage von–bis in den Kalender schreiben (läuft im Hintergrund, Tag für Tag)."""
+        if not self.settings.get("calendar"):
+            raise HomeAssistantError("Erst einen Kalender wählen")
+        if last < first:
+            first, last = last, first
+        if (last - first).days > 400:
+            raise HomeAssistantError("Höchstens gut ein Jahr auf einmal")
+        isos = sorted(iso for iso, e in self.data["days"].items() if first.isoformat() <= iso <= last.isoformat() and e.get("kind") == "work" and e.get("start") and e.get("end"))
+
+        async def run() -> None:
+            for iso in isos:
+                await self.async_write_day(iso)
+        self.hass.async_create_task(run())
+        self._log(user, f"📤 {len(isos)} Tage ({first.isoformat()} bis {last.isoformat()}) werden in den Kalender geschrieben")
+        return len(isos)
 
     @staticmethod
     def _features(ent) -> list[str]:
@@ -944,12 +1040,25 @@ class StundenzettelManager:
         if len(text) > MAX_IMPORT_CHARS:
             raise HomeAssistantError("Der Text ist zu lang")
         found, skipped = parse_import(text)
+        cur = self.today().strftime("%Y-%m")
+        months = {k: v for k, v in parse_import_months(text).items() if k < cur}  # 🧾 nur fertige Monate (der laufende wartet auf die Lohnabrechnung)
         days = self.data["days"]
         new = sum(1 for iso in found if iso not in days)
         clash = sum(1 for iso in found if iso in days)
         res = {"found": len(found), "new": new, "clash": clash, "skipped": skipped,
-               "first": min(found) if found else None, "last": max(found) if found else None}
-        if apply and found:
+               "first": min(found) if found else None, "last": max(found) if found else None, "months": len(months)}
+        if apply and months:
+            for key, v in months.items():
+                meta = dict(self.data["months"].get(key) or {})
+                if meta.get("sheet") and not overwrite:
+                    continue
+                meta["sheet"] = {k: r2(v[k]) for k in ("sum", "ges", "long") if k in v}
+                if "alt" in v:
+                    meta["alt"] = r2(v["alt"])
+                meta.pop("adjust", None)  # 🎯 alte „Konto stellen“-Korrektur braucht es jetzt nicht mehr
+                self.data["months"][key] = meta
+            self._log(user, f"📥 Import: Zettel-Werte für {len(months)} Monate übernommen")
+        if apply and (found or months):
             n = 0
             for iso, e in found.items():
                 if iso in days and not overwrite:

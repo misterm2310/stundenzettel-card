@@ -20,15 +20,16 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 
 - ⏱️ **Heute auf einen Blick**: oben groß die Stunden von heute (beim Stempeln läuft die Zeit mit), darunter Stunden im Monat und Überstunden-Konto.
 - 📅 **Aus dem Kalender**: Termin „Arbeiten“ mit Anfang und Ende? Wird alle 15 Minuten übernommen – inklusive Notiz (z. B. Baustelle) und „(+0,50 h Pause)“.
-- 📤 **Oder andersrum**: Die Karte ist die Chefin und schreibt deine Zeiten in den Termin. Krank oder Urlaub → der Arbeits-Termin verschwindet. (Google kann über Home Assistant nicht ändern – die Karte löscht dann und legt neu an.)
-- ⏱️ **Kommen & Gehen** per Knopf – oder **automatisch**, wenn dein Handy in die Zone „Arbeit“ kommt bzw. sie verlässt. Zeiten auf 5 oder 15 Minuten runden.
-- ⚖️ **Überstunden-Konto** wie auf Papier: Summe − Bezahlt = Plus/Minus, Ü.-Alt + Plus/Minus = Ü.-Gesamt. Im laufenden Monat fair: **Soll nur bis heute**.
+- 📤 **Oder andersrum**: Die Karte ist die Chefin und schreibt deine Zeiten in den Termin. Krank oder Urlaub → der Arbeits-Termin verschwindet. Fehlt ein Termin, legt die Karte ihn wieder an; „Alle Tage in den Kalender schreiben“ holt ganze Zeiträume nach. (Google kann über Home Assistant nicht ändern – die Karte löscht dann und legt neu an.)
+- ⏱️ **Kommen & Gehen** als zwei Felder oben unter Heute (antippen, Uhrzeit ändern, fertig), ⏱️ „jetzt“ zum Stempeln – oder **automatisch**, wenn dein Handy in die Zone „Arbeit“ kommt bzw. sie verlässt. Zeiten auf 5 oder 15 Minuten runden.
+- ⚖️ **Überstunden-Konto** wie auf Papier: Summe − Bezahlt = Plus/Minus, Ü.-Alt + Plus/Minus = Ü.-Gesamt. Im laufenden Monat fair: **Soll nur bis heute**. 💶 **Ü.-Alt laut Lohnabrechnung** pro Monat eintragen – die Karte rechnet mit der Zahl vom Chef weiter und zeigt die Abweichung.
 - 🏖️ **Urlaub, Krank, Feiertag, Frei, Pauschal** (z. B. Samstag für feste Euro – zählt nicht zu den Stunden). Resturlaub und Kranktage pro Jahr.
 - ☕ **Pausen-Regeln** nach Dauer (Standard: mehr als 0 Std. → 0,25 · mehr als 6 Std. → 0,50) **oder nach Uhrzeit beim Gehen** (z. B. bis 12 Uhr 0,25 · danach 0,50) – einzelne Tage auch anders.
 - 💶 **Bezahlte Stunden** pro Monat, **früher anders** (z. B. bis Dezember 2019: 160) und **Korrekturen** (ausgezahlt, geschenkt).
 - 🎌 **Feiertage automatisch** aus einem Feiertags-Kalender (z. B. Integration „Feiertage“ für dein Bundesland).
-- 🥪 **„8 Stunden und →“**: zählt die langen Tage (z. B. für die Verpflegungspauschale).
-- 📥 **Alten Zettel übernehmen**: einfach aus Google Tabellen/Excel/PDF kopieren und einfügen. Danach **„Konto stellen“** auf den Stand vom Zettel.
+- 🥪 **„8 Stunden und →“**: zählt die langen Tage (ohne Pause gerechnet).
+- 📊 **Statistik**: Überstunden-Kurve, Stunden pro Monat mit Soll-Linie, Wochentage, Urlaub & Krank pro Jahr, Rekorde – für ein Jahr oder alle Jahre.
+- 📥 **Alten Zettel übernehmen**: einfach aus Google Tabellen/Excel/PDF kopieren und einfügen. Aus Tabellen kommen auch die **Monatswerte** mit (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) – jeder alte Monat sieht aus wie auf dem Zettel. Sonst **„Konto stellen“** auf den Stand vom Zettel.
 - 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
 - 📱 **Offline-App** fürs Handy: stempeln und Tage eintragen auch **ohne Netz** (z. B. im Keller der Baustelle) – wird nachgeschickt, die Uhrzeit vom Knopfdruck bleibt. Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol, Fingerabdruck-Sperre.
 - 🔒 **PIN-Sperre** für ⚙️ oder die ganze Karte – prüft auch ohne Netz, sperrt nach 10 Minuten wieder.
@@ -98,7 +99,7 @@ Alles Weitere steht in der Karte unter **📖 Anleitung** (mit Suche).
 
 - Arbeitstag: (Ende − Anfang) − Pause. Beispiel: 6:30–16:15 = 9,75 Std. da → mehr als 6 → 0,50 Pause → **9,25 Std.**
 - Urlaub, Krank, Feiertag: zählen je **8 Std.** (einstellbar). Frei = 0. Pauschal zählt gar nicht.
-- Monat: **Summe − Bezahlt = Plus/Minus**. **Ü.-Alt + Plus/Minus + Korrektur = Ü.-Gesamt**.
+- Monat: **Summe − Bezahlt = Plus/Minus**. **Ü.-Alt + Plus/Minus + Korrektur = Ü.-Gesamt**. Steht beim Monat ein **Ü.-Alt laut Lohnabrechnung**, nimmt die Karte diese Zahl statt des eigenen Vormonats-Stands.
 - Laufender Monat: Das Soll zählt nur für die Arbeitstage bis heute → **„Konto heute“**.
 - Monate ganz ohne Einträge zählen nicht mit (sonst gäbe es für Lücken riesige Minusstunden).
 - ✋ Was du in der Karte änderst, fasst der Kalender nie wieder an.

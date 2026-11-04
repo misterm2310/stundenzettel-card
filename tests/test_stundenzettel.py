@@ -319,3 +319,69 @@ async def test_pause_set_und_pdf(hass: HomeAssistant) -> None:
     assert get_pdf(hass, r["url"].split("/")[4])["data"].startswith(b"%PDF")
     with pytest.raises(ValueError):
         store_pdf(hass, base64.b64encode(b"keine pdf").decode())
+
+
+async def test_fehlender_termin_kommt_zurueck(hass: HomeAssistant, monkeypatch):
+    """📤 Karte ist die Chefin: im Kalender gelöschter Termin wird beim Abgleich neu angelegt – ohne Doppelte."""
+    cal = FakeCal()
+    monkeypatch.setattr(mgr, "_cal_entity", lambda hass, eid: cal)
+    m = await _setup(hass)
+    d0 = (dt_util.now().date() - timedelta(days=2)).isoformat()
+    m.apply([{"type": "set", "key": "calendar", "value": "calendar.test"}, {"type": "set", "key": "cal_write", "value": True}])
+    m.apply([{"type": "day_set", "date": d0, "kind": "work", "start": "06:30", "end": "16:15"}])
+    await hass.async_block_till_done()
+    assert len(cal.events) == 1
+    cal.events = []  # 🗑️ aus Versehen im Kalender gelöscht
+    res = await m.async_sync()
+    await hass.async_block_till_done()
+    assert res.get("write") == 1 and len(cal.events) == 1 and m.data["days"][d0]["source"] == "card"
+    await m.async_sync()
+    await hass.async_block_till_done()
+    assert len(cal.events) == 1  # keine doppelten Termine
+    # 📤 Zeitraum nachschreiben
+    cal.events = []
+    assert m.cal_write_range(date.fromisoformat(d0), dt_util.now().date()) == 1
+    await hass.async_block_till_done()
+    assert len(cal.events) == 1
+
+
+TSV = "\n".join([
+    "Oktober\t2026\t\t\tNovember\t2026",
+    "Datum\tZeit\tStunden\t\tDatum\tZeit\tStunden",
+    "01.10.2026\t6:30 - 16:15\t9,25\t\t02.11.2026\t6:30 - 16:15\t9,25",
+    "02.10.2026\t6:30 - 16:15\t9,25",
+    "\t\t20,5",
+    "Bezahlt\t-175\t-154,5\t\tBezahlt\t-175\t-165,75",
+    "Ü.-Alt\t\t31\t\tÜ.-Alt\t\t0",
+    "Ü.-Gesamt\t\t-123,5\t\tÜ.-Gesamt\t\t-165,75",
+    "Urlaubstage\t\t0",
+    "Kranktage\t\t0",
+    "8 Stunden und ->\t\t2",
+])
+
+
+async def test_import_monatswerte_und_lohnabrechnung(hass: HomeAssistant) -> None:
+    """🧾 Import übernimmt die Monatswerte 1:1 · 💶 Ü.-Alt laut Lohnabrechnung · laufender Monat bleibt frei."""
+    months = mgr.parse_import_months(TSV)
+    assert months["2026-10"] == {"sum": 20.5, "alt": 31.0, "ges": -123.5, "urlaub": 0.0, "krank": 0.0, "long": 2.0}
+    m = mgr.StundenzettelManager(hass)
+    m.data["months"]["2026-10"] = {"adjust": -10}
+    res = m.import_text(TSV, apply=True, overwrite=False)
+    assert res["months"] == 1 and "2026-11" not in m.data["months"]  # November wartet auf die Lohnabrechnung
+    assert "adjust" not in m.data["months"]["2026-10"]
+    rows = {r["month"]: r for r in m.months()}
+    okt = rows["2026-10"]
+    assert okt["old"] == 31 and okt["hours"] == 20.5 and okt["total"] == -123.5 and okt["sheet"] and okt["long"] == 2
+    assert rows["2026-11"]["old"] == -123.5
+    # 💶 Lohnabrechnung für November: Konto rechnet mit der Zahl vom Chef weiter, Abweichung sichtbar
+    m.apply([{"type": "month_set", "month": "2026-11", "alt": -120}])
+    nov = {r["month"]: r for r in m.months()}["2026-11"]
+    assert nov["old"] == -120 and nov["alt"] and nov["calc_old"] == -123.5
+    m.apply([{"type": "month_set", "month": "2026-11", "alt": None}])
+    assert {r["month"]: r for r in m.months()}["2026-11"]["old"] == -123.5
+    # 🧮 „Mit Karte neu rechnen“ → Tage zählen wieder
+    m.apply([{"type": "month_set", "month": "2026-10", "sheet": None}])
+    assert {r["month"]: r for r in m.months()}["2026-10"]["hours"] == 18.5
+    # 🥪 8 Stunden und → zählt ohne Pause
+    m.data["days"]["2026-09-01"] = {"kind": "work", "start": "06:30", "end": "14:45"}  # 8,25 da, 7,75 ohne Pause
+    assert {r["month"]: r for r in m.months()}["2026-09"]["long"] == 0

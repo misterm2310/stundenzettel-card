@@ -18,12 +18,13 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 
 - ⏱️ Today at a glance: today's hours big at the top (running while clocked in), then hours this month and overtime balance.
 - 📅 Reads a daily calendar event (default name „Arbeiten“) with start and end – every 15 minutes, including note and „(+0,50 h Pause)“.
-- 📤 Optional: writes your times back to the calendar (Google: delete + create, because Home Assistant can't edit Google events).
-- ⏱️ Clock in/out by button or automatically when your phone enters/leaves a zone. Rounding to 5 or 15 minutes.
-- ⚖️ Overtime balance per month: total − paid hours = plus/minus, previous balance + plus/minus + correction = new balance. Current month counts the target only up to today.
+- 📤 Optional: writes your times back to the calendar (Google: delete + create, because Home Assistant can't edit Google events). Missing events are created again; „write all days“ catches up on a whole period.
+- ⏱️ Two fields „Kommen“/„Gehen“ (arrive/leave) under Today – tap, change the time, done. ⏱️ clocks in/out now, or automatically when your phone enters/leaves a zone. Rounding to 5 or 15 minutes.
+- ⚖️ Overtime balance per month: total − paid hours = plus/minus, previous balance + plus/minus + correction = new balance. Current month counts the target only up to today. 💶 Enter the carried-over balance from your payslip each month – the card continues with your boss's number and shows the difference.
+- 📊 Statistics: overtime curve, hours per month with target line, weekdays, vacation & sick per year, records – for one year or all years.
 - 🏖️ Vacation, sick, holiday, day off, flat rate days. Vacation left and sick days per year.
 - ☕ Break rules by duration or by the time you leave (e.g. until 12:00 → 0.25, later → 0.50), 💶 paid hours per month (with history like „until Dec 2019: 160“), corrections, 🎌 holidays from a holiday calendar.
-- 📥 Import an old sheet by pasting text, then „set the balance“ to the value of the paper sheet.
+- 📥 Import an old sheet by pasting text. From Google Sheets/Excel the monthly values come along too (total, carried over, balance, 8 hours and more), otherwise „set the balance“ to the value of the paper sheet.
 - 📤 Print & share month or year as PDF (WhatsApp, mail, iPhone printing), print or as text, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
 - 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
 - 🔒 PIN lock for ⚙️ or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
