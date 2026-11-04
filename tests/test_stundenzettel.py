@@ -285,3 +285,37 @@ async def test_resturlaub_vorjahr(hass: HomeAssistant) -> None:
     m.data["days"][f"{y}-01-02"] = {"kind": "urlaub"}
     s = m.summary()
     assert s["vacation_carry"] == 9 and s["vacation_left"] == 30 + 9 - 1
+
+
+def test_pause_nach_uhrzeit_beim_gehen():
+    """☕ Marco: Gehen bis 12 Uhr → 0,25 Pause, danach 0,50."""
+    st = {**ST, "pause_by": "ende", "pause_rules": [{"from": 0, "pause": 0.25}, {"from": 12, "pause": 0.5}]}
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "12:00"}, st)["hours"] == 5.25
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "12:15"}, st)["pause"] == 0.5
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "16:15"}, st)["hours"] == 9.25
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "16:15", "pause": 0}, st)["hours"] == 9.75  # von Hand bleibt von Hand
+
+
+def test_bezahlt_bis_monat():
+    """💶 „bis Dezember 2019: 160“, danach das aktuelle Soll."""
+    st = {**ST, "paid_hours": 175, "paid_until": [{"until": "2019-12", "hours": 160}]}
+    assert mgr.paid_for("2015-06", st) == 160 and mgr.paid_for("2019-12", st) == 160 and mgr.paid_for("2020-01", st) == 175
+
+
+async def test_pause_set_und_pdf(hass: HomeAssistant) -> None:
+    """📝 Snapshot sagt, ob die Pause wirklich eingetragen ist · 📄 PDF-Link für die HA-App."""
+    from custom_components.stundenzettel.pdf_share import get_pdf, store_pdf
+
+    m = mgr.StundenzettelManager(hass)
+    m.data["days"]["2026-11-02"] = {"kind": "work", "start": "06:30", "end": "16:15"}
+    m.data["days"]["2026-11-03"] = {"kind": "work", "start": "06:30", "end": "16:15", "pause": 0.25}
+    days = m.snapshot()["days"]
+    assert days["2026-11-02"]["pause_set"] is False and days["2026-11-02"]["pause"] == 0.5
+    assert days["2026-11-03"]["pause_set"] is True
+    import base64
+
+    r = store_pdf(hass, base64.b64encode(b"%PDF-1.4 test").decode(), "Stundenzettel Nov")
+    assert r["url"].startswith("/api/stundenzettel/pdf/") and r["url"].endswith("/Stundenzettel-Nov.pdf")
+    assert get_pdf(hass, r["url"].split("/")[4])["data"].startswith(b"%PDF")
+    with pytest.raises(ValueError):
+        store_pdf(hass, base64.b64encode(b"keine pdf").decode())

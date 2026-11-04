@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.2";
+const SZ_VERSION = "0.2.0-beta.3";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["0.2.0-beta.3", "📤 <b>Drucken & Teilen</b> für Monat und Jahr: als PDF (WhatsApp, Mail, Drucker – auch auf dem iPhone), Drucken oder als Text · ☕ Pause wahlweise <b>nach Uhrzeit beim Gehen</b> (z. B. bis 12 Uhr 0,25 – danach 0,50) · 💶 Bezahlte Stunden: oben die aktuellen, darunter „bis Dezember 2019: 160“ · 🐞 Tag bearbeiten: das Pausen-Feld bleibt leer (= nach Regel) statt eine 0 vorzufüllen"],
   ["0.2.0-beta.2", "🐞 Überstunden-Konto: Schon eingetragener Urlaub in einem späteren Monat (z. B. Dezember) zählt erst, wenn der Monat dran ist – vorher wurde fälschlich das volle Soll abgezogen · 🔮 Kommende Monate zeigen nur, was schon eingetragen ist · 🧳 Resturlaub aus dem Vorjahr (⚙️ → Urlaub, Krank & Co.) zählt zum Resturlaub dazu · Blaue Knöpfe „In HACS öffnen“ und „Integration hinzufügen“ in der Anleitung auf GitHub"],
   ["0.2.0", "Heute zeigt oben groß die <b>Stunden von heute</b> (beim Stempeln läuft die Zeit mit), darunter Monat und Überstunden-Konto · 🔒 PIN-Sperre für ⚙️ oder die ganze Karte (geht auch ohne Netz) · 📱 Offline-App fürs Handy: stempeln ohne Netz, wird später nachgeschickt · Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol · 🌍 Englisch · ⏰ Maskottchen: ein kleiner Wecker mit Laune und Jahreszeiten-Kostüm · 🙈 Überstunden verschleiern · ↩️ Rückgängig nach dem Löschen · 🧘 Ruhiger Modus · Reiter ausblenden · Neues Symbol"],
   ["0.1.0", "Erste Version 🎉 · Termin „Arbeiten“ aus dem Kalender lesen und (wenn du willst) zurückschreiben · Kommen/Gehen per Knopf oder automatisch per Handy-Zone · Überstunden-Konto wie auf dem Papier-Zettel (Summe, Bezahlt, Ü.-Alt, Ü.-Gesamt) · Urlaub, Krank, Feiertag, Frei, Pauschal · Pausen-Regeln · Alte Tabelle als Text importieren · Drucken und CSV"],
@@ -213,6 +214,7 @@ const THEMEKEY = "szapp_theme";       // 🌓 Hell / Dunkel – nur in der Offli
 const szTheme = () => { try { return localStorage.getItem(THEMEKEY) || "auto"; } catch (_) { return "auto"; } };
 const szMin = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || "")); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
 const szHhmm = (m) => `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+const szClock = (h) => szHhmm(Math.round(Number(h || 0) * 60) % 1440); // 12.5 → „12:30“
 // ☕ Gleiche Rechnung wie in Home Assistant (manager.py → auto_pause / day_hours), damit die Karte auch offline richtig zählt
 function szAutoPause(brutto, rules) {
   let best = 0;
@@ -227,7 +229,7 @@ function szDayHours(e, st) {
     if (a == null || b == null) return { hours: 0, brutto: 0, pause: 0 };
     if (b < a) b += 1440;
     const brutto = (b - a) / 60;
-    const pause = e.pause == null ? szAutoPause(brutto, st.pause_rules) : Number(e.pause);
+    const pause = e.pause == null ? szAutoPause(st.pause_by === "ende" ? b / 60 : brutto, st.pause_rules) : Number(e.pause); // ☕ nach Dauer oder nach Uhrzeit beim Gehen
     return { hours: r2(Math.max(0, brutto - pause)), brutto: r2(brutto), pause: r2(pause) };
   }
   if (["urlaub", "krank", "feiertag"].includes(e.kind)) return { hours: r2(e.hours == null ? Number(st.absence_hours ?? 8) : Number(e.hours)), brutto: 0, pause: 0 };
@@ -241,7 +243,7 @@ function szApplyLocal(d, op) {
   if (op.type === "day_set") {
     const e = { kind: op.kind || "work", source: "card", waiting: true };
     for (const k of ["start", "end", "pause", "hours", "amount", "note"]) if (op[k] != null && op[k] !== "") e[k] = op[k];
-    d.days[op.date] = { ...e, ...szDayHours(e, st) };
+    d.days[op.date] = { ...e, ...szDayHours(e, st), pause_set: e.pause != null };
   } else if (op.type === "day_delete") delete d.days[op.date];
   else if (op.type === "stamp_in") { const [iso, m] = nowMin(op.ts); if (!d.stamp) d.stamp = { in: szHhmm(m), date: iso, ts: op.ts, waiting: true }; }
   else if (op.type === "stamp_cancel") d.stamp = null;
@@ -780,6 +782,7 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .prqrbox { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .prqrc { width:min(280px, 80vw); background:#fff; padding:6px; border-radius:12px; }
 .prqrc svg { width:100%; height:auto; display:block; }
+.shprev td, .shprev th { white-space:nowrap; } .shprev td:last-child { white-space:normal; min-width:120px; }
 .kcprev { overflow-x:auto; border:1px solid var(--divider-color); border-radius:12px; }
 /* ⏱️ Extra für den Stundenzettel */
 .tiles.two { grid-template-columns:repeat(2,1fr); }
@@ -832,6 +835,112 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .planrow label { display:flex; align-items:center; gap:8px; }
 `;
 
+// ---------------------------------------------------------------- 📄 Kleiner PDF-Baukasten (aus der Einkaufsliste)
+const SZ_PDF_W = { r: [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,761,556,0,222,556,333,1000,556,556,333,1000,667,333,1000,0,611,0,0,222,222,333,333,350,556,1000,333,1000,500,333,944,0,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500], b: [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,761,556,0,278,556,500,1000,556,556,333,1000,667,333,1000,0,611,0,0,278,278,500,500,350,556,1000,333,1000,556,333,944,0,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556] }; // Zeichenbreiten (1/1000) für die Zeichen 32–255 (WinAnsi)
+const SZ_CP1252 = { 0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88, 0x2030: 0x89, 0x0160: 0x8a, 0x2039: 0x8b, 0x0152: 0x8c, 0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, 0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b, 0x0153: 0x9c, 0x017e: 0x9e, 0x0178: 0x9f };
+function szPdfChars(text) { // Text → WinAnsi; Emojis und Unbekanntes fallen weg (die Standard-Schrift kennt sie nicht)
+  let out = "";
+  for (const ch of String(text ?? "").normalize("NFC")) {
+    const c = ch.codePointAt(0);
+    if ((c >= 32 && c < 127) || (c >= 160 && c <= 255)) out += ch;
+    else if (SZ_CP1252[c]) out += String.fromCharCode(SZ_CP1252[c]);
+    else if (c === 0xff0b) out += "+";
+    else if (c === 9 || c === 10 || c === 13) out += " ";
+  }
+  return out.replace(/\s+/g, " ").trim();
+}
+function szPdfWidth(t, bold, size) {
+  const w = bold ? SZ_PDF_W.b : SZ_PDF_W.r;
+  let n = 0;
+  for (let k = 0; k < t.length; k++) n += w[t.charCodeAt(k) - 32] || 556;
+  return (n * size) / 1000;
+}
+function szPdfWrap(t, bold, size, max) { // Wörter auf Zeilen verteilen; zu lange Wörter werden hart getrennt
+  const lines = [];
+  let cur = "";
+  for (let word of t.split(" ")) {
+    while (szPdfWidth(word, bold, size) > max && word.length > 1) {
+      let k = word.length - 1;
+      while (k > 1 && szPdfWidth(word.slice(0, k), bold, size) > max) k--;
+      if (cur) { lines.push(cur); cur = ""; }
+      lines.push(word.slice(0, k));
+      word = word.slice(k);
+    }
+    const next = cur ? `${cur} ${word}` : word;
+    if (cur && szPdfWidth(next, bold, size) > max) { lines.push(cur); cur = word; } else cur = next;
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [""];
+}
+// 📄 Stundenzettel als PDF (Uint8Array) – A4, Helvetica, ohne fremde Bibliothek (Baukasten wie bei Einkaufsliste und Kegelclub)
+// m = { title, sub, big, cols: [{ t, x, w, right }], rows: [{ cells: [], gray, bold }], sums: [[Text, Wert]] }
+function szTablePdf(m) {
+  const PW = 595.28, PH = 841.89, M = 36, BOTTOM = M + 22;
+  const f = (n) => (Math.round(n * 100) / 100).toString();
+  const str = (x) => `(${x.replace(/[\\()]/g, (c) => `\\${c}`).replace(/[\x80-\xff]/g, (c) => `\\${c.charCodeAt(0).toString(8).padStart(3, "0")}`)})`;
+  const pages = [];
+  let ops = null;
+  const newPage = () => { ops = []; pages.push(ops); };
+  const col = (rgb) => rgb.map(f).join(" ");
+  const text = (x, y, s, size, bold = false, rgb = [0.13, 0.13, 0.13]) => { if (s) ops.push(`BT /${bold ? "F2" : "F1"} ${f(size)} Tf ${col(rgb)} rg ${f(x)} ${f(y)} Td ${str(s)} Tj ET`); };
+  const right = (x, y, s, size, bold, rgb) => text(x - szPdfWidth(s, bold, size), y, s, size, bold, rgb);
+  const fill = (x, y, w, h, rgb) => ops.push(`${col(rgb)} rg ${f(x)} ${f(y)} ${f(w)} ${f(h)} re f`);
+  const line = (x1, y1, x2, y2, rgb = [0.82, 0.82, 0.82], lw = 0.6) => ops.push(`${f(lw)} w ${col(rgb)} RG ${f(x1)} ${f(y1)} m ${f(x2)} ${f(y2)} l S`);
+  const gray = [0.45, 0.45, 0.45], accent = [0.118, 0.533, 0.898];
+  newPage();
+  let y = PH - M;
+  text(M, y - 20, szPdfChars(m.title), 20, true);
+  if (m.big) right(PW - M, y - 22, szPdfChars(m.big), 20, true, accent);
+  y -= 38;
+  if (m.sub) for (const l of szPdfWrap(szPdfChars(m.sub), false, 10, PW - 2 * M - 140)) { text(M, y, l, 10, false, gray); y -= 13.5; }
+  y -= 2; fill(M, y, PW - 2 * M, 3, accent); y -= 18;
+  const X = (c) => M + c.x;
+  const head = () => {
+    for (const c of m.cols) (c.right ? right : text)(c.right ? X(c) + c.w : X(c), y, szPdfChars(c.t), 8.5, true, gray);
+    y -= 6; line(M, y, PW - M, y, [0.6, 0.6, 0.6], 0.8); y -= 12;
+  };
+  head();
+  for (const r of m.rows) {
+    const cells = r.cells.map((v, k) => szPdfWrap(szPdfChars(v), !!r.bold && k === 0, 9, m.cols[k].w));
+    const h = Math.max(...cells.map((c) => c.length)) * 11 + 4;
+    if (y - h < BOTTOM) { newPage(); y = PH - M - 10; head(); }
+    const rgb = r.gray ? gray : [0.13, 0.13, 0.13];
+    cells.forEach((ls, k) => { const c = m.cols[k]; ls.forEach((l, j) => (c.right ? right(X(c) + c.w, y - j * 11, l, 9, !!r.bold, rgb) : text(X(c), y - j * 11, l, 9, !!r.bold && k === 0, rgb))); });
+    y -= h; line(M, y + 7, PW - M, y + 7); y -= 2;
+  }
+  y -= 10;
+  if (y - 15 * m.sums.length < BOTTOM) { newPage(); y = PH - M - 10; }
+  for (const [label, val, strong] of m.sums) { text(PW - M - 260, y, szPdfChars(label), 10.5, !!strong); right(PW - M, y, szPdfChars(val), 10.5, true, strong ? accent : [0.13, 0.13, 0.13]); y -= 15; }
+  pages.forEach((pg, k) => {
+    ops = pg;
+    const ft = szPdfChars(`Erstellt mit Stundenzettel${pages.length > 1 ? ` · ${k + 1}/${pages.length}` : ""}`);
+    text(PW / 2 - szPdfWidth(ft, false, 8) / 2, M - 4, ft, 8, false, [0.55, 0.55, 0.55]);
+  });
+  const objs = [];
+  const add = (o) => { objs.push(o); return objs.length; };
+  const cat = add(""), pagesId = add("");
+  const f1 = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  const f2 = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids = [];
+  for (const pg of pages) {
+    const body = pg.join("\n");
+    const cs = add(`<< /Length ${body.length} >>\nstream\n${body}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${f(PW)} ${f(PH)}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${cs} 0 R >>`));
+  }
+  objs[cat - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objs[pagesId - 1] = `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(" ")}] /Count ${kids.length} >>`;
+  const info = add(`<< /Title ${str(szPdfChars(m.title))} /Producer (Stundenzettel) >>`);
+  let out = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
+  const offs = [];
+  objs.forEach((o, k) => { offs.push(out.length); out += `${k + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offs.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}`;
+  out += `trailer\n<< /Size ${objs.length + 1} /Root ${cat} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  const bytes = new Uint8Array(out.length);
+  for (let k = 0; k < out.length; k++) bytes[k] = out.charCodeAt(k) & 255;
+  return bytes;
+}
+
 class StundenzettelCard extends HTMLElement {
   constructor() {
     super();
@@ -842,6 +951,7 @@ class StundenzettelCard extends HTMLElement {
     this._year = now.getFullYear();
     this._open = null;      // 📝 welcher Tag gerade bearbeitet wird (ISO-Datum)
     this._sheet = null;     // ⚙️ welche Einstellungs-Seite offen ist
+    this._share = null;     // 📤 Drucken & Teilen: { kind: "month" | "year", key }
     this._setOpen = null;
     this._pad = null;       // 🔢 PIN-Tastenfeld
     this._server = null;    // 🏠 Stand von Home Assistant
@@ -1003,11 +1113,11 @@ class StundenzettelCard extends HTMLElement {
     if (!d) {
       body = this._err ? `<div class="empty">⚠️ ${esc(this._err)}</div>` : `<div class="empty">⏳ Lade …</div>`;
     } else {
-      const page = this._pad ? this._padPage() : this._view === "guide" ? { icon: "book-open-variant", color: "#3949ab", title: "Anleitung", html: this._guideView() }
+      const page = this._pad ? this._padPage() : this._share ? this._sharePage() : this._view === "guide" ? { icon: "book-open-variant", color: "#3949ab", title: "Anleitung", html: this._guideView() }
         : this._view === "set" && this._sheet ? this._sheetPage() : null;
       this._padShown = !!this._pad;
       const deeper = this._pad ? this._pad.back === "sheet" : this._view === "set" && !!this._sheet;
-      const showBack = !this._lockAll && (this._view === "set" || this._view === "guide" || !!this._pad);
+      const showBack = !this._lockAll && (this._view === "set" || this._view === "guide" || !!this._pad || !!this._share);
       const stamp = d.stamp;
       const badge = stamp ? `<span class="badge" data-a="tab" data-v="heute" title="Eingestempelt" style="display:inline-flex;align-items:center;gap:4px">${ic("timer-outline")}seit ${esc(stamp.in)}</span>` : "";
       const title = this._config?.title && this._config.title !== "Stundenzettel" ? esc(this._config.title) : "";
@@ -1017,7 +1127,7 @@ class StundenzettelCard extends HTMLElement {
       const logo = this._st.mascot ? `<span class="logo mascotbox" data-a="tab" data-v="heute" title="Zurück zu Heute">${szMascotSvg(szMascotMood(d), szMascotDeco())}</span>` : `<span class="logo" data-a="tab" data-v="heute" title="Zurück zu Heute">${ic("clipboard-text-clock-outline")}</span>`;
       body = `<div class="head"><div class="title">${logo}${title ? `<span data-noicon>${title}</span>` : ""}${this._lockAll ? "" : badge}</div>${tools}</div>`;
       body += this._updHtml(d);
-      if (!page && this._view !== "set") {
+      if (!page && this._view !== "set" && !this._share) {
         const tabs = [["heute", "calendar-today", "Heute"], ...(vw.monat === false ? [] : [["monat", "calendar-month-outline", "Monat"]]), ...(vw.jahr === false ? [] : [["jahr", "chart-bar", "Jahr"]])];
         if (tabs.length > 1) body += `<div class="tabs">${tabs.map(([k, i, l]) => `<button class="tab ${this._view === k ? "active" : ""}" data-a="tab" data-v="${k}">${ic(i)}${l}</button>`).join("")}</div>`;
       }
@@ -1152,7 +1262,7 @@ class StundenzettelCard extends HTMLElement {
     if (kind === "work" || kind === "pauschal") {
       fields += `<label>Von<input type="time" name="start" value="${esc(start)}" step="300"></label><label>Bis<input type="time" name="end" value="${esc(end)}" step="300"></label>`;
     }
-    if (kind === "work") fields += `<label>Pause (Std.)<input name="pause" inputmode="decimal" value="${e.kind === "work" && e.pause != null && e.source !== "calendar" ? esc(String(e.pause).replace(".", ",")) : ""}" placeholder="automatisch"></label><label>&nbsp;<span class="small" style="margin:8px 0 0">leer = nach Pausen-Regel</span></label>`;
+    if (kind === "work") fields += `<label>Pause (Std.)<input name="pause" inputmode="decimal" value="${e.kind === "work" && e.pause_set && e.source !== "calendar" ? esc(String(e.pause).replace(".", ",")) : ""}" placeholder="automatisch"></label><label>&nbsp;<span class="small" style="margin:8px 0 0">leer = nach Pausen-Regel</span></label>`;
     if (["urlaub", "krank", "feiertag"].includes(kind)) fields += `<label>Zählt Stunden<input name="hours" inputmode="decimal" value="${e.kind === kind && e.hours != null && e.source === "card" ? esc(String(e.hours).replace(".", ",")) : ""}" placeholder="${h2(st.absence_hours)}"></label><label>&nbsp;</label>`;
     if (kind === "pauschal") fields += `<label class="wide">Betrag (€) – zählt nicht zu den Stunden<input name="amount" inputmode="decimal" value="${e.amount != null ? esc(String(e.amount).replace(".", ",")) : ""}" placeholder="z. B. 40,00"></label>`;
     fields += `<label class="wide">Notiz (z. B. Baustelle)<textarea name="note" rows="2">${esc(e.note || "")}</textarea></label>`;
@@ -1171,7 +1281,7 @@ class StundenzettelCard extends HTMLElement {
     let h = `<div class="yearnav"><button class="iconbtn" data-a="mon" data-v="-1" title="Monat zurück">${ic("chevron-left")}</button><b>${monthName(this._month)}</b><button class="iconbtn" data-a="mon" data-v="1" title="Monat vor">${ic("chevron-right")}</button></div>`;
     h += this._dayRows(isos);
     h += this._zettel(row);
-    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Korrektur / Soll</button><button class="btn small" data-a="print">${ic("printer-outline")}Drucken</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button></div>`;
+    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Korrektur / Soll</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button></div>`;
     if (this._monthForm) {
       const meta = (d.months_meta || {})[this._month] || {};
       h += `<form class="edit" data-form="month"><b>🗓️ ${monthName(this._month)}</b><div class="f">
@@ -1231,6 +1341,7 @@ class StundenzettelCard extends HTMLElement {
       <tfoot><tr><td>Σ</td><td>${h2(sum("hours"))}</td><td>${h2(sum("paid"))}</td><td>${hs(sum("diff") + sum("adjust"))}</td><td></td><td>${sum("urlaub")}</td><td>${sum("krank")}</td></tr></tfoot></table>`;
     const vac = (Number(this._st.vacation_days) || 0) + (Number((this._st.vacation_carry || {})[y]) || 0); // 🧳 + Resturlaub Vorjahr
     h += `<div class="tiles" style="margin-top:12px"><div class="tile"><b>${sum("urlaub")} / ${vac}</b><span>${ic("beach")}Urlaub genommen</span></div><div class="tile"><b>${sum("krank")}</b><span>${ic("emoticon-sick-outline")}Kranktage</span></div><div class="tile"><b>${sum("long")}</b><span>${ic("food-variant")}Tage ab ${h2(this._st.long_day).replace(",00", "")} Std.</span></div></div>`;
+    h += `<div class="btnrow"><button class="btn small" data-a="share" data-v="year">${ic("share-variant-outline")}Drucken & Teilen</button></div>`;
     h += `<p class="small">U = Urlaubstage · K = Kranktage · Konto = Ü.-Gesamt am Monatsende (laufender Monat: Stand heute, Soll bis heute). Grau = Monat ohne Einträge (zählt nicht mit). 🔮 = Monat kommt erst noch. Antippen öffnet den Monat.</p>`;
     return h;
   }
@@ -1318,18 +1429,23 @@ class StundenzettelCard extends HTMLElement {
     const planN = Object.keys(st.plan || {}).length;
     return {
       work: { icon: "cash-clock", color: "#43a047", title: "Bezahlte Stunden & Konto", info: `${h2(st.paid_hours)} Std. pro Monat · Start ${hs(st.start_balance)}`, html: () => `
-        ${this._num("paid_hours", "cash", "Bezahlte Stunden pro Monat (Soll)", st.paid_hours, "Std.")}
+        <div class="hero" style="--hc:#43a047"><div class="lbl">💶 Aktuell bezahlt</div><div class="big">${h2(st.paid_hours)} Std.</div><div class="lbl">pro Monat (Soll)</div></div>
+        ${this._num("paid_hours", "cash", "Aktuell bezahlte Stunden pro Monat", st.paid_hours, "Std.")}
         <p class="small">So viele Stunden bezahlt dein Chef jeden Monat. Alles darüber landet auf dem Überstunden-Konto, alles darunter geht runter.</p>
         <div class="ghead"><span class="gdot" style="--gc:#43a047">${ic("calendar-range")}</span><span>Früher anders?</span><span class="n"><button class="btn small" data-a="addperiod">${ic("plus")}Neu</button></span></div>
-        ${(st.paid_periods || []).map((p, i) => `<div class="item"><span class="kd" style="--kc:#43a047">${ic("calendar-start")}</span><div class="n"><b>ab ${monthName(p.from)}</b><div class="meta"><span class="tag">${h2(p.hours)} Std. pro Monat</span></div></div><button class="iconbtn" data-a="delperiod" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("") || `<p class="small">Keine – es gilt immer das Soll oben.</p>`}
-        ${this._addPeriod ? `<form class="edit" data-form="period"><div class="f"><label>Ab Monat<input type="month" name="from" required></label><label>Stunden pro Monat<input name="hours" inputmode="decimal" required placeholder="160"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addperiod">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : ""}
-        <p class="small">Beispiel: Bis 2022 waren es 160 Stunden, seit 2023 sind es 175 → einen Eintrag „ab März 2012: 160“ und einen „ab Januar 2023: 175“.</p>
+        ${[...(st.paid_until || [])].map((p, i) => [p, i]).sort((x, y) => (x[0].until < y[0].until ? 1 : -1)).map(([p, i]) => `<div class="item"><span class="kd" style="--kc:#43a047">${ic("calendar-end")}</span><div class="n"><b>bis ${monthName(p.until)}</b><div class="meta"><span class="tag">${h2(p.hours)} Std. pro Monat</span></div></div><button class="iconbtn" data-a="delperiod" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("")}
+        ${(st.paid_periods || []).map((p, i) => `<div class="item"><span class="kd" style="--kc:#9e9e9e">${ic("calendar-start")}</span><div class="n"><b>ab ${monthName(p.from)}</b><div class="meta"><span class="tag">${h2(p.hours)} Std. pro Monat</span><span class="tag">alte Schreibweise</span></div></div><button class="iconbtn" data-a="deloldperiod" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("")}
+        ${!(st.paid_until || []).length && !(st.paid_periods || []).length ? `<p class="small">Keine – es gilt immer das Soll oben.</p>` : ""}
+        ${this._addPeriod ? `<form class="edit" data-form="period"><div class="f"><label>Bis einschließlich<input type="month" name="until" required></label><label>Stunden pro Monat<input name="hours" inputmode="decimal" required placeholder="160"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addperiod">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : ""}
+        <p class="small">Beispiel: Bis Dezember 2019 waren es 160 Stunden, seitdem 175 → oben 175 eintragen und hier „bis Dezember 2019: 160“.</p>
         ${this._num("start_balance", "piggy-bank-outline", "Überstunden, bevor es losging", st.start_balance, "Std.")}
         <p class="small">💡 Tipp: Unter <b>📥 Import</b> → <b>„Konto stellen“</b> kannst du sagen „Ende Oktober stand das Konto bei 32“ – die Karte rechnet die Korrektur selbst aus.</p>` },
-      pause: { icon: "coffee-outline", color: "#6d4c41", title: "Pausen-Regeln", info: (st.pause_rules || []).map((r) => `ab ${h2(r.from).replace(",00", "")} Std. → ${h2(r.pause)}`).join(" · ") || "keine Pause", html: () => `
-        <p class="small">Die Pause wird automatisch abgezogen. Es zählt die <b>größte</b> Regel, deren Grenze du <b>überschreitest</b>. Beispiel: 6:30–16:15 = 9,75 Std. da → mehr als 6 → 0,50 Pause → <b>9,25 Std.</b></p>
-        ${(st.pause_rules || []).map((r, i) => `<div class="item"><span class="kd" style="--kc:#6d4c41">${ic("coffee-outline")}</span><div class="n"><b>mehr als ${h2(r.from)} Std. da</b><div class="meta"><span class="tag">${h2(r.pause)} Std. Pause</span></div></div><button class="iconbtn" data-a="delrule" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("") || `<p class="small">Keine Regeln – es wird keine Pause abgezogen.</p>`}
-        ${this._addRule ? `<form class="edit" data-form="rule"><div class="f"><label>Mehr als … Std. da<input name="from" inputmode="decimal" required placeholder="6"></label><label>… Std. Pause<input name="pause" inputmode="decimal" required placeholder="0,5"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addrule">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : `<div class="btnrow"><button class="btn small" data-a="addrule">${ic("plus")}Neue Regel</button></div>`}
+      pause: { icon: "coffee-outline", color: "#6d4c41", title: "Pausen-Regeln", info: (st.pause_rules || []).map((r) => (st.pause_by === "ende" ? `nach ${szClock(r.from)} → ${h2(r.pause)}` : `ab ${h2(r.from).replace(",00", "")} Std. → ${h2(r.pause)}`)).join(" · ") || "keine Pause", html: () => `
+        <div class="seg"><button class="${st.pause_by !== "ende" ? "on" : ""}" data-a="pauseby" data-v="dauer">${ic("timer-sand")}Nach Dauer</button><button class="${st.pause_by === "ende" ? "on" : ""}" data-a="pauseby" data-v="ende">${ic("clock-end")}Nach Uhrzeit beim Gehen</button></div>
+        ${st.pause_by === "ende" ? `<p class="small">Die Pause richtet sich danach, <b>wann du gehst</b>. Es zählt die <b>größte</b> Regel, deren Uhrzeit du <b>überschreitest</b>. Beispiel: Gehen bis 12:00 → 0,25 Pause · Gehen nach 12:00 → 0,50 Pause.</p>`
+          : `<p class="small">Die Pause wird automatisch abgezogen. Es zählt die <b>größte</b> Regel, deren Grenze du <b>überschreitest</b>. Beispiel: 6:30–16:15 = 9,75 Std. da → mehr als 6 → 0,50 Pause → <b>9,25 Std.</b></p>`}
+        ${(st.pause_rules || []).map((r, i) => `<div class="item"><span class="kd" style="--kc:#6d4c41">${ic("coffee-outline")}</span><div class="n"><b>${st.pause_by === "ende" ? (r.from > 0 ? `Gehen nach ${szClock(r.from)} Uhr` : "Gehen egal wann") : `mehr als ${h2(r.from)} Std. da`}</b><div class="meta"><span class="tag">${h2(r.pause)} Std. Pause</span></div></div><button class="iconbtn" data-a="delrule" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("") || `<p class="small">Keine Regeln – es wird keine Pause abgezogen.</p>`}
+        ${this._addRule ? `<form class="edit" data-form="rule"><div class="f">${st.pause_by === "ende" ? `<label>Gehen nach … Uhr<input type="time" name="from" required value="12:00" step="300"></label>` : `<label>Mehr als … Std. da<input name="from" inputmode="decimal" required placeholder="6"></label>`}<label>… Std. Pause<input name="pause" inputmode="decimal" required placeholder="0,5"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addrule">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : `<div class="btnrow"><button class="btn small" data-a="addrule">${ic("plus")}Neue Regel</button></div>`}
         <p class="small">Einzelne Tage mit anderer Pause trägst du direkt am Tag ein. Steht im Kalender-Termin „(+0,50 h Pause)“, nimmt die Karte genau das.</p>` },
       plan: { icon: "calendar-week", color: "#1e88e5", title: "Normaler Tag", info: planN ? `${planN} Arbeitstage pro Woche` : "kein Plan", html: () => `
         <p class="small">Dein normaler Tag pro Wochentag. Daraus kommen der Knopf <b>„📋 Normaler Tag“</b>, die Vorschläge beim Eintragen und das <b>Soll heute</b>. Wochentage ohne Haken = frei.</p>
@@ -1450,10 +1566,10 @@ class StundenzettelCard extends HTMLElement {
       ["📅", "Der Kalender", "lesen und zurückschreiben", `<p>Die Karte holt sich alle 15 Minuten den Termin „Arbeiten“ (Anfang, Ende, Notiz und „(+0,50 h Pause)“). Mit <b>„Änderungen in den Kalender schreiben“</b> geht es auch andersrum: Was du in der Karte einträgst, landet im Termin. Krank oder Urlaub? Dann verschwindet der Arbeits-Termin.</p><p>✋ Einen Tag, den du in der Karte geändert hast, fasst der Kalender nie wieder an.</p>`],
       ["✍", "Tag eintragen oder ändern", "antippen, ändern, speichern", `<p>Tippe auf einen Tag (unter <b>Heute</b> oder <b>Monat</b>). Oben wählst du die Art: <b>Arbeit, Urlaub, Krank, Feiertag, Frei</b> oder <b>Pauschal</b> (z. B. Samstag für feste Euro – zählt nicht zu den Stunden). Pause leer lassen = automatisch.</p>`],
       ["⚖", "So rechnet das Konto", "wie auf dem Papier-Zettel", `<p><b>Summe</b> aller Stunden im Monat − <b>Bezahlt</b> (z. B. 175) = <b>Plus/Minus</b>.<br><b>Ü.-Alt</b> (Stand vom Vormonat) + Plus/Minus + Korrektur = <b>Ü.-Gesamt</b>.</p><p>Im laufenden Monat zeigt <b>„Konto heute“</b> den fairen Stand: Das Soll wird nur für die Arbeitstage bis heute gerechnet. Monate ganz ohne Einträge zählen nicht mit.</p>`],
-      ["☕", "Pausen", "automatisch nach Regel", `<p>⚙️ → <b>Pausen-Regeln</b>. Standard: mehr als 0 Std. da → 0,25 Pause, mehr als 6 Std. → 0,50 Pause. Also 6:30–12:00 = 5,25 Std. und 6:30–16:15 = 9,25 Std.</p>`],
+      ["☕", "Pausen", "automatisch nach Regel", `<p>⚙️ → <b>Pausen-Regeln</b>. Standard: mehr als 0 Std. da → 0,25 Pause, mehr als 6 Std. → 0,50 Pause. Also 6:30–12:00 = 5,25 Std. und 6:30–16:15 = 9,25 Std.</p><p>Oder <b>nach Uhrzeit beim Gehen</b>: z. B. gehen bis 12:00 → 0,25 Pause, gehen nach 12:00 → 0,50 Pause. Beim Umschalten stellt die Karte die Standard-Regeln passend um.</p>`],
       ["🗓", "Korrektur & Soll", "ausgezahlt, geschenkt, anderer Monat", `<p>Unter <b>Monat</b> → <b>Korrektur / Soll</b>: z. B. „−20, ausgezahlt“. Oder für genau diesen Monat ein anderes Soll. Früher wurden weniger Stunden bezahlt? ⚙️ → <b>Bezahlte Stunden</b> → <b>Früher anders</b>.</p>`],
       ["📥", "Alten Zettel übernehmen", "einfach Text einfügen", `<p>⚙️ → <b>Import</b>: In Google Tabellen alles markieren, kopieren, einfügen, <b>Vorschau</b>, <b>Übernehmen</b>. Danach mit <b>„Konto stellen“</b> den Stand eines Monats so einstellen, wie er auf dem Zettel stand.</p>`],
-      ["🖨", "Drucken & CSV", "für den Chef oder die Steuer", `<p>Unter <b>Monat</b> → <b>Drucken</b> (Monats-Zettel) oder <b>CSV</b> (für Excel). Unter ⚙️ → Import & Sicherung gibt es <b>alles</b> als CSV.</p>`],
+      ["🖨", "Drucken, Teilen & CSV", "für den Chef oder die Steuer", `<p>Unter <b>Monat</b> oder <b>Jahr</b> → <b>Drucken & Teilen</b>: als PDF (z. B. per WhatsApp oder Mail, auf dem iPhone über Teilen → Drucken), direkt drucken oder als Text. <b>CSV</b> (für Excel) gibt es unter Monat. Unter ⚙️ → Import & Sicherung gibt es <b>alles</b> als CSV.</p>`],
       ["📱", "Offline-App", "stempeln ohne Netz", `<p>⚙️ → <b>App & Info → Offline-App</b>: Adresse aufs Handy, einmal anmelden, „Zum Startbildschirm hinzufügen“. Ohne Netz landet alles im <b>Postausgang</b> (oben „⏳ 1 wartet“) und geht raus, sobald wieder Netz da ist – mit der Uhrzeit vom Knopfdruck.</p>`],
       ["🔒", "PIN & Schloss", "⚙️ oder alles sperren", `<p>⚙️ → <b>App & Info → Schutz</b>: PIN festlegen. Dann fragt ⚙️ nach der PIN, mit <b>„Ganze Karte sperren“</b> sogar alles. Das Schloss oben rechts sperrt sofort, nach 10 Minuten ohne Tippen sperrt es von selbst.</p>`],
       ["🤖", "Für Automationen", "Sensoren und Aktionen", `<p>Sensoren: <code>sensor.stundenzettel_ueberstunden</code>, <code>sensor.stundenzettel_stunden_diesen_monat</code>, <code>sensor.stundenzettel_resturlaub</code>, <code>sensor.stundenzettel_kranktage_dieses_jahr</code>, <code>binary_sensor.stundenzettel_eingestempelt</code>.<br>Aktionen: <code>stundenzettel.kommen</code>, <code>stundenzettel.gehen</code>, <code>stundenzettel.tag_eintragen</code>, <code>stundenzettel.abgleichen</code>, <code>stundenzettel.daten_abrufen</code>.</p>`],
@@ -1466,6 +1582,93 @@ class StundenzettelCard extends HTMLElement {
       ${sec("🙏", "Credits", "wer das gemacht hat", this._creditsHtml())}</div>`;
   }
 
+  // ---------------------------------------------------------------- 📤 Drucken & Teilen (wie beim Kegelclub): Monat oder Jahr als PDF, Druck oder Text
+  _shareModel() {
+    const sh = this._share, d = this._d, st = this._st;
+    if (sh.kind === "year") {
+      const y = sh.key;
+      const rows = (d.months || []).filter((m) => m.month.startsWith(y)).map((m) => (m.now != null ? { ...m, paid: m.paid_today, diff: m.hours - m.paid_today, total: m.now } : m));
+      const sum = (k) => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
+      const vac = (Number(st.vacation_days) || 0) + (Number((st.vacation_carry || {})[y]) || 0);
+      const last = rows.filter((r) => !r.future).slice(-1)[0];
+      return {
+        title: `Stundenzettel ${y}`, sub: `Übersicht pro Monat · Stand ${dm(d.today)}${d.today.slice(0, 4)}`, big: last ? `${hs(last.total)} Std.` : "",
+        cols: [{ t: "Monat", x: 0, w: 110 }, { t: "Stunden", x: 110, w: 70, right: true }, { t: "Soll", x: 185, w: 70, right: true }, { t: "+/-", x: 260, w: 70, right: true }, { t: "Konto", x: 335, w: 80, right: true }, { t: "Urlaub", x: 420, w: 50, right: true }, { t: "Krank", x: 473, w: 50, right: true }],
+        rows: rows.map((r) => ({ gray: !r.tracked, cells: [MONTHS[Number(r.month.slice(5)) - 1], h2(r.hours), r.future ? "" : h2(r.paid), r.future ? "" : hs(r.diff + r.adjust), r.future ? "kommt noch" : hs(r.total), String(r.urlaub || ""), String(r.krank || "")] })),
+        sums: [["Stunden gesamt", h2(sum("hours"))], ["Urlaub genommen", `${sum("urlaub")} / ${vac}`], ["Kranktage", String(sum("krank"))], [`Tage ab ${h2(st.long_day).replace(",00", "")} Std.`, String(sum("long"))], ...(last ? [["Überstunden-Konto", `${hs(last.total)} Std.`, true]] : [])],
+      };
+    }
+    const key = sh.key, [y, mo] = key.split("-").map(Number), last = new Date(y, mo, 0).getDate();
+    const row = this._rowOf(key) || { hours: 0, paid: 0, diff: 0, old: 0, total: 0, urlaub: 0, krank: 0, long: 0, adjust: 0, euro: 0 };
+    const rows = Array.from({ length: last }, (_, i) => isoOf(y, mo, i + 1)).map((iso) => {
+      const e = d.days[iso], dt = `${WD[wdOf(iso)]} ${dm(iso)}`;
+      if (!e) return { gray: true, cells: [dt, this._plan(iso) ? "" : "frei", "", "", ""] };
+      if (e.kind === "work") return { cells: [dt, `${e.start || "?"} - ${e.end || "?"}`, h2(e.pause), h2(e.hours), e.note || ""] };
+      return { cells: [dt, KIND[e.kind]?.[1] || e.kind, "", e.kind === "pauschal" ? eur(e.amount) : h2(e.hours), e.note || ""] };
+    });
+    const now = row.now != null;
+    return {
+      title: `Stundenzettel ${monthName(key)}`, sub: now ? `Monat läuft noch · Stand ${dm(d.today)}${d.today.slice(0, 4)} (Soll bis heute)` : "", big: `${h2(row.hours)} Std.`,
+      cols: [{ t: "Datum", x: 0, w: 75 }, { t: "Uhrzeit / Art", x: 78, w: 105 }, { t: "Pause", x: 186, w: 45, right: true }, { t: "Stunden", x: 236, w: 55, right: true }, { t: "Notiz", x: 302, w: 221 }],
+      rows,
+      sums: [["Summe", `${h2(row.hours)} Std.`], [now ? "Soll bis heute" : "Bezahlt (Soll)", `-${h2(now ? row.paid_today : row.paid)} Std.`], ["Plus/Minus", hs(row.hours - (now ? row.paid_today : row.paid))], ["Ü.-Alt (Vormonat)", hs(row.old)], ...(row.adjust ? [["Korrektur", hs(row.adjust)]] : []), [now ? "Stand heute" : "Ü.-Gesamt", `${hs(now ? row.now : row.total)} Std.`, true], ["Urlaubstage", String(row.urlaub)], ["Kranktage", String(row.krank)], [`${h2(st.long_day).replace(",00", "")} Stunden und mehr`, String(row.long)], ...(row.euro ? [["Pauschal", eur(row.euro)]] : [])],
+    };
+  }
+  _sharePdfBytes(m = this._shareModel()) { return szTablePdf(m); }
+  _shareText(m) {
+    const out = [`⏱️ ${m.title}`, ""];
+    for (const r of m.rows) { if (r.gray && !r.cells.slice(1).some(Boolean)) continue; out.push(r.cells.filter(Boolean).join(" · ")); }
+    out.push("", ...m.sums.map(([l, v]) => `${l}: ${v}`));
+    return out.join("\n");
+  }
+  _sharePage() {
+    const m = this._shareModel();
+    const apple = /iPhone|iPad|iPod/i.test(navigator.userAgent || "") || (/Macintosh/i.test(navigator.userAgent || "") && (navigator.maxTouchPoints || 0) > 1);
+    const tbl = `<table class="ytab shprev"><thead><tr>${m.cols.map((c) => `<th>${esc(c.t)}</th>`).join("")}</tr></thead><tbody>${m.rows.map((r) => `<tr class="${r.gray ? "gap" : ""}">${r.cells.map((v) => `<td>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+      <div class="zettel" style="margin-top:10px">${m.sums.map(([l, v, s]) => `<div class="zr ${s ? "tot" : ""}"><span>${esc(l)}</span><span>${esc(v)}</span></div>`).join("")}</div>`;
+    return { icon: "share-variant-outline", color: "#546e7a", title: "Drucken & Teilen", html: `
+      <div class="prchoice">${apple ? "" : `<button class="btn" data-a="shprint">${ic("printer-outline")}Drucken</button>`}<button class="btn ${apple ? "main" : ""}" data-a="shpdf">${ic("file-pdf-box")}${apple ? "PDF drucken / teilen" : "PDF teilen / speichern"}</button>${navigator.share ? `<button class="btn" data-a="shtext">${ic("message-text-outline")}Als Text teilen</button>` : ""}<button class="btn" data-a="shcopy">${ic("content-copy")}Text kopieren</button></div>
+      <p class="small">${apple ? "Auf iPhone und iPad geht Drucken über die PDF: Teilen-Menü → Drucken." : "Vorschau:"} <b>${esc(m.title)}</b></p><div class="kcprev">${tbl}</div>` };
+  }
+  _shareHtmlDoc(m) {
+    return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(m.title)}</title><style>@page{size:A4;margin:14mm}
+      body{font-family:Roboto,Arial,sans-serif;font-size:11.5px;margin:0;color:#000} h1{font-size:18px;margin:0 0 2px} .sub{color:#666;margin:0 0 8px} table{border-collapse:collapse;width:100%} td,th{border-bottom:1px solid #ccc;padding:3px 5px;text-align:left;vertical-align:top} th{font-size:10px;color:#666;border-bottom:1.5px solid #999}
+      tr.gap td{color:#999} .sum{margin:10px 0 0 auto;width:auto} .sum td{border:0;padding:2px 6px} .sum td:last-child{text-align:right;font-weight:bold} .sum tr.tot td{color:#1e88e5;font-size:13px}</style></head><body>
+      <h1>${esc(m.title)}</h1>${m.sub ? `<p class="sub">${esc(m.sub)}</p>` : ""}<table><thead><tr>${m.cols.map((c) => `<th${c.right ? ' style="text-align:right"' : ""}>${esc(c.t)}</th>`).join("")}</tr></thead><tbody>${m.rows.map((r) => `<tr class="${r.gray ? "gap" : ""}">${r.cells.map((v, k) => `<td${m.cols[k].right ? ' style="text-align:right"' : ""}>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+      <table class="sum">${m.sums.map(([l, v, s]) => `<tr class="${s ? "tot" : ""}"><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join("")}</table></body></html>`;
+  }
+  _sharePrint() {
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:-10000px;top:0;width:182mm;height:263mm;border:0;visibility:hidden;";
+    f.srcdoc = this._shareHtmlDoc(this._shareModel());
+    f.onload = () => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (_) { this._toast("Drucken geht hier nicht – nimm „PDF“."); } setTimeout(() => f.remove(), 60000); };
+    document.body.append(f);
+  }
+  async _sharePdf() { // 📄 iPhone/iPad = Teilen-Menü (dort Drucken per AirPrint), HA-App = kurz von Home Assistant bereitgestellt, sonst Herunterladen
+    const m = this._shareModel(), bytes = this._sharePdfBytes(m);
+    const name = `Stundenzettel-${this._share.key}.pdf`;
+    const file = typeof File === "function" ? new File([bytes], name, { type: "application/pdf" }) : null;
+    const touch = (navigator.maxTouchPoints || 0) > 0 || /iPhone|iPad|Android/i.test(navigator.userAgent || "");
+    if (this._hass?.auth?.external && !this._app) {
+      try {
+        let bin = "";
+        for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode(...bytes.subarray(k, k + 0x8000));
+        const r = await this._hass.callWS({ type: "stundenzettel/pdf/store", data: btoa(bin), name });
+        window.open(this._hass?.hassUrl ? this._hass.hassUrl(r.url) : new URL(r.url, location.origin).href, "_blank");
+        this._toast("📄 PDF geöffnet – dort über Teilen drucken oder sichern");
+      } catch (err) { this._toast("⚠️ " + (err?.message || "PDF ging nicht")); }
+      return;
+    }
+    if (touch && file && navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: m.title }); return; } catch (err) { if (err?.name === "AbortError") return; }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    a.download = name;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    this._toast("📄 PDF gespeichert – öffnen und drucken");
+  }
   // ---------------------------------------------------------------- 🖨️ Drucken & CSV
   _csv(keys) {
     const rows = [["Datum", "Wochentag", "Art", "Von", "Bis", "Pause", "Stunden", "Betrag", "Notiz"]];
@@ -1548,8 +1751,9 @@ class StundenzettelCard extends HTMLElement {
     const a = el.dataset.a, v = el.dataset.v, iso = el.dataset.d;
     const d = this._d, st = this._st;
     switch (a) {
-      case "tab": this._view = v; this._sheet = null; this._open = null; this._fkind = null; this._monthForm = false; if (this._pad?.step !== "unlock") this._pad = null; return this._redraw();
+      case "tab": this._view = v; this._sheet = null; this._share = null; this._open = null; this._fkind = null; this._monthForm = false; if (this._pad?.step !== "unlock") this._pad = null; return this._redraw();
       case "back":
+        if (this._share && !this._pad) { this._share = null; return this._redraw(); }
         if (this._pad) { const back = this._pad.back; this._pad = null; if (back !== "sheet") { this._view = "heute"; this._sheet = null; } }
         else if (this._view === "set" && this._sheet) this._sheet = null; else this._view = "heute";
         this._addRule = this._addPeriod = false; return this._redraw();
@@ -1601,6 +1805,11 @@ class StundenzettelCard extends HTMLElement {
       case "gomonth": this._month = v; this._view = "monat"; return this._redraw();
       case "monthform": this._monthForm = !this._monthForm; return this._redraw();
       case "print": return this._print();
+      case "share": this._share = v === "year" ? { kind: "year", key: String(this._year) } : { kind: "month", key: this._month }; return this._redraw();
+      case "shprint": return this._sharePrint();
+      case "shpdf": return this._sharePdf();
+      case "shtext": if (navigator.share) navigator.share({ text: this._shareText(this._shareModel()) }).catch(() => {}); return;
+      case "shcopy": szCopy(this._shareText(this._shareModel())).then(() => this._toast("📋 Text kopiert")); return;
       case "csv": return this._download(`stundenzettel-${this._month}.csv`, this._csv((x) => x.startsWith(this._month)));
       case "csvall": return this._download("stundenzettel-alles.csv", this._csv());
       case "sync": {
@@ -1613,9 +1822,18 @@ class StundenzettelCard extends HTMLElement {
       case "sets": return this._set(v, el.value);
       case "round": return this._set("round", Number(v));
       case "addrule": this._addRule = !this._addRule; return this._redraw();
+      case "pauseby": { // ☕ beim Wechsel auf „Uhrzeit“ die Standard-Regeln passend umstellen (6 Std. → 12 Uhr)
+        if (v === (st.pause_by || "dauer")) return;
+        const rules = st.pause_rules || [], std = (a, b) => rules.length === 2 && rules.some((r) => r.from === 0 && r.pause === 0.25) && rules.some((r) => r.from === a && r.pause === b);
+        const ok = await this._set("pause_by", v);
+        if (ok && v === "ende" && std(6, 0.5)) await this._set("pause_rules", [{ from: 0, pause: 0.25 }, { from: 12, pause: 0.5 }]);
+        if (ok && v === "dauer" && std(12, 0.5)) await this._set("pause_rules", [{ from: 0, pause: 0.25 }, { from: 6, pause: 0.5 }]);
+        return this._redraw();
+      }
       case "delrule": return this._set("pause_rules", (st.pause_rules || []).filter((_, i) => i !== Number(v)));
       case "addperiod": this._addPeriod = !this._addPeriod; return this._redraw();
-      case "delperiod": return this._set("paid_periods", (st.paid_periods || []).filter((_, i) => i !== Number(v)));
+      case "delperiod": return this._set("paid_until", (st.paid_until || []).filter((_, i) => i !== Number(v)));
+      case "deloldperiod": return this._set("paid_periods", (st.paid_periods || []).filter((_, i) => i !== Number(v)));
       case "impprev": case "impgo": {
         const text = this.shadowRoot.getElementById("imptext")?.value || this._impText || "";
         if (!text.trim()) { this._toast("Erst Text einfügen 🙂"); return; }
@@ -1659,13 +1877,13 @@ class StundenzettelCard extends HTMLElement {
       if (Number.isNaN(op.adjust) || Number.isNaN(op.paid)) return this._toast("⚠️ Bitte Zahlen eintragen");
       if (await this._send(op)) { this._monthForm = false; this._redraw(); }
     } else if (kind === "rule") {
-      const r = { from: toNum(fd.from), pause: toNum(fd.pause) };
+      const r = { from: /^\d{1,2}:\d{2}$/.test(fd.from || "") ? szMin(fd.from) / 60 : toNum(fd.from), pause: toNum(fd.pause) };
       if ([r.from, r.pause].some((x) => x == null || Number.isNaN(x))) return this._toast("⚠️ Bitte Zahlen eintragen");
       if (await this._set("pause_rules", [...(this._st.pause_rules || []), r])) { this._addRule = false; this._redraw(); }
     } else if (kind === "period") {
-      const p = { from: fd.from, hours: toNum(fd.hours) };
-      if (!p.from || p.hours == null || Number.isNaN(p.hours)) return this._toast("⚠️ Monat und Stunden eintragen");
-      if (await this._set("paid_periods", [...(this._st.paid_periods || []), p])) { this._addPeriod = false; this._redraw(); }
+      const p = { until: fd.until, hours: toNum(fd.hours) };
+      if (!p.until || p.hours == null || Number.isNaN(p.hours)) return this._toast("⚠️ Monat und Stunden eintragen");
+      if (await this._set("paid_until", [...(this._st.paid_until || []), p])) { this._addPeriod = false; this._redraw(); }
     } else if (kind === "plan") {
       const plan = {};
       for (let w = 1; w <= 7; w++) if (f.querySelector(`[name=on${w}]`).checked) plan[String(w)] = [fd[`a${w}`], fd[`b${w}`]];

@@ -35,7 +35,9 @@ ABSENCE_KINDS = ("urlaub", "krank", "feiertag")
 DEFAULT_SETTINGS: dict = {
     # ⏱️ Arbeitszeit
     "paid_hours": 175.0,        # 💶 so viele Stunden bezahlt der Chef pro Monat (Soll)
+    "paid_until": [],           # 🗓️ früher anders? [{"until": "2019-12", "hours": 160}] – gilt BIS einschließlich diesem Monat
     "paid_periods": [],         # 🗓️ früher anders? [{"from": "2012-03", "hours": 160}] – gilt ab diesem Monat
+    "pause_by": "dauer",        # ☕ Pause nach „dauer“ (Stunden da) oder „ende“ (Uhrzeit beim Gehen)
     "pause_rules": [            # ☕ Pause automatisch: ab MEHR als „from“ Std. Anwesenheit → „pause“ Std. abziehen
         {"from": 0, "pause": 0.25},
         {"from": 6, "pause": 0.5},

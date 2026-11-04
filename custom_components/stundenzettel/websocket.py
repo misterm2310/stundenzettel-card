@@ -21,7 +21,7 @@ def _m(hass: HomeAssistant):
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
-    for cmd in (ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check):
+    for cmd in (ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check, ws_pdf_store):
         websocket_api.async_register_command(hass, cmd)
 
 
@@ -159,3 +159,23 @@ def ws_pin_check(hass: HomeAssistant, connection: websocket_api.ActiveConnection
         connection.send_result(msg["id"], {"ok": m.check_pin(msg["pin"])})
     except HomeAssistantError as err:
         connection.send_error(msg["id"], "pin", str(err))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "stundenzettel/pdf/store",
+        vol.Required("data"): vol.All(str, vol.Length(max=7_000_000)),
+        vol.Optional("name"): vol.All(str, vol.Length(max=120)),
+    }
+)
+@callback
+def ws_pdf_store(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """📄 Die Karte hat eine PDF gebaut: kurz bereithalten, Link zurück (für die HA-App auf dem Handy)."""
+    from .pdf_share import store_pdf  # noqa: PLC0415
+
+    try:
+        result = store_pdf(hass, msg["data"], msg.get("name"))
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], result)

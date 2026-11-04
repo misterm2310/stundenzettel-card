@@ -24,12 +24,12 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - ⏱️ **Kommen & Gehen** per Knopf – oder **automatisch**, wenn dein Handy in die Zone „Arbeit“ kommt bzw. sie verlässt. Zeiten auf 5 oder 15 Minuten runden.
 - ⚖️ **Überstunden-Konto** wie auf Papier: Summe − Bezahlt = Plus/Minus, Ü.-Alt + Plus/Minus = Ü.-Gesamt. Im laufenden Monat fair: **Soll nur bis heute**.
 - 🏖️ **Urlaub, Krank, Feiertag, Frei, Pauschal** (z. B. Samstag für feste Euro – zählt nicht zu den Stunden). Resturlaub und Kranktage pro Jahr.
-- ☕ **Pausen-Regeln** (Standard: mehr als 0 Std. → 0,25 · mehr als 6 Std. → 0,50) – einzelne Tage auch anders.
-- 💶 **Bezahlte Stunden** pro Monat, **früher anders** (z. B. bis 2022: 160, ab 2023: 175) und **Korrekturen** (ausgezahlt, geschenkt).
+- ☕ **Pausen-Regeln** nach Dauer (Standard: mehr als 0 Std. → 0,25 · mehr als 6 Std. → 0,50) **oder nach Uhrzeit beim Gehen** (z. B. bis 12 Uhr 0,25 · danach 0,50) – einzelne Tage auch anders.
+- 💶 **Bezahlte Stunden** pro Monat, **früher anders** (z. B. bis Dezember 2019: 160) und **Korrekturen** (ausgezahlt, geschenkt).
 - 🎌 **Feiertage automatisch** aus einem Feiertags-Kalender (z. B. Integration „Feiertage“ für dein Bundesland).
 - 🥪 **„8 Stunden und →“**: zählt die langen Tage (z. B. für die Verpflegungspauschale).
 - 📥 **Alten Zettel übernehmen**: einfach aus Google Tabellen/Excel/PDF kopieren und einfügen. Danach **„Konto stellen“** auf den Stand vom Zettel.
-- 🖨️ **Monats-Zettel drucken**, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
+- 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
 - 📱 **Offline-App** fürs Handy: stempeln und Tage eintragen auch **ohne Netz** (z. B. im Keller der Baustelle) – wird nachgeschickt, die Uhrzeit vom Knopfdruck bleibt. Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol, Fingerabdruck-Sperre.
 - 🔒 **PIN-Sperre** für ⚙️ oder die ganze Karte – prüft auch ohne Netz, sperrt nach 10 Minuten wieder.
 - 🌍 **Deutsch und Englisch** (automatisch wie dein Home Assistant).

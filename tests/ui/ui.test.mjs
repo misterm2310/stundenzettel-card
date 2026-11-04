@@ -57,9 +57,23 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await page.waitForTimeout(100);
   const sent = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
   ok(sent.some((o) => o.type === "day_set" && o.date === "2026-11-03" && o.kind === "krank"), "Speichern schickt day_set (krank)");
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '[data-a="share"][data-v="month"]');
+  ok(/Drucken & Teilen/.test(await txt()) && /PDF/.test(await txt()) && /November 2026/.test(await txt()), "Monat → Drucken & Teilen zeigt PDF-Knöpfe und Vorschau");
+  const pdf = await card(page).evaluate((el) => { const b = el._sharePdfBytes(); return { head: String.fromCharCode(...b.slice(0, 5)), tail: String.fromCharCode(...b.slice(-6)), n: b.length }; });
+  ok(pdf.head === "%PDF-" && /%%EOF/.test(pdf.tail) && pdf.n > 1500, "PDF vom Monat ist eine echte PDF-Datei");
+  await shot(page, "4b-teilen");
+  await click(page, '[data-a="back"]');
+  ok(await card(page).locator(".tabs").count() === 1, "Schließen führt zurück zum Monat");
+  await click(page, '.dayrow[data-d="2026-11-04"]');
+  ok(await card(page).locator('form[data-form="day"] input[name="pause"]').inputValue() === "", "Tag bearbeiten: Pause leer, wenn sie nur nach Regel kommt");
   await click(page, '[data-a="tab"][data-v="jahr"]');
   ok(/Okt/.test(await txt()) && /Σ/.test(await txt()), "Jahr: Tabelle mit Summe");
   await shot(page, "4-jahr");
+  await click(page, '[data-a="share"][data-v="year"]');
+  const pdfY = await card(page).evaluate((el) => el._sharePdfBytes().length);
+  ok(/Stundenzettel 2026/.test(await txt()) && pdfY > 1500, "Jahr → Drucken & Teilen mit PDF");
+  await click(page, '[data-a="back"]');
   await click(page, '[data-a="tab"][data-v="set"]');
   for (const grp of ["Arbeitszeit", "Kalender & Stempeln", "Daten", "Ansicht", "App & Info"]) {
     await click(page, `[data-a="setgrp"][data-v="${grp}"]`);

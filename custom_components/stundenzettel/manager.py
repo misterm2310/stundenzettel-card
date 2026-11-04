@@ -132,7 +132,10 @@ def day_hours(entry: dict[str, Any], st: dict[str, Any]) -> dict[str, float]:
             b += 24 * 60
         brutto = (b - a) / 60
         pause = entry.get("pause")
-        pause = auto_pause(brutto, st.get("pause_rules")) if pause is None else float(pause)
+        if pause is None:  # ☕ nach Regel: Dauer („mehr als 6 Std. da“) oder Uhrzeit beim Gehen („nach 12 Uhr“)
+            pause = auto_pause(b / 60 if st.get("pause_by") == "ende" else brutto, st.get("pause_rules"))
+        else:
+            pause = float(pause)
         return {"hours": r2(max(0.0, brutto - pause)), "brutto": r2(brutto), "pause": r2(pause)}
     if kind in ABSENCE_KINDS:
         h = entry.get("hours")
@@ -142,6 +145,9 @@ def day_hours(entry: dict[str, Any], st: dict[str, Any]) -> dict[str, float]:
 
 def paid_for(month: str, st: dict[str, Any]) -> float:
     """💶 Soll eines Monats: der neueste Zeitraum, der vor/in diesem Monat anfängt – sonst das normale Soll."""
+    for p in sorted((p for p in st.get("paid_until") or [] if _MONTH_RE.match(str(p.get("until", "")))), key=lambda p: p["until"]):
+        if month <= p["until"]:  # 🗓️ „bis Dezember 2019: 160“ – der früheste passende Zeitraum gewinnt
+            return float(p.get("hours", 0))
     best = None
     for p in st.get("paid_periods") or []:
         f = str(p.get("from", ""))
@@ -483,7 +489,7 @@ class StundenzettelManager:
         if self._snap_cache and self._snap_cache[0] == self._rev and self._snap_cache[1].get("_day") == self.today().isoformat():
             snap = dict(self._snap_cache[1])
         else:
-            days = {iso: {**e, **day_hours(e, self.settings)} for iso, e in self.data["days"].items()}
+            days = {iso: {**e, **day_hours(e, self.settings), "pause_set": e.get("pause") is not None} for iso, e in self.data["days"].items()}  # 📝 pause_set: Pause steht wirklich drin (sonst nach Regel)
             snap = {"days": days, "months": self.months(), "_day": self.today().isoformat()}
             self._snap_cache = (self._rev, snap)
             snap = dict(snap)
@@ -720,6 +726,16 @@ class StundenzettelManager:
                     raise HomeAssistantError("Monat bitte so: 2012-03")
                 out.append({"from": f, "hours": r2(num(p.get("hours"), 0) or 0)})
             return sorted(out, key=lambda p: p["from"])[:50]
+        if key == "pause_by":
+            return "ende" if value == "ende" else "dauer"
+        if key == "paid_until":
+            out = []
+            for p in value or []:
+                u = str(p.get("until", ""))
+                if not _MONTH_RE.match(u):
+                    raise HomeAssistantError("Monat bitte so: 2019-12")
+                out.append({"until": u, "hours": r2(num(p.get("hours"), 0) or 0)})
+            return sorted(out, key=lambda p: p["until"])[:50]
         if key == "vacation_carry":  # 🧳 {"2026": 9} – nur echte Jahre, ganze/halbe Tage
             out = {}
             for y, n in (value or {}).items():

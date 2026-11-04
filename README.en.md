@@ -22,9 +22,9 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 - ⏱️ Clock in/out by button or automatically when your phone enters/leaves a zone. Rounding to 5 or 15 minutes.
 - ⚖️ Overtime balance per month: total − paid hours = plus/minus, previous balance + plus/minus + correction = new balance. Current month counts the target only up to today.
 - 🏖️ Vacation, sick, holiday, day off, flat rate days. Vacation left and sick days per year.
-- ☕ Break rules, 💶 paid hours per month (with history), corrections, 🎌 holidays from a holiday calendar.
+- ☕ Break rules by duration or by the time you leave (e.g. until 12:00 → 0.25, later → 0.50), 💶 paid hours per month (with history like „until Dec 2019: 160“), corrections, 🎌 holidays from a holiday calendar.
 - 📥 Import an old sheet by pasting text, then „set the balance“ to the value of the paper sheet.
-- 🖨️ Print month, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
+- 📤 Print & share month or year as PDF (WhatsApp, mail, iPhone printing), print or as text, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
 - 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
 - 🔒 PIN lock for ⚙️ or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
 - ⏰ Mascot: a little alarm clock with moods and seasonal costumes (off by default). 🙈 Veil overtime, ↩️ undo, 🧘 calm mode, hide tabs.
