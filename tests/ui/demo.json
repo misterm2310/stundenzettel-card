@@ -1,0 +1,1306 @@
+{
+ "version": "0.1.0",
+ "settings": {
+  "paid_hours": 175.0,
+  "paid_periods": [],
+  "pause_rules": [
+   {
+    "from": 0,
+    "pause": 0.25
+   },
+   {
+    "from": 6,
+    "pause": 0.5
+   }
+  ],
+  "absence_hours": 8.0,
+  "round": 15,
+  "long_day": 8.0,
+  "vacation_days": 30,
+  "start_balance": 12.0,
+  "plan": {
+   "1": [
+    "06:30",
+    "16:15"
+   ],
+   "2": [
+    "06:30",
+    "16:15"
+   ],
+   "3": [
+    "06:30",
+    "16:15"
+   ],
+   "4": [
+    "06:30",
+    "16:15"
+   ],
+   "5": [
+    "06:30",
+    "12:00"
+   ]
+  },
+  "calendar": "calendar.beispiel",
+  "event_title": "Arbeiten",
+  "location": "",
+  "cal_read": true,
+  "cal_write": true,
+  "holiday_calendar": "calendar.feiertage_beispiel",
+  "stamp_person": "person.max",
+  "stamp_zone": "zone.arbeit",
+  "labels": false,
+  "log_on": true
+ },
+ "days": {
+  "2026-06-01": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-06-02": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Werkstatt",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-06-03": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-06-04": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-06-05": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-06-08": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "stamp",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-06-09": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-06-10": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-06-11": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-06-12": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "stamp",
+   "note": "Werkstatt",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-06-15": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-06-16": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-06-17": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-06-18": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Werkstatt",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-06-19": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Werkstatt",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-06-22": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-06-23": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-06-24": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-06-25": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-06-26": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-06-29": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "stamp",
+   "note": "Werkstatt",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-06-30": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "stamp",
+   "note": "Lager aufräumen",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-07-01": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-07-02": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "stamp",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-07-03": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "stamp",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-07-06": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-07-07": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-07-08": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-07-09": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-07-10": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-07-13": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-07-14": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-07-15": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "stamp",
+   "note": "Lager aufräumen",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-07-16": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-07-17": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "stamp",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-07-18": {
+   "kind": "pauschal",
+   "start": "08:00",
+   "end": "12:00",
+   "amount": 40.0,
+   "source": "card",
+   "note": "Samstag Notdienst",
+   "hours": 0.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-07-20": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Werkstatt",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-07-21": {
+   "kind": "krank",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-07-22": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-07-23": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-07-24": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "stamp",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-07-27": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-07-28": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-07-29": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-07-30": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-07-31": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-08-03": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "stamp",
+   "note": "Musterstadt – Terrasse",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-08-04": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "stamp",
+   "note": "Lager aufräumen",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-08-05": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-08-06": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-08-07": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-08-10": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-11": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-12": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-13": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-14": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-17": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-18": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-19": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-20": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-21": {
+   "kind": "urlaub",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-22": {
+   "kind": "pauschal",
+   "start": "08:00",
+   "end": "12:00",
+   "amount": 40.0,
+   "source": "card",
+   "note": "Samstag Notdienst",
+   "hours": 0.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-08-24": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "stamp",
+   "note": "Werkstatt",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-08-25": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-08-26": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-08-27": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-08-28": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-08-31": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "note": "Werkstatt",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-09-01": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-09-02": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "stamp",
+   "note": "Werkstatt",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-09-03": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-09-04": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-09-07": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-09-08": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "stamp",
+   "note": "Musterstadt – Terrasse",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-09-09": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-09-10": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-09-11": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-09-14": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-09-15": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "stamp",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-09-16": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-09-17": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "stamp",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-09-18": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "stamp",
+   "note": "Lager aufräumen",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-09-21": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "stamp",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-09-22": {
+   "kind": "krank",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-09-23": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "stamp",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-09-24": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-09-25": {
+   "kind": "krank",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-09-28": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Werkstatt",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-09-29": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-09-30": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-10-01": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-10-02": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-10-05": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "stamp",
+   "note": "Musterstadt – Terrasse",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-10-06": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-10-07": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "stamp",
+   "note": "Musterstadt – Terrasse",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-10-08": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-10-09": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-10-10": {
+   "kind": "pauschal",
+   "start": "08:00",
+   "end": "12:00",
+   "amount": 40.0,
+   "source": "card",
+   "note": "Samstag Notdienst",
+   "hours": 0.0,
+   "brutto": 0.0,
+   "pause": 0.0
+  },
+  "2026-10-12": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-10-13": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "note": "Lager aufräumen",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-10-14": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "17:00",
+   "source": "stamp",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 10.0,
+   "brutto": 10.5,
+   "pause": 0.5
+  },
+  "2026-10-15": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-10-16": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Kunde Muster – Reklamation",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-10-19": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "stamp",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-10-20": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-10-21": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-10-22": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  },
+  "2026-10-23": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-10-26": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "note": "Werkstatt",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-10-27": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-10-28": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "15:45",
+   "source": "calendar",
+   "note": "Beispielweg 3 – Carport",
+   "hours": 8.75,
+   "brutto": 9.25,
+   "pause": 0.5
+  },
+  "2026-10-29": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:00",
+   "source": "calendar",
+   "hours": 9.0,
+   "brutto": 9.5,
+   "pause": 0.5
+  },
+  "2026-10-30": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "12:00",
+   "source": "stamp",
+   "note": "Lager aufräumen",
+   "hours": 5.25,
+   "brutto": 5.5,
+   "pause": 0.25
+  },
+  "2026-11-02": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:30",
+   "source": "calendar",
+   "hours": 9.5,
+   "brutto": 10.0,
+   "pause": 0.5
+  },
+  "2026-11-03": {
+   "kind": "work",
+   "start": "06:30",
+   "end": "16:15",
+   "source": "calendar",
+   "note": "Musterstadt – Terrasse",
+   "hours": 9.25,
+   "brutto": 9.75,
+   "pause": 0.5
+  }
+ },
+ "months": [
+  {
+   "month": "2026-06",
+   "hours": 190.5,
+   "paid": 175.0,
+   "diff": 15.5,
+   "adjust": 0.0,
+   "old": 12.0,
+   "total": 27.5,
+   "urlaub": 0,
+   "krank": 0,
+   "feiertag": 0,
+   "work": 22,
+   "long": 18,
+   "euro": 0.0,
+   "days": 22,
+   "tracked": true,
+   "note": ""
+  },
+  {
+   "month": "2026-07",
+   "hours": 193.0,
+   "paid": 175.0,
+   "diff": 18.0,
+   "adjust": -10.0,
+   "old": 27.5,
+   "total": 35.5,
+   "urlaub": 0,
+   "krank": 1,
+   "feiertag": 0,
+   "work": 22,
+   "long": 17,
+   "euro": 40.0,
+   "days": 24,
+   "tracked": true,
+   "note": "10 Std. ausgezahlt"
+  },
+  {
+   "month": "2026-08",
+   "hours": 174.25,
+   "paid": 175.0,
+   "diff": -0.75,
+   "adjust": 0.0,
+   "old": 35.5,
+   "total": 34.75,
+   "urlaub": 10,
+   "krank": 0,
+   "feiertag": 0,
+   "work": 11,
+   "long": 9,
+   "euro": 40.0,
+   "days": 22,
+   "tracked": true,
+   "note": ""
+  },
+  {
+   "month": "2026-09",
+   "hours": 188.0,
+   "paid": 175.0,
+   "diff": 13.0,
+   "adjust": 0.0,
+   "old": 34.75,
+   "total": 47.75,
+   "urlaub": 0,
+   "krank": 2,
+   "feiertag": 0,
+   "work": 20,
+   "long": 17,
+   "euro": 0.0,
+   "days": 22,
+   "tracked": true,
+   "note": ""
+  },
+  {
+   "month": "2026-10",
+   "hours": 184.75,
+   "paid": 175.0,
+   "diff": 9.75,
+   "adjust": 0.0,
+   "old": 47.75,
+   "total": 57.5,
+   "urlaub": 0,
+   "krank": 0,
+   "feiertag": 0,
+   "work": 22,
+   "long": 17,
+   "euro": 40.0,
+   "days": 23,
+   "tracked": true,
+   "note": ""
+  },
+  {
+   "month": "2026-11",
+   "hours": 18.75,
+   "paid": 175.0,
+   "diff": -156.25,
+   "adjust": 0.0,
+   "old": 57.5,
+   "total": -98.75,
+   "urlaub": 0,
+   "krank": 0,
+   "feiertag": 0,
+   "work": 2,
+   "long": 2,
+   "euro": 0.0,
+   "days": 2,
+   "tracked": true,
+   "note": "",
+   "paid_today": 25.0,
+   "now": 51.25
+  }
+ ],
+ "months_meta": {
+  "2026-07": {
+   "adjust": -10,
+   "note": "10 Std. ausgezahlt"
+  }
+ },
+ "stamp": {
+  "in": "06:30",
+  "date": "2026-11-04",
+  "ts": 0
+ },
+ "log": [
+  {
+   "ts": 1793770200000,
+   "user": "Max",
+   "text": "⏱️ Eingestempelt um 06:30"
+  }
+ ],
+ "errors": [],
+ "today": "2026-11-04",
+ "cal": {
+  "ok": true,
+  "last": 1793780100000,
+  "error": null,
+  "can": [
+   "create",
+   "delete"
+  ]
+ },
+ "summary": {
+  "balance": 51.25,
+  "month_hours": 18.75,
+  "month_paid": 175.0,
+  "last_month_total": 57.5,
+  "vacation_taken": 10,
+  "vacation_left": 20,
+  "sick_days": 3,
+  "long_days": 0,
+  "stamped_in": true,
+  "stamp_since": "06:30",
+  "today": null,
+  "days": 115
+ }
+}

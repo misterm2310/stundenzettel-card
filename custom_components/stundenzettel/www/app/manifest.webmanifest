@@ -1,0 +1,18 @@
+{
+  "name": "Stundenzettel",
+  "short_name": "Stunden",
+  "description": "Dein Stundenzettel aus Home Assistant – Kommen, Gehen, Überstunden, auch ohne Netz.",
+  "start_url": "/stundenzettel/app/",
+  "scope": "/stundenzettel/app/",
+  "display": "standalone",
+  "background_color": "#111418",
+  "theme_color": "#0478bd",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Kommen – einstempeln", "short_name": "Kommen", "url": "/stundenzettel/app/?do=in", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Gehen – ausstempeln", "short_name": "Gehen", "url": "/stundenzettel/app/?do=out", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Stundenzettel einrichten",
+        "description": "Danach findest du alles in der Karte unter ⚙️ (Kalender, bezahlte Stunden, Pausen, Stempeln).",
+        "data": {
+          "sidebar": "In der Seitenleiste anzeigen",
+          "reset_pin": "PIN zurücksetzen"
+        },
+        "data_description": {
+          "reset_pin": "Die PIN der Karte wird entfernt. Danach in der Karte unter ⚙️ → Schutz eine neue festlegen."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Der Stundenzettel ist schon eingerichtet.",
+      "single_instance_allowed": "Der Stundenzettel ist schon eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Stundenzettel",
+        "data": {
+          "sidebar": "In der Seitenleiste anzeigen"
+        }
+      }
+    }
+  },
+  "selector": {
+    "art": {
+      "options": {
+        "work": "Arbeit",
+        "urlaub": "Urlaub",
+        "krank": "Krank",
+        "feiertag": "Feiertag",
+        "frei": "Frei",
+        "pauschal": "Pauschal"
+      }
+    }
+  },
+  "services": {
+    "kommen": {
+      "name": "Kommen (einstempeln)",
+      "description": "Stempelt jetzt ein."
+    },
+    "gehen": {
+      "name": "Gehen (ausstempeln)",
+      "description": "Stempelt aus und trägt den Tag ein."
+    },
+    "tag_eintragen": {
+      "name": "Tag eintragen",
+      "description": "Trägt einen Tag ein oder ändert ihn.",
+      "fields": {
+        "datum": {
+          "name": "Datum",
+          "description": "Welcher Tag?"
+        },
+        "art": {
+          "name": "Art",
+          "description": "Arbeit, Urlaub, Krank, Feiertag, Frei oder Pauschal"
+        },
+        "von": {
+          "name": "Von",
+          "description": "Anfang"
+        },
+        "bis": {
+          "name": "Bis",
+          "description": "Ende"
+        },
+        "pause": {
+          "name": "Pause",
+          "description": "Leer = automatisch"
+        },
+        "stunden": {
+          "name": "Stunden",
+          "description": "Nur für Urlaub/Krank/Feiertag – leer = Standard"
+        },
+        "betrag": {
+          "name": "Betrag",
+          "description": "Nur für Pauschal (Euro)"
+        },
+        "notiz": {
+          "name": "Notiz",
+          "description": "z. B. Baustelle"
+        }
+      }
+    },
+    "abgleichen": {
+      "name": "Mit dem Kalender abgleichen",
+      "description": "Holt die Termine jetzt sofort."
+    },
+    "daten_abrufen": {
+      "name": "Daten abrufen",
+      "description": "Gibt Konto und die letzten Monate zurück."
+    }
+  }
+}

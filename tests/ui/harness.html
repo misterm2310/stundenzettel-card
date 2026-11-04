@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Stundenzettel Test</title>
+<style>
+:root { --primary-color:#03a9f4; --primary-text-color:#e1e1e1; --secondary-text-color:#9b9b9b; --divider-color:rgba(225,225,225,.12);
+  --primary-background-color:#111418; --secondary-background-color:#262a31; --card-background-color:#1c1f24; --ha-card-background:#1c1f24; color-scheme:dark; }
+body.light { --primary-text-color:#212121; --secondary-text-color:#727272; --divider-color:rgba(0,0,0,.12); --primary-background-color:#fafafa;
+  --secondary-background-color:#f0f0f0; --card-background-color:#fff; --ha-card-background:#fff; color-scheme:light; }
+body { margin:0; padding:16px; background:var(--primary-background-color); color:var(--primary-text-color); font:15px Roboto, system-ui, sans-serif; }
+#c1 { display:block; max-width:520px; }
+</style></head>
+<body>
+<stundenzettel-card id="c1"></stundenzettel-card>
+<script>
+// 🧪 Ein nachgebautes Home Assistant mit AUSGEDACHTEN Stunden (keine echten Daten!)
+if (location.hash.includes("light")) document.body.classList.add("light");
+window.fake = { online: true, msgs: [], data: null };
+let ICONS = null; const waitIc = new Set();
+fetch("icons.json").then((r) => r.json()).then((j) => { ICONS = j; waitIc.forEach((e) => e.draw()); });
+customElements.define("ha-icon", class extends HTMLElement {
+  static get observedAttributes() { return ["icon"]; }
+  attributeChangedCallback() { this.draw(); }
+  connectedCallback() { if (!this.shadowRoot) this.attachShadow({ mode: "open" }).innerHTML = `<style>:host{display:inline-flex;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px);vertical-align:middle}svg{width:100%;height:100%;fill:currentColor}</style><svg viewBox="0 0 24 24"><path></path></svg>`; this.draw(); }
+  draw() { if (!this.shadowRoot) return; if (!ICONS) { waitIc.add(this); return; } const n = (this.getAttribute("icon") || "").replace("mdi:", ""); if (!ICONS[n]) console.warn("Symbol fehlt: " + n); this.shadowRoot.querySelector("path")?.setAttribute("d", ICONS[n] || ""); }
+});
+const st = (f) => ({ state: "on", attributes: { friendly_name: f } });
+let push = null;
+const send = () => push && push(JSON.parse(JSON.stringify(fake.data)));
+const mins = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+const hours = (e) => { if (e.kind !== "work") return ["urlaub", "krank", "feiertag"].includes(e.kind) ? 8 : 0; const b = (mins(e.end) - mins(e.start)) / 60; const p = e.pause ?? (b > 6 ? 0.5 : b > 0 ? 0.25 : 0); return { h: b - p, p }; };
+const LANG = location.hash.includes("en") ? "en" : "de";
+fake.pin = location.hash.includes("pin") ? "1234" : null;
+const hass = () => ({
+  connected: fake.online, user: { name: "Max Muster", is_admin: true }, language: LANG, locale: { language: LANG },
+  states: { "calendar.beispiel": st("Beispiel-Kalender"), "calendar.feiertage_beispiel": st("Feiertage"), "person.max": st("Max"), "zone.arbeit": st("Arbeit"), "zone.home": st("Zuhause") },
+  connection: { subscribeMessage: async (f, m) => { fake.msgs.push(m); push = f; setTimeout(send, 10); return () => {}; } },
+  callWS: async (msg) => {
+    fake.msgs.push(msg);
+    const d = fake.data;
+    if (msg.type === "stundenzettel/apply") {
+      if (!fake.online) throw { code: "lost", message: "📴 Keine Verbindung" };
+      for (const o of msg.ops) {
+        if (o.type === "day_set") { const e = { kind: o.kind, source: "card", ...(o.start ? { start: o.start, end: o.end } : {}), ...(o.note ? { note: o.note } : {}), ...(o.pause != null ? { pause: o.pause } : {}) }; const r = hours(e); d.days[o.date] = typeof r === "object" ? { ...e, hours: r.h, pause: r.p } : { ...e, hours: r }; }
+        if (o.type === "day_delete") delete d.days[o.date];
+        if (o.type === "set") d.settings[o.key] = o.value;
+        if (o.type === "stamp_out") d.stamp = null;
+        if (o.type === "stamp_in") d.stamp = { in: "06:30", date: d.today };
+      }
+      setTimeout(send, 5);
+      return { results: msg.ops.map((o) => ({ op_id: o.op_id, ok: true })) };
+    }
+    if (!fake.online) throw { code: "lost", message: "📴 Keine Verbindung" };
+    if (msg.type === "stundenzettel/pin/check") return { ok: msg.pin === fake.pin };
+    if (msg.type === "stundenzettel/pin/set") { fake.pin = msg.pin || null; d.pin = !!fake.pin; setTimeout(send, 5); return { ok: true }; }
+    if (msg.type === "stundenzettel/import") return { found: 3, new: 3, clash: 0, skipped: 1, first: "2012-03-15", last: "2012-03-17", ...(msg.apply ? { applied: 3 } : {}) };
+    if (msg.type === "stundenzettel/sync") return { read: 0, holidays: 0, cal: d.cal };
+    if (msg.type === "stundenzettel/backup") return { kind: "stundenzettel-sicherung", days: d.days };
+    return {};
+  },
+});
+fetch("demo.json").then((r) => r.json()).then(async (j) => {
+  fake.data = j;
+  if (fake.pin) j.pin = true;
+  if (location.hash.includes("mascot")) j.settings.mascot = true;
+  if (location.hash.includes("lockall")) j.settings.lock_all = true;
+  if (location.hash.includes("empty")) { j.days = {}; j.months = []; j.settings.calendar = ""; j.stamp = null; j.summary.balance = 0; }
+  await import("../../custom_components/stundenzettel/www/stundenzettel-card.js");
+  const c = document.getElementById("c1");
+  c.setConfig({ type: "custom:stundenzettel-card" });
+  c.hass = hass();
+  window.ready = true;
+  // 📴 Netz an/aus spielen
+  window.setOnline = (on) => { fake.online = on; c.hass = hass(); };
+});
+</script>
+</body></html>

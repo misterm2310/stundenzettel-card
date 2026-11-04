@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv*/
+node_modules/
+
+# 🔒 Eigene Stundenzettel NIE ins Repo (nur die ausgedachte Beispieldatei)
+*.csv
+*.pdf
+!docs/beispiel-stunden.txt
+tests/ui/node_modules
