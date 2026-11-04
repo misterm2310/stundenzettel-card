@@ -1,0 +1,99 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Stundenzettel",
+        "description": "Afterwards everything is in the card under ⚙️ (calendar, paid hours, breaks, clocking).",
+        "data": {
+          "sidebar": "Show in sidebar",
+          "reset_pin": "Reset PIN"
+        },
+        "data_description": {
+          "reset_pin": "Removes the card PIN. Set a new one in the card under ⚙️ → Protection."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Stundenzettel is already set up.",
+      "single_instance_allowed": "Stundenzettel is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Stundenzettel",
+        "data": {
+          "sidebar": "Show in sidebar"
+        }
+      }
+    }
+  },
+  "selector": {
+    "art": {
+      "options": {
+        "work": "Work",
+        "urlaub": "Vacation",
+        "krank": "Sick",
+        "feiertag": "Holiday",
+        "frei": "Day off",
+        "pauschal": "Flat rate"
+      }
+    }
+  },
+  "services": {
+    "kommen": {
+      "name": "Clock in",
+      "description": "Clocks in now."
+    },
+    "gehen": {
+      "name": "Clock out",
+      "description": "Clocks out and records the day."
+    },
+    "tag_eintragen": {
+      "name": "Record day",
+      "description": "Records or changes a day.",
+      "fields": {
+        "datum": {
+          "name": "Date",
+          "description": "Which day?"
+        },
+        "art": {
+          "name": "Type",
+          "description": "Work, vacation, sick, holiday, off or flat rate"
+        },
+        "von": {
+          "name": "From",
+          "description": "Start"
+        },
+        "bis": {
+          "name": "To",
+          "description": "End"
+        },
+        "pause": {
+          "name": "Break",
+          "description": "Empty = automatic"
+        },
+        "stunden": {
+          "name": "Hours",
+          "description": "Only vacation/sick/holiday – empty = default"
+        },
+        "betrag": {
+          "name": "Amount",
+          "description": "Only flat rate"
+        },
+        "notiz": {
+          "name": "Note",
+          "description": "e.g. site"
+        }
+      }
+    },
+    "abgleichen": {
+      "name": "Sync with calendar",
+      "description": "Fetches the events right now."
+    },
+    "daten_abrufen": {
+      "name": "Get data",
+      "description": "Returns balance and the last months."
+    }
+  }
+}
