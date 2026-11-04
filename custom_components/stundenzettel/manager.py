@@ -34,7 +34,7 @@ from typing import Any
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event, async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -476,7 +476,15 @@ class StundenzettelManager:
     def async_start(self) -> None:
         self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=SYNC_MINUTES)))
         self._watch_person()
-        self.hass.async_create_task(self.async_sync())
+        self.hass.async_create_task(self._first_sync())
+
+    async def _first_sync(self, tries: int = 0) -> None:
+        """🔁 Erster Abgleich nach dem Start: Kalender ist beim HA-Start oft noch nicht da – dann bis zu 5× jede Minute nochmal."""
+        await self.async_sync()
+        if self.cal_status.get("ok") is False and tries < 5:
+            async def _again(_now: datetime) -> None:
+                await self._first_sync(tries + 1)
+            self._unsubs.append(async_call_later(self.hass, 60, _again))
 
     @callback
     def async_stop(self) -> None:

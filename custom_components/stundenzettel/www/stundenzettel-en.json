@@ -634,5 +634,8 @@
  "Unter <b>Monat</b> oder <b>Jahr</b> → <b>Drucken &amp; Teilen</b>: als PDF (z. B. per WhatsApp oder Mail, auf dem iPhone über Teilen → Drucken), direkt drucken oder als Text. <b>CSV</b> (für Excel) gibt es unter Monat. Unter ⚙️ → Import &amp; Sicherung gibt es <b>alles</b> als CSV.": "Under <b>Month</b> or <b>Year</b> → <b>Print &amp; share</b>: as PDF (e.g. via WhatsApp or mail, on the iPhone via Share → Print), print directly or as text. <b>CSV</b> (for Excel) is under Month. Under ⚙️ → Import &amp; backup you get <b>everything</b> as CSV.",
  "selbst raus. Die Stunden vom Zettel werden genau übernommen (die Pause passt sich an). Kopierst du aus Google Tabellen oder Excel, kommen auch die": "by itself. The hours from the sheet are taken over exactly (the break adapts). If you copy from Google Sheets or Excel, the",
  "Monatswerte": "monthly values",
- "mit: Summe, Ü.-Alt (Lohnabrechnung), Ü.-Gesamt und „8 Stunden und →“ – genau so, wie sie im Zettel stehen.": "come along too: total, carried over (payslip), balance and “8 hours and more” – exactly as on the sheet."
+ "mit: Summe, Ü.-Alt (Lohnabrechnung), Ü.-Gesamt und „8 Stunden und →“ – genau so, wie sie im Zettel stehen.": "come along too: total, carried over (payslip), balance and “8 hours and more” – exactly as on the sheet.",
+ "🎨 Heute: <b>Kommen</b> (grün) und <b>Gehen</b> (rot) stehen auch auf dem Handy nebeneinander, mit farbigem ⏱️-Knopf": "🎨 Today: <b>Arrive</b> (green) and <b>Leave</b> (red) now sit side by side on phones too, with a coloured ⏱️ button",
+ "📥 Import erkennt Monatsnamen auch abgekürzt (z. B. „Septem“)": "📥 Import also recognises shortened month names (e.g. “Septem”)",
+ "📅 Nach dem Start von Home Assistant versucht die Karte den Kalender noch ein paar Mal, statt gleich „nicht gefunden“ zu melden": "📅 After Home Assistant starts, the card retries the calendar a few times instead of reporting “not found” right away"
 }

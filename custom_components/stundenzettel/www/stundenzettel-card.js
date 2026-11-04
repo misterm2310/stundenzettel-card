@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.4";
+const SZ_VERSION = "0.2.0-beta.5";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["0.2.0-beta.5", "🎨 Heute: <b>Kommen</b> (grün) und <b>Gehen</b> (rot) stehen auch auf dem Handy nebeneinander, mit farbigem ⏱️-Knopf · 📥 Import erkennt Monatsnamen auch abgekürzt (z. B. „Septem“) · 📅 Nach dem Start von Home Assistant versucht die Karte den Kalender noch ein paar Mal, statt gleich „nicht gefunden“ zu melden"],
   ["0.2.0-beta.4", "📊 Neuer Reiter <b>Statistik</b>: Überstunden-Kurve, Stunden pro Monat mit Soll-Linie, Wochentage, Urlaub & Krank pro Jahr und Rekorde – für ein Jahr oder alle Jahre · ⏱️ Heute oben zwei Felder <b>Kommen</b> und <b>Gehen</b> (antippen, Uhrzeit ändern, fertig) mit ⏱️ „jetzt“ · 💶 <b>Ü.-Alt laut Lohnabrechnung</b> pro Monat eintragen – die Karte rechnet dann mit der Zahl vom Chef weiter und zeigt die Abweichung · 📥 Import übernimmt auch die Monatswerte (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) genau wie im alten Zettel · 📅 Fehlt ein Termin im Kalender (z. B. gelöscht), legt die Karte ihn wieder an · Knopf „Alle Tage in den Kalender schreiben“ · 🥪 „8 Stunden und →“ zählt jetzt ohne Pause – wie auf dem Zettel"],
   ["0.2.0-beta.3", "📤 <b>Drucken & Teilen</b> für Monat und Jahr: als PDF (WhatsApp, Mail, Drucker – auch auf dem iPhone), Drucken oder als Text · ☕ Pause wahlweise <b>nach Uhrzeit beim Gehen</b> (z. B. bis 12 Uhr 0,25 – danach 0,50) · 💶 Bezahlte Stunden: oben die aktuellen, darunter „bis Dezember 2019: 160“ · 🐞 Tag bearbeiten: das Pausen-Feld bleibt leer (= nach Regel) statt eine 0 vorzufüllen"],
   ["0.2.0-beta.2", "🐞 Überstunden-Konto: Schon eingetragener Urlaub in einem späteren Monat (z. B. Dezember) zählt erst, wenn der Monat dran ist – vorher wurde fälschlich das volle Soll abgezogen · 🔮 Kommende Monate zeigen nur, was schon eingetragen ist · 🧳 Resturlaub aus dem Vorjahr (⚙️ → Urlaub, Krank & Co.) zählt zum Resturlaub dazu · Blaue Knöpfe „In HACS öffnen“ und „Integration hinzufügen“ in der Anleitung auf GitHub"],
