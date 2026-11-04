@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.1";
+const SZ_VERSION = "0.2.0-beta.2";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["0.2.0-beta.2", "🐞 Überstunden-Konto: Schon eingetragener Urlaub in einem späteren Monat (z. B. Dezember) zählt erst, wenn der Monat dran ist – vorher wurde fälschlich das volle Soll abgezogen · 🔮 Kommende Monate zeigen nur, was schon eingetragen ist · 🧳 Resturlaub aus dem Vorjahr (⚙️ → Urlaub, Krank & Co.) zählt zum Resturlaub dazu · Blaue Knöpfe „In HACS öffnen“ und „Integration hinzufügen“ in der Anleitung auf GitHub"],
   ["0.2.0", "Heute zeigt oben groß die <b>Stunden von heute</b> (beim Stempeln läuft die Zeit mit), darunter Monat und Überstunden-Konto · 🔒 PIN-Sperre für ⚙️ oder die ganze Karte (geht auch ohne Netz) · 📱 Offline-App fürs Handy: stempeln ohne Netz, wird später nachgeschickt · Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol · 🌍 Englisch · ⏰ Maskottchen: ein kleiner Wecker mit Laune und Jahreszeiten-Kostüm · 🙈 Überstunden verschleiern · ↩️ Rückgängig nach dem Löschen · 🧘 Ruhiger Modus · Reiter ausblenden · Neues Symbol"],
   ["0.1.0", "Erste Version 🎉 · Termin „Arbeiten“ aus dem Kalender lesen und (wenn du willst) zurückschreiben · Kommen/Gehen per Knopf oder automatisch per Handy-Zone · Überstunden-Konto wie auf dem Papier-Zettel (Summe, Bezahlt, Ü.-Alt, Ü.-Gesamt) · Urlaub, Krank, Feiertag, Frei, Pauschal · Pausen-Regeln · Alte Tabelle als Text importieren · Drucken und CSV"],
 ];
@@ -1198,6 +1199,12 @@ class StundenzettelCard extends HTMLElement {
       ${r("food-variant", `${h2(this._st.long_day).replace(",00", "")} Stunden und →`, row.long)}${row.euro ? r("cash", "Pauschal", eur(row.euro)) : ""}</div>
       <p class="small">Der Monat läuft noch – darum zählt das Soll nur bis heute. Den fertigen Zettel (mit vollem Soll) gibt es ab dem 1. des nächsten Monats.</p>`;
     }
+    if (row.future) { // 🔮 Monat kommt erst noch – Eingetragenes (z. B. Urlaub) zeigen, Konto bleibt unberührt
+      return `<div class="zettel">
+      ${r("sigma", "Schon eingetragen", `${h2(row.hours)} Std.`)}
+      ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}</div>
+      <p class="small">🔮 Dieser Monat kommt erst noch. Was hier schon steht, zählt fürs Überstunden-Konto erst, wenn der Monat dran ist.</p>`;
+    }
     const totCol = row.total < 0 ? "var(--kc-red)" : "var(--kc-green)";
     return `<div class="zettel" style="--hc:${totCol}">
       ${r("sigma", "Summe", `${h2(row.hours)} Std.`)}
@@ -1220,11 +1227,11 @@ class StundenzettelCard extends HTMLElement {
     const sum = (k) => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
     const curKey = d.today.slice(0, 7);
     h += `<table class="ytab"><thead><tr><th>Monat</th><th>Std.</th><th>Soll</th><th>+/−</th><th>Konto</th><th>U</th><th>K</th></tr></thead><tbody>${rows.map((r) => `
-      <tr class="click ${r.month === curKey ? "cur" : ""} ${r.tracked ? "" : "gap"}" data-a="gomonth" data-v="${r.month}"><td>${MONTHS[Number(r.month.slice(5)) - 1].slice(0, 3)}</td><td>${h2(r.hours)}</td><td>${h2(r.paid)}</td><td class="${r.diff + r.adjust < 0 ? "vneg" : "vpos"}">${hs(r.diff + r.adjust)}</td><td><b>${this._mv(hs(r.total), "y" + r.month)}</b></td><td>${r.urlaub || ""}</td><td>${r.krank || ""}</td></tr>`).join("")}</tbody>
+      <tr class="click ${r.month === curKey ? "cur" : ""} ${r.tracked ? "" : "gap"}" data-a="gomonth" data-v="${r.month}"><td>${MONTHS[Number(r.month.slice(5)) - 1].slice(0, 3)}</td><td>${h2(r.hours)}</td><td>${h2(r.paid)}</td><td class="${r.diff + r.adjust < 0 ? "vneg" : "vpos"}">${r.future ? "" : hs(r.diff + r.adjust)}</td><td><b>${r.future ? "🔮" : this._mv(hs(r.total), "y" + r.month)}</b></td><td>${r.urlaub || ""}</td><td>${r.krank || ""}</td></tr>`).join("")}</tbody>
       <tfoot><tr><td>Σ</td><td>${h2(sum("hours"))}</td><td>${h2(sum("paid"))}</td><td>${hs(sum("diff") + sum("adjust"))}</td><td></td><td>${sum("urlaub")}</td><td>${sum("krank")}</td></tr></tfoot></table>`;
-    const vac = Number(this._st.vacation_days) || 0;
+    const vac = (Number(this._st.vacation_days) || 0) + (Number((this._st.vacation_carry || {})[y]) || 0); // 🧳 + Resturlaub Vorjahr
     h += `<div class="tiles" style="margin-top:12px"><div class="tile"><b>${sum("urlaub")} / ${vac}</b><span>${ic("beach")}Urlaub genommen</span></div><div class="tile"><b>${sum("krank")}</b><span>${ic("emoticon-sick-outline")}Kranktage</span></div><div class="tile"><b>${sum("long")}</b><span>${ic("food-variant")}Tage ab ${h2(this._st.long_day).replace(",00", "")} Std.</span></div></div>`;
-    h += `<p class="small">U = Urlaubstage · K = Kranktage · Konto = Ü.-Gesamt am Monatsende (laufender Monat: Stand heute, Soll bis heute). Grau = Monat ohne Einträge (zählt nicht mit). Antippen öffnet den Monat.</p>`;
+    h += `<p class="small">U = Urlaubstage · K = Kranktage · Konto = Ü.-Gesamt am Monatsende (laufender Monat: Stand heute, Soll bis heute). Grau = Monat ohne Einträge (zählt nicht mit). 🔮 = Monat kommt erst noch. Antippen öffnet den Monat.</p>`;
     return h;
   }
 
@@ -1331,6 +1338,8 @@ class StundenzettelCard extends HTMLElement {
       absence: { icon: "beach", color: "#00897b", title: "Urlaub, Krank & Co.", info: `${h2(st.absence_hours)} Std. pro Tag · ${st.vacation_days} Urlaubstage`, html: () => `
         ${this._num("absence_hours", "beach", "Ein Urlaubs-, Kranken- oder Feiertag zählt", st.absence_hours, "Std.")}
         ${this._num("vacation_days", "calendar-star", "Urlaubstage pro Jahr", st.vacation_days, "Tage")}
+        <div class="switch"><span>${ic("briefcase-outline")}Resturlaub aus ${this._year - 1} (für ${this._year})</span><span><input data-a="setcarry" data-v="${this._year}" inputmode="decimal" value="${esc(String((st.vacation_carry || {})[this._year] ?? 0).replace(".", ","))}" style="width:90px;text-align:right"> Tage</span></div>
+        <p class="small">🧳 Übrige Urlaubstage vom Vorjahr kommen zum Anspruch dazu. Für ein anderes Jahr: oben unter Jahr das Jahr wählen, dann hier eintragen.</p>
         ${this._num("long_day", "food-variant", "„… Stunden und →“ zählt Tage ab", st.long_day, "Std.")}
         <p class="small">„8 Stunden und →“ zählt die Tage, an denen du mindestens so lange weg warst (Anfang bis Ende, mit Pause) – praktisch z. B. für die Verpflegungspauschale in der Steuererklärung.</p>` },
       cal: { icon: "calendar-sync-outline", color: "#3949ab", title: "Kalender", info: st.calendar ? `${st.calendar} · „${st.event_title}“` : "nicht verbunden", html: () => `
@@ -1600,6 +1609,7 @@ class StundenzettelCard extends HTMLElement {
       }
       case "setb": if (v === "_overwrite") { this._overwrite = el.checked; return; } return this._set(v, el.checked);
       case "setn": { const n = toNum(el.value); if (n == null || Number.isNaN(n)) { this._toast("⚠️ Bitte eine Zahl eintragen"); return this._redraw(); } return this._set(v, n); }
+      case "setcarry": { const n = toNum(el.value); if (n == null || Number.isNaN(n)) { this._toast("⚠️ Bitte eine Zahl eintragen"); return this._redraw(); } return this._set("vacation_carry", { ...(st.vacation_carry || {}), [v]: n }); }
       case "sets": return this._set(v, el.value);
       case "round": return this._set("round", Number(v));
       case "addrule": this._addRule = !this._addRule; return this._redraw();

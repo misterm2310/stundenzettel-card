@@ -44,6 +44,7 @@ DEFAULT_SETTINGS: dict = {
     "round": 15,                # 🔄 Stempelzeiten auf 15 Minuten runden (0 = gar nicht)
     "long_day": 8.0,            # 🥪 „8 Stunden und →“: Tage, an denen man mindestens so lange weg war
     "vacation_days": 30,        # 🏖️ Urlaubsanspruch pro Jahr
+    "vacation_carry": {},       # 🧳 Resturlaub aus dem Vorjahr je Jahr, z. B. {"2026": 9}
     "start_balance": 0.0,       # 🐷 Überstunden-Stand, bevor es mit der Karte losging
     "plan": {                   # 📋 normaler Tag je Wochentag (1 = Montag … 7 = Sonntag) – Vorschlag & Kalender-Vorlage
         "1": ["06:30", "16:15"], "2": ["06:30", "16:15"], "3": ["06:30", "16:15"], "4": ["06:30", "16:15"], "5": ["06:30", "12:00"],

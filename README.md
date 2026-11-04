@@ -6,6 +6,8 @@
 
 **Schluss mit dem Stundenzettel von Hand.** Die Karte holt sich deine Arbeitszeit aus dem Kalender (oder du stempelst per Knopf bzw. automatisch per Handy), zieht die Pause ab und führt dein **Überstunden-Konto** – genau wie der alte Papier-Zettel: Summe, Bezahlt, Ü.-Alt, Ü.-Gesamt.
 
+Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=stundenzettel-card&category=integration) [![Integration hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=stundenzettel)
+
 ![Vorschau – Stundenzettel (nur ausgedachte Zeiten)](docs/screenshot.png)
 
 > 🔒 **Deine Zeiten bleiben bei dir.** Alles liegt nur in deinem Home Assistant. Keine Cloud, kein fremder Server. In diesem Repo stehen nur ausgedachte Beispieldaten.

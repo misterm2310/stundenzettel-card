@@ -194,7 +194,7 @@
  "K": "S",
  "Urlaub genommen": "Vacation taken",
  "Tage ab {} Std.": "Days of {0}+ h",
- "U = Urlaubstage · K = Kranktage · Konto = Ü.-Gesamt am Monatsende (laufender Monat: Stand heute, Soll bis heute). Grau = Monat ohne Einträge (zählt nicht mit). Antippen öffnet den Monat.": "V = vacation days · S = sick days · Balance = overtime total at month end (running month: today, target until today). Grey = month without entries (doesn't count). Tap to open the month.",
+ "U = Urlaubstage · K = Kranktage · Konto = Ü.-Gesamt am Monatsende (laufender Monat: Stand heute, Soll bis heute). Grau = Monat ohne Einträge (zählt nicht mit). 🔮 = Monat kommt erst noch. Antippen öffnet den Monat.": "V = vacation days · S = sick days · Balance = overtime total at month end (running month: today, target until today). Grey = month without entries (doesn't count). 🔮 = month still to come. Tap to open the month.",
  "Für {} gibt es noch nichts. 🤷": "Nothing for {0} yet. 🤷",
  "Arbeitszeit": "Working time",
  "Kalender & Stempeln": "Calendar & clocking",
@@ -514,5 +514,9 @@
  "Stempeln abbrechen? Es wird nichts eingetragen.": "Cancel clock-in? Nothing will be entered.",
  "Wirklich ALLES löschen? Das geht nicht rückgängig.": "Really delete EVERYTHING? This can't be undone.",
  "Sicherung mit {} Tagen einspielen? Alles Jetzige wird ersetzt.": "Restore backup with {0} days? Everything current will be replaced.",
- "Lange auf ein Symbol drücken": "Long-press an icon"
+ "Lange auf ein Symbol drücken": "Long-press an icon",
+ "Schon eingetragen": "Already entered",
+ "🔮 Dieser Monat kommt erst noch. Was hier schon steht, zählt fürs Überstunden-Konto erst, wenn der Monat dran ist.": "🔮 This month is still to come. What's already here only counts towards the overtime balance once the month arrives.",
+ "Resturlaub aus {} (für {})": "Leftover vacation from {0} (for {1})",
+ "🧳 Übrige Urlaubstage vom Vorjahr kommen zum Anspruch dazu. Für ein anderes Jahr: oben unter Jahr das Jahr wählen, dann hier eintragen.": "🧳 Leftover vacation days from last year are added to your allowance. For another year: pick the year under Year first, then enter it here."
 }

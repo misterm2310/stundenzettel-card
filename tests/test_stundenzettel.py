@@ -45,6 +45,22 @@ def test_monate_und_konto():
     assert jan["long"] == 1  # 9,75 Std. weg ≥ 8
 
 
+
+def test_kommende_monate_zaehlen_nicht():
+    """🔮 Schon eingetragener Urlaub im Dezember darf das Konto im November nicht runterziehen."""
+    days = {
+        "2026-10-05": {"kind": "work", "start": "06:30", "end": "16:15"},
+        "2026-11-02": {"kind": "work", "start": "06:30", "end": "16:15"},
+        "2026-12-21": {"kind": "urlaub"},
+        "2026-12-22": {"kind": "urlaub"},
+    }
+    st = {**ST, "paid_hours": 9.25, "start_balance": 0}
+    rows = mgr.compute_months(days, {}, st, date(2026, 11, 4))
+    okt, nov, dez = rows
+    assert okt["total"] == 0 and "now" in nov and nov["future"] is False
+    assert dez["future"] is True and dez["tracked"] is False and dez["paid"] == 0
+    assert dez["total"] == nov["total"] and dez["urlaub"] == 2
+
 def test_soll_frueher_anders():
     st = {**ST, "paid_hours": 175, "paid_periods": [{"from": "2012-03", "hours": 160}, {"from": "2023-01", "hours": 175}]}
     assert mgr.paid_for("2015-06", st) == 160 and mgr.paid_for("2024-02", st) == 175 and mgr.paid_for("2010-01", st) == 175
@@ -258,3 +274,14 @@ async def test_offline_app_seite(hass: HomeAssistant, hass_client_no_auth):
     assert r.status == 200 and r.headers.get("Service-Worker-Allowed") == "/stundenzettel/app/"
     assert (await client.get("/stundenzettel/app/manifest.webmanifest")).status == 200
     assert (await client.get("/stundenzettel/app/geheim.json")).status == 404
+
+
+async def test_resturlaub_vorjahr(hass: HomeAssistant) -> None:
+    """🧳 Resturlaub aus dem Vorjahr zählt zum Anspruch dazu, Unsinn wird aussortiert."""
+    m = mgr.StundenzettelManager(hass)
+    y = str(m.today().year)
+    assert m._clean_setting("vacation_carry", {y: "9", "abc": 3, "2025": 0}) == {y: 9.0}
+    m.data["settings"]["vacation_carry"] = {y: 9}
+    m.data["days"][f"{y}-01-02"] = {"kind": "urlaub"}
+    s = m.summary()
+    assert s["vacation_carry"] == 9 and s["vacation_left"] == 30 + 9 - 1

@@ -186,18 +186,22 @@ def compute_months(days: dict[str, dict[str, Any]], months_meta: dict[str, dict[
                 long_n += 1
             if e.get("kind") == "pauschal":
                 euro += float(e.get("amount") or 0)
-        tracked = bool(items) or "adjust" in meta or key == cur
+        future = key > cur  # 🔮 Monat kommt erst noch (z. B. schon eingetragener Urlaub) → anzeigen, aber nicht ins Konto
+        tracked = (bool(items) or "adjust" in meta or key == cur) and not future
         soll = paid_for(key, st) if (items or key == cur or meta.get("paid") is not None) else 0.0
         if meta.get("paid") is not None:
             soll = float(meta["paid"])
+        if future:
+            soll = 0.0
         diff = tot - soll
-        adjust = float(meta.get("adjust") or 0)
+        adjust = 0.0 if future else float(meta.get("adjust") or 0)
         old = bal
         bal = bal + diff + adjust if tracked else bal
         row = {
             "month": key, "hours": r2(tot), "paid": r2(soll), "diff": r2(diff), "adjust": r2(adjust),
             "old": r2(old), "total": r2(bal), "urlaub": cnt["urlaub"], "krank": cnt["krank"], "feiertag": cnt["feiertag"],
             "work": cnt["work"], "long": long_n, "euro": r2(euro), "days": len(items), "tracked": tracked, "note": meta.get("note", ""),
+            "future": future,
         }
         if key == cur:  # 📍 laufender Monat: Soll nur anteilig bis heute → „Konto heute“
             wd_all = workdays(y, m, st) or 1
@@ -450,19 +454,23 @@ class StundenzettelManager:
 
     def summary(self) -> dict[str, Any]:
         months = self.months()
-        cur = months[-1] if months else None
+        key = self.today().strftime("%Y-%m")
+        idx = next((i for i, m in enumerate(months) if m["month"] == key), None)  # 📍 heute zählt – nicht der letzte Monat mit Einträgen
+        cur = months[idx] if idx is not None else None
         year = str(self.today().year)
         ym = [m for m in months if m["month"].startswith(year)]
         urlaub = sum(m["urlaub"] for m in ym)
+        carry = float((self.settings.get("vacation_carry") or {}).get(year) or 0)  # 🧳 Resturlaub aus dem Vorjahr
         stamp = self.data.get("stamp")
         today = self.data["days"].get(self.today().isoformat())
         return {
             "balance": cur["now"] if cur and "now" in cur else (cur["total"] if cur else float(self.settings.get("start_balance") or 0)),
             "month_hours": cur["hours"] if cur else 0.0,
             "month_paid": cur["paid"] if cur else 0.0,
-            "last_month_total": months[-2]["total"] if len(months) > 1 else None,
+            "last_month_total": months[idx - 1]["total"] if idx else None,
             "vacation_taken": urlaub,
-            "vacation_left": int(self.settings.get("vacation_days") or 0) - urlaub,
+            "vacation_carry": carry,
+            "vacation_left": r2(int(self.settings.get("vacation_days") or 0) + carry - urlaub),
             "sick_days": sum(m["krank"] for m in ym),
             "long_days": sum(m["long"] for m in ym),
             "stamped_in": bool(stamp),
@@ -712,6 +720,13 @@ class StundenzettelManager:
                     raise HomeAssistantError("Monat bitte so: 2012-03")
                 out.append({"from": f, "hours": r2(num(p.get("hours"), 0) or 0)})
             return sorted(out, key=lambda p: p["from"])[:50]
+        if key == "vacation_carry":  # 🧳 {"2026": 9} – nur echte Jahre, ganze/halbe Tage
+            out = {}
+            for y, n in (value or {}).items():
+                v = num(n, 0) or 0.0
+                if str(y).isdigit() and len(str(y)) == 4 and 0 < abs(v) <= 400:
+                    out[str(y)] = r2(v)
+            return out
         if key == "view":
             return {k: bool(v) for k, v in (value or {}).items() if k in ("monat", "jahr")}
         if key == "plan":
