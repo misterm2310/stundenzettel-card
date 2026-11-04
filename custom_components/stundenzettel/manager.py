@@ -310,8 +310,13 @@ def parse_import(text: str) -> tuple[dict[str, dict[str, Any]], int]:
     return found, skipped
 
 
-_MONTH_NAMES = {n: i + 1 for i, n in enumerate(("januar", "februar", "märz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"))}
-_MONTH_NAMES["maerz"] = 3
+_MONTH_SHORT = {"jan": 1, "feb": 2, "mär": 3, "mae": 3, "mar": 3, "apr": 4, "mai": 5, "jun": 6, "jul": 7, "aug": 8, "sep": 9, "okt": 10, "nov": 11, "dez": 12}
+
+
+def _month_no(text: str) -> int | None:
+    """„Oktober“, „Okt.“ oder auch vertippt „Septem“ → 10 / 9 (die ersten drei Buchstaben reichen)."""
+    t = text.strip().lower().rstrip(".")
+    return _MONTH_SHORT.get(t[:3]) if 3 <= len(t) <= 10 and t.isalpha() else None
 
 
 def parse_import_months(text: str) -> dict[str, dict[str, float]]:
@@ -337,7 +342,7 @@ def parse_import_months(text: str) -> dict[str, dict[str, float]]:
     out: dict[str, dict[str, float]] = {}
     for r, row in enumerate(grid):
         for c, x in enumerate(row):
-            mon = _MONTH_NAMES.get(x.strip().lower())
+            mon = _month_no(x)
             year = cell(r, c + 1)
             if not mon or not (year.isdigit() and len(year) == 4):
                 continue
@@ -345,7 +350,7 @@ def parse_import_months(text: str) -> dict[str, dict[str, float]]:
             vals: dict[str, float] = {}
             for rr in range(r + 1, min(r + 70, len(grid))):
                 lab = cell(rr, c).lower()
-                if _MONTH_NAMES.get(lab) and cell(rr, c + 1).isdigit():
+                if _month_no(lab) and cell(rr, c + 1).isdigit():
                     break  # nächster Monatsblock
                 if lab == "bezahlt" and "sum" not in vals:
                     v = val(rr - 1, c + 2)
