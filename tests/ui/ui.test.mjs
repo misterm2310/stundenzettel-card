@@ -155,6 +155,8 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(ops.some((o) => o.type === "day_set" && o.date === "2026-11-02" && o.kind === "work" && o.start), "Rückgängig schickt den alten Tag zurück");
   // 📴 ohne Netz: Postausgang
   await page.evaluate(() => window.setOnline(false));
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  ok(await card(page).locator(".bossrow").count() === 0, "Ohne Netz: kein Knopf „Zettel vom Chef“ (braucht Home Assistant)");
   await click(page, '[data-a="tab"][data-v="heute"]');
   await click(page, '[data-a="kgnow"][data-v="start"]');
   ok(/wartet/.test(await card(page).locator(".topbar").innerText()) && await card(page).locator(".kg.running").count() === 1, "Ohne Netz: Einstempeln landet im Postausgang und wirkt sofort");

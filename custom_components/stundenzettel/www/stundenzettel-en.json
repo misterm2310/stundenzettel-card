@@ -668,5 +668,7 @@
  "½ Feiertag": "½ holiday",
  "📄 <b>Zettel vom Chef</b> im Monat: „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie rot links neben deinen, unten sein Saldo, „Saldo Vormonat“ mit einem Tipp als Ü.-Alt (geht nur mit diesem Zettel-Typ, siehe ⓘ)": "📄 <b>Employer's timesheet</b> in the month: pick the „Zeitsaldenliste“ PDF – where their hours differ they show in red left of yours, their balance below, „Saldo Vormonat“ as carried-over hours with one tap (works only with this timesheet type, see ⓘ)",
  "ⓘ <b>Hilfe zum Antippen</b>: In ⚙️ und bei „Lohnabrechnung / Korrektur“ steht neben den Feldern ein kleines ⓘ statt langer Texte": "ⓘ <b>Tap-help</b>: in ⚙️ and at „Payslip / correction“ a small ⓘ sits next to the fields instead of long texts",
- "🏪 Hinweis: Ab Home Assistant 2026.11 heißt HACS „Marketplace“ (Einstellungen &gt; Marketplace)": "🏪 Note: from Home Assistant 2026.11 HACS is called „Marketplace“ (Settings &gt; Marketplace)"
+ "🏪 Hinweis: Ab Home Assistant 2026.11 heißt HACS „Marketplace“ (Einstellungen &gt; Marketplace)": "🏪 Note: from Home Assistant 2026.11 HACS is called „Marketplace“ (Settings &gt; Marketplace)",
+ "📱 <b>Zettel vom Chef</b> jetzt auch in der Offline-App (Knopf im Monat, nur wenn die App Netz hat)": "📱 <b>Employer's timesheet</b> now also in the offline app (button in the month, only while the app is online)",
+ "📴 Zettel vom Chef geht nur mit Netz": "📴 The employer's timesheet needs a connection"
 }

@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.6";
+const SZ_VERSION = "0.2.0-beta.7";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["0.2.0-beta.7", "📱 <b>Zettel vom Chef</b> jetzt auch in der Offline-App (Knopf im Monat, nur wenn die App Netz hat)"],
   ["0.2.0-beta.6", "📄 <b>Zettel vom Chef</b> im Monat: „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie rot links neben deinen, unten sein Saldo, „Saldo Vormonat“ mit einem Tipp als Ü.-Alt (geht nur mit diesem Zettel-Typ, siehe ⓘ) · ⓘ <b>Hilfe zum Antippen</b>: In ⚙️ und bei „Lohnabrechnung / Korrektur“ steht neben den Feldern ein kleines ⓘ statt langer Texte · 🏪 Hinweis: Ab Home Assistant 2026.11 heißt HACS „Marketplace“ (Einstellungen &gt; Marketplace)"],
   ["0.2.0-beta.5", "🎨 Heute: <b>Kommen</b> (grün) und <b>Gehen</b> (rot) stehen auch auf dem Handy nebeneinander, mit farbigem ⏱️-Knopf · 📥 Import erkennt Monatsnamen auch abgekürzt (z. B. „Septem“) · 📅 Nach dem Start von Home Assistant versucht die Karte den Kalender noch ein paar Mal, statt gleich „nicht gefunden“ zu melden"],
   ["0.2.0-beta.4", "📊 Neuer Reiter <b>Statistik</b>: Überstunden-Kurve, Stunden pro Monat mit Soll-Linie, Wochentage, Urlaub & Krank pro Jahr und Rekorde – für ein Jahr oder alle Jahre · ⏱️ Heute oben zwei Felder <b>Kommen</b> und <b>Gehen</b> (antippen, Uhrzeit ändern, fertig) mit ⏱️ „jetzt“ · 💶 <b>Ü.-Alt laut Lohnabrechnung</b> pro Monat eintragen – die Karte rechnet dann mit der Zahl vom Chef weiter und zeigt die Abweichung · 📥 Import übernimmt auch die Monatswerte (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) genau wie im alten Zettel · 📅 Fehlt ein Termin im Kalender (z. B. gelöscht), legt die Karte ihn wieder an · Knopf „Alle Tage in den Kalender schreiben“ · 🥪 „8 Stunden und →“ zählt jetzt ohne Pause – wie auf dem Zettel"],
@@ -1394,8 +1395,8 @@ class StundenzettelCard extends HTMLElement {
     h += this._dayRows(isos);
     h += this._zettel(row);
     h += this._bossBox(row);
-    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Lohnabrechnung / Korrektur</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button>${this._app ? "" : `<span class="bossrow"><button class="btn small" data-a="bosspick">${ic("file-document-outline")}Zettel vom Chef</button>${this._ib("boss")}<input type="file" id="bossfile" accept=".pdf,application/pdf" hidden></span>`}</div>`;
-    if (!this._app) h += `${this._ih("boss", "📄 Geht nur mit Zetteln vom Typ <b>„Zeitsaldenliste“</b> als <b>PDF vom Computer</b> (aus dem Zeiterfassungs-Programm deines Chefs). Fotos, Scans und andere Stundenzettel gehen nicht – dann sagt die Karte Bescheid und ändert nichts.", "🔴 An deinen Tagen ändert sich nichts. Die Stunden vom Chef stehen nur <b>rot links neben deinen</b>, wo sie anders sind. Unten siehst du seinen Saldo und kannst „Saldo Vormonat“ als Ü.-Alt übernehmen.")}`;
+    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Lohnabrechnung / Korrektur</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button>${this._hass?.connected === false ? "" : `<span class="bossrow"><button class="btn small" data-a="bosspick">${ic("file-document-outline")}Zettel vom Chef</button>${this._ib("boss")}<input type="file" id="bossfile" accept=".pdf,application/pdf" hidden></span>`}</div>`;
+    if (this._hass?.connected !== false) h += `${this._ih("boss", "📄 Geht nur mit Zetteln vom Typ <b>„Zeitsaldenliste“</b> als <b>PDF vom Computer</b> (aus dem Zeiterfassungs-Programm deines Chefs). Fotos, Scans und andere Stundenzettel gehen nicht – dann sagt die Karte Bescheid und ändert nichts.", "🔴 An deinen Tagen ändert sich nichts. Die Stunden vom Chef stehen nur <b>rot links neben deinen</b>, wo sie anders sind. Unten siehst du seinen Saldo und kannst „Saldo Vormonat“ als Ü.-Alt übernehmen.")}`;
     if (this._monthForm) {
       const meta = (d.months_meta || {})[this._month] || {};
       h += `<form class="edit" data-form="month"><div class="flab"><b>🗓️ ${monthName(this._month)}</b>${this._ib("monthform")}</div>${this._ih("monthform", "💶 <b>Ü.-Alt laut Lohnabrechnung</b> = der Überstunden-Stand, den dein Chef auf der Abrechnung vom Vormonat stehen hat. Dann rechnet die Karte ab diesem Monat mit seiner Zahl weiter.", `💡 <b>Korrektur</b> = Stunden, die nicht aus den Tagen kommen (ausgezahlt = Minus, geschenkt = Plus). <b>Soll</b> leer = normal (${h2(this._st.paid_hours)}).`)}<div class="f">
@@ -2073,7 +2074,7 @@ class StundenzettelCard extends HTMLElement {
         return;
       }
       case "restore": this.shadowRoot.getElementById("restorefile")?.click(); return;
-      case "bosspick": this.shadowRoot.getElementById("bossfile")?.click(); return;
+      case "bosspick": if (this._hass?.connected === false) { this._toast("📴 Zettel vom Chef geht nur mit Netz"); return; } this.shadowRoot.getElementById("bossfile")?.click(); return;
       case "bossalt": { const b = ((d.months_meta || {})[this._month] || {}).boss; if (b?.saldo_vm != null) { this._send({ type: "month_set", month: this._month, alt: b.saldo_vm }); this._toast(`💶 Ü.-Alt = ${hs(b.saldo_vm)} (laut Chef)`); } return; }
       case "bossdel": if (szConfirm("Zettel vom Chef für diesen Monat entfernen? Deine Tage bleiben, wie sie sind.")) this._send({ type: "month_set", month: this._month, boss: null }); return;
       case "errclear": await this._hass.callWS({ type: "stundenzettel/errors_clear" }); return;
