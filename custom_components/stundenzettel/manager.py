@@ -38,6 +38,7 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .zettel import ZettelError, read_zettel
 from .const import (
     APP_URL,
     PIN_OFF_ITER,
@@ -751,6 +752,8 @@ class StundenzettelManager:
             meta = dict(self.data["months"].get(key) or {})
             if "sheet" in op and not op.get("sheet"):
                 meta.pop("sheet", None)  # 🧮 „Mit Karte neu rechnen“
+            if "boss" in op and not op.get("boss"):
+                meta.pop("boss", None)  # 📄 Zettel vom Chef wieder weg
             for f in ("adjust", "paid", "alt"):
                 if f in op:
                     v = num(op[f])
@@ -1049,6 +1052,22 @@ class StundenzettelManager:
         self._notify()
 
     # ------------------------------------------------------------------ 📥 Import & Sicherung
+    def boss_import(self, raw: bytes, user: str | None) -> dict[str, Any]:
+        """📄 Zettel vom Chef („Zeitsaldenliste“) einlesen und beim Monat merken – an den Tagen selbst ändert sich nichts."""
+        try:
+            z = read_zettel(raw)
+        except ZettelError as err:
+            raise HomeAssistantError(str(err)) from err
+        except Exception as err:  # noqa: BLE001 – kaputte Datei: freundlich sagen, nichts ändern
+            raise HomeAssistantError("Der Zettel ließ sich nicht lesen – es wurde nichts geändert.") from err
+        key = z.pop("month")
+        meta = dict(self.data["months"].get(key) or {})
+        meta["boss"] = {**z, "ts": int(time.time() * 1000)}
+        self.data["months"][key] = meta
+        self._log(user, f"📄 Zettel vom Chef für {key} eingelesen ({len(z['days'])} Tage)")
+        self._save()
+        return {"month": key, "days": len(z["days"]), **{k: v for k, v in z.items() if k != "days"}}
+
     def import_text(self, text: str, apply: bool, overwrite: bool, user: str | None = None) -> dict[str, Any]:
         if len(text) > MAX_IMPORT_CHARS:
             raise HomeAssistantError("Der Text ist zu lang")

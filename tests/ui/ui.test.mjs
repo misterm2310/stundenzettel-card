@@ -21,6 +21,7 @@ const ok = (cond, text) => { console.log(`${cond ? "✅" : "❌"} ${text}`); if 
 async function open(hash = "", width = 520) {
   const page = await browser.newPage({ viewport: { width, height: 1000 }, deviceScaleFactor: SHOTS ? 2 : 1 });
   const errors = [];
+  await page.clock.setFixedTime(new Date("2026-11-04T10:00:00")); // 📅 Uhr auf den Tag der Beispiel-Daten stellen
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error" || (m.type() === "warning" && /Symbol fehlt/.test(m.text()))) errors.push(m.text()); });
   await page.goto(base + hash);
@@ -115,6 +116,34 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await page.waitForTimeout(150);
   const mOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
   ok(mOps.some((o) => o.type === "month_set" && o.alt === 31), "Lohnabrechnung speichern schickt month_set mit alt");
+  // 📄 Zettel vom Chef
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.bossrow .finfo');
+  ok(/Zeitsaldenliste/.test(await card(page).locator('.fhint[data-tip="boss"]').innerText()), "Monat: ⓘ neben „Zettel vom Chef“ sagt, welche Zettel gehen");
+  await card(page).locator("#bossfile").setInputFiles({ name: "zettel.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 ausgedacht") });
+  await page.waitForTimeout(250);
+  ok(/Oktober 2026/.test(await txt()) && /Saldo Übertrag \(Chef\)/.test(await txt()), "Zettel vom Chef: springt zum Monat und zeigt den Saldo vom Chef");
+  const bossN = await card(page).locator(".dayrow .boss").count();
+  ok(bossN >= 3, `Zettel vom Chef: rote Stunden nur an abweichenden Tagen (${bossN})`);
+  const firstBoss = await card(page).locator(".dayrow .hrs").filter({ has: page.locator(".boss") }).first().innerText();
+  ok(/^\d+,\d\d\s*\d+,\d\d$/.test(firstBoss.trim()), `Rote Zahl steht links neben den eigenen Stunden („${firstBoss.trim().replace(/\s+/, " ")}“)`);
+  await shot(page, "2b-zettel-vom-chef");
+  await click(page, '[data-a="bossalt"]');
+  await page.waitForTimeout(150);
+  const bOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(bOps.some((o) => o.type === "month_set" && o.month === "2026-10" && o.alt === 30.5), "„Saldo Vormonat als Ü.-Alt übernehmen“ schickt month_set");
+  await click(page, '[data-a="mon"][data-v="1"]');
+  // ⓘ in den Einstellungen
+  await click(page, '[data-a="tab"][data-v="set"]');
+  await click(page, '[data-a="setgrp"][data-v="Arbeitszeit"]');
+  await click(page, '.lrow[data-v="work"]');
+  const hidden0 = await card(page).locator(".fhint:not([hidden])").count();
+  await click(page, '.finfo[data-v="paid_hours"]');
+  ok(hidden0 === 0 && await card(page).locator('.fhint[data-tip="paid_hours"]:not([hidden])').count() === 1, "⚙️ ⓘ neben dem Feld klappt die Erklärung auf (vorher keine Textwand)");
+  await click(page, '.finfo[data-v="paid_hours"]');
+  ok(await card(page).locator('.fhint[data-tip="paid_hours"]:not([hidden])').count() === 0, "⚙️ ⓘ nochmal antippen = zu");
+  await click(page, '[data-a="back"]');
+  await click(page, '[data-a="back"]');
   // ↩️ Tag löschen → Rückgängig
   await click(page, '[data-a="tab"][data-v="monat"]');
   await click(page, '.dayrow[data-d="2026-11-02"]');

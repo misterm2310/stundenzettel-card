@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 from datetime import date
 from typing import Any
 
@@ -22,7 +24,7 @@ def _m(hass: HomeAssistant):
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
-    for cmd in (ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check, ws_pdf_store, ws_cal_write_range):
+    for cmd in (ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check, ws_pdf_store, ws_cal_write_range, ws_boss_import):
         websocket_api.async_register_command(hass, cmd)
 
 
@@ -198,3 +200,21 @@ def ws_cal_write_range(hass: HomeAssistant, connection: websocket_api.ActiveConn
         connection.send_error(msg["id"], "bad_date", "Datum bitte so: 2026-11-04")
     except HomeAssistantError as err:
         connection.send_error(msg["id"], "cal_failed", str(err))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/boss_import", vol.Required("data"): vol.All(str, vol.Length(max=8_000_000))})
+@callback
+def ws_boss_import(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """📄 Zettel vom Chef (PDF als base64) einlesen."""
+    m = _m(hass)
+    if m is None:
+        connection.send_error(msg["id"], "not_ready", NOT_READY)
+        return
+    try:
+        raw = base64.b64decode(msg["data"].split(",", 1)[-1], validate=False)
+        user = connection.user.name if connection.user else None
+        connection.send_result(msg["id"], m.boss_import(raw, user))
+    except (binascii.Error, ValueError):
+        connection.send_error(msg["id"], "bad_file", "Die Datei ließ sich nicht lesen – es wurde nichts geändert.")
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "zettel_failed", str(err))

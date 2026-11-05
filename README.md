@@ -29,6 +29,8 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - 🎌 **Feiertage automatisch** aus einem Feiertags-Kalender (z. B. Integration „Feiertage“ für dein Bundesland).
 - 🥪 **„8 Stunden und →“**: zählt die langen Tage (ohne Pause gerechnet).
 - 📊 **Statistik**: Überstunden-Kurve, Stunden pro Monat mit Soll-Linie, Wochentage, Urlaub & Krank pro Jahr, Rekorde – für ein Jahr oder alle Jahre.
+- 📄 **Zettel vom Chef vergleichen**: im Monat die „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie rot links neben deinen, dazu sein Saldo. „Saldo Vormonat“ geht mit einem Tipp als Ü.-Alt rein. Geht nur mit diesem Zettel-Typ (PDF vom Computer, keine Fotos).
+- ⓘ **Hilfe zum Antippen**: In ⚙️ steht neben den Feldern ein kleines ⓘ statt langer Texte.
 - 📥 **Alten Zettel übernehmen**: einfach aus Google Tabellen/Excel/PDF kopieren und einfügen. Aus Tabellen kommen auch die **Monatswerte** mit (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) – jeder alte Monat sieht aus wie auf dem Zettel. Sonst **„Konto stellen“** auf den Stand vom Zettel.
 - 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
 - 📱 **Offline-App** fürs Handy: stempeln und Tage eintragen auch **ohne Netz** (z. B. im Keller der Baustelle) – wird nachgeschickt, die Uhrzeit vom Knopfdruck bleibt. Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol, Fingerabdruck-Sperre.
@@ -40,6 +42,8 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 ---
 
 ## 📦 Installation
+
+Installation über HACS (ab Home Assistant 2026.11: Einstellungen > Marketplace).
 
 1. **HACS** öffnen, oben rechts **⋮ → Benutzerdefinierte Repositories**, `https://github.com/misterm2310/stundenzettel-card` eintragen, Typ **Integration**, **Hinzufügen**.
 2. Nach **Stundenzettel** suchen, **Herunterladen**, danach **Home Assistant neu starten**.

@@ -44,6 +44,7 @@ const hass = () => ({
         if (o.type === "set") d.settings[o.key] = o.value;
         if (o.type === "stamp_out" || o.type === "stamp_cancel") d.stamp = null;
         if (o.type === "stamp_in") d.stamp = { in: "06:30", date: d.today };
+        if (o.type === "month_set") { const m = { ...((d.months_meta || {})[o.month] || {}) }; for (const k of ["adjust", "paid", "note", "alt"]) if (k in o) m[k] = o[k]; if ("boss" in o && !o.boss) delete m.boss; d.months_meta = { ...(d.months_meta || {}), [o.month]: m }; }
       }
       setTimeout(send, 5);
       return { results: msg.ops.map((o) => ({ op_id: o.op_id, ok: true })) };
@@ -52,6 +53,15 @@ const hass = () => ({
     if (msg.type === "stundenzettel/pin/check") return { ok: msg.pin === fake.pin };
     if (msg.type === "stundenzettel/pin/set") { fake.pin = msg.pin || null; d.pin = !!fake.pin; setTimeout(send, 5); return { ok: true }; }
     if (msg.type === "stundenzettel/import") return { found: 3, new: 3, clash: 0, skipped: 1, first: "2012-03-15", last: "2012-03-17", ...(msg.apply ? { applied: 3 } : {}) };
+    if (msg.type === "stundenzettel/boss_import") { // 📄 ausgedachter Zettel vom Chef für Oktober
+      if (!String(msg.data || "").length) throw { code: "zettel_failed", message: "Das ist kein Zettel vom Typ „Zeitsaldenliste“ (als PDF vom Computer) – es wurde nichts geändert." };
+      const days = {}; let i = 0;
+      for (const [iso, e] of Object.entries(d.days)) if (iso.startsWith("2026-10") && e.kind === "work") days[iso] = { h: Math.round((e.hours + [0, -0.03, 0, 0.25, 0, 0, -0.5][i++ % 7]) * 100) / 100, in: e.start, out: e.end };
+      days["2026-10-03"] = { kind: "feiertag", h: 8.08 };
+      d.months_meta = { ...(d.months_meta || {}), "2026-10": { ...((d.months_meta || {})["2026-10"] || {}), boss: { days, gesamt: 183.1, soll: 177.83, saldo_vm: 30.5, saldo_ue: 40.12, ts: 0 } } };
+      setTimeout(send, 5);
+      return { month: "2026-10", days: Object.keys(days).length, saldo_vm: 30.5, saldo_ue: 40.12 };
+    }
     if (msg.type === "stundenzettel/sync") return { read: 0, holidays: 0, cal: d.cal };
     if (msg.type === "stundenzettel/backup") return { kind: "stundenzettel-sicherung", days: d.days };
     return {};

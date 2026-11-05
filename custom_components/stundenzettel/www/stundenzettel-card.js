@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.5";
+const SZ_VERSION = "0.2.0-beta.6";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["0.2.0-beta.6", "📄 <b>Zettel vom Chef</b> im Monat: „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie rot links neben deinen, unten sein Saldo, „Saldo Vormonat“ mit einem Tipp als Ü.-Alt (geht nur mit diesem Zettel-Typ, siehe ⓘ) · ⓘ <b>Hilfe zum Antippen</b>: In ⚙️ und bei „Lohnabrechnung / Korrektur“ steht neben den Feldern ein kleines ⓘ statt langer Texte · 🏪 Hinweis: Ab Home Assistant 2026.11 heißt HACS „Marketplace“ (Einstellungen &gt; Marketplace)"],
   ["0.2.0-beta.5", "🎨 Heute: <b>Kommen</b> (grün) und <b>Gehen</b> (rot) stehen auch auf dem Handy nebeneinander, mit farbigem ⏱️-Knopf · 📥 Import erkennt Monatsnamen auch abgekürzt (z. B. „Septem“) · 📅 Nach dem Start von Home Assistant versucht die Karte den Kalender noch ein paar Mal, statt gleich „nicht gefunden“ zu melden"],
   ["0.2.0-beta.4", "📊 Neuer Reiter <b>Statistik</b>: Überstunden-Kurve, Stunden pro Monat mit Soll-Linie, Wochentage, Urlaub & Krank pro Jahr und Rekorde – für ein Jahr oder alle Jahre · ⏱️ Heute oben zwei Felder <b>Kommen</b> und <b>Gehen</b> (antippen, Uhrzeit ändern, fertig) mit ⏱️ „jetzt“ · 💶 <b>Ü.-Alt laut Lohnabrechnung</b> pro Monat eintragen – die Karte rechnet dann mit der Zahl vom Chef weiter und zeigt die Abweichung · 📥 Import übernimmt auch die Monatswerte (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) genau wie im alten Zettel · 📅 Fehlt ein Termin im Kalender (z. B. gelöscht), legt die Karte ihn wieder an · Knopf „Alle Tage in den Kalender schreiben“ · 🥪 „8 Stunden und →“ zählt jetzt ohne Pause – wie auf dem Zettel"],
   ["0.2.0-beta.3", "📤 <b>Drucken & Teilen</b> für Monat und Jahr: als PDF (WhatsApp, Mail, Drucker – auch auf dem iPhone), Drucken oder als Text · ☕ Pause wahlweise <b>nach Uhrzeit beim Gehen</b> (z. B. bis 12 Uhr 0,25 – danach 0,50) · 💶 Bezahlte Stunden: oben die aktuellen, darunter „bis Dezember 2019: 160“ · 🐞 Tag bearbeiten: das Pausen-Feld bleibt leer (= nach Regel) statt eine 0 vorzufüllen"],
@@ -259,7 +260,7 @@ function szApplyLocal(d, op) {
     d.days[iso] = { ...e, ...szDayHours(e, st) };
     d.stamp = null;
   } else if (op.type === "set") d.settings = { ...st, [op.key]: op.value };
-  else if (op.type === "month_set") { const old = { ...((d.months_meta || {})[op.month] || {}) }; for (const k of ["adjust", "paid", "note", "alt"]) if (k in op) old[k] = op[k]; if ("sheet" in op && !op.sheet) delete old.sheet; d.months_meta = { ...(d.months_meta || {}), [op.month]: old }; }
+  else if (op.type === "month_set") { const old = { ...((d.months_meta || {})[op.month] || {}) }; for (const k of ["adjust", "paid", "note", "alt"]) if (k in op) old[k] = op[k]; if ("sheet" in op && !op.sheet) delete old.sheet; if ("boss" in op && !op.boss) delete old.boss; d.months_meta = { ...(d.months_meta || {}), [op.month]: old }; }
 }
 
 // ---------------------------------------------------------------- ⏰ Maskottchen: der kleine Wecker (wie Einkaufswagen, Sparschwein und Kegelfigur)
@@ -643,7 +644,7 @@ ol.steps li { margin:3px 0; }
 .logrow { display:flex; align-items:baseline; gap:8px; padding:4px 2px; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.15)); font-size:.9em; }
 .logrow .lt { flex:none; width:42px; color:var(--secondary-text-color); font-variant-numeric:tabular-nums; }
 .logrow .lx { flex:1; min-width:0; }
-.switch .vt { display:flex; flex-direction:column; } .switch .vt small { color:var(--secondary-text-color); font-size:.82em; }
+.switch .vt { display:flex; flex-direction:column; align-items:flex-start; } .switch .vt small { color:var(--secondary-text-color); font-size:.82em; }
 /* 🙈 verschleierte Beträge: PC = Maus drüber, Handy = antippen (4 Sekunden) */
 .veil { filter:blur(6px); cursor:pointer; user-select:none; -webkit-user-select:none; transition:filter .2s; }
 .veil.peek { filter:none; }
@@ -801,6 +802,14 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .kgf input[type=time] { width:100%; min-width:0; box-sizing:border-box; font-size:1.35em; font-weight:600; border:0; background:transparent; color:var(--primary-text-color); font-variant-numeric:tabular-nums; padding:4px 2px; }
 .kg.ghost .kgf input { color:var(--secondary-text-color); font-weight:400; }
 .kgh { margin:-4px 4px 10px; }
+.boss { color:var(--kc-red); font-weight:600; font-size:.85em; margin-right:6px; font-variant-numeric:tabular-nums; }
+.bossrow { display:inline-flex; align-items:center; gap:6px; }
+.finfo { flex:none; width:20px; height:20px; padding:0; border-radius:50%; border:1.5px solid var(--pc); background:none; color:var(--pc); font:700 11px/1 serif; font-style:italic; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-transform:none; letter-spacing:0; }
+.finfo[aria-expanded="true"] { background:var(--pc); color:#fff; }
+.fhint { margin:2px 4px 8px; padding:2px 10px; border-radius:10px; background:color-mix(in srgb, var(--pc) 10%, transparent); }
+.fhint[hidden] { display:none; }
+.flab { display:flex; align-items:center; gap:8px; }
+.fhint p.small { margin:6px 0; }
 .kgf.in { --kgc:var(--kc-green); } .kgf.out { --kgc:var(--kc-red); }
 .kgf.in, .kgf.out { background:color-mix(in srgb, var(--kgc) 12%, transparent); border-color:color-mix(in srgb, var(--kgc) 45%, transparent); }
 .kgf .kgl, .kgf .kgl ha-icon { color:var(--kgc, var(--secondary-text-color)); font-weight:600; }
@@ -1314,13 +1323,45 @@ class StundenzettelCard extends HTMLElement {
       const e = d.days[iso];
       const wd = wdOf(iso);
       const we = !e && !this._plan(iso);
-      if (!e && !showEmpty && we) return `<div class="dayrow we empty-day" data-a="open" data-d="${iso}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><div class="n"><b>Wochenende</b></div></div>`;
-      if (!e) return `<div class="dayrow empty-day ${iso === d.today ? "today" : ""} ${iso > d.today ? "future" : ""}" data-a="open" data-d="${iso}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><div class="n"><b>${iso > d.today ? "–" : "noch nichts eingetragen"}</b></div><span class="iconbtn">${ic("plus")}</span></div>`;
+      const boss = this._bossMark(iso, e);
+      if (!e && !showEmpty && we) return `<div class="dayrow we empty-day" data-a="open" data-d="${iso}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><div class="n"><b>Wochenende</b></div>${boss ? `<span class="hrs">${boss}</span>` : ""}</div>`;
+      if (!e) return `<div class="dayrow empty-day ${iso === d.today ? "today" : ""} ${iso > d.today ? "future" : ""}" data-a="open" data-d="${iso}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><div class="n"><b>${iso > d.today ? "–" : "noch nichts eingetragen"}</b></div>${boss ? `<span class="hrs">${boss}</span>` : ""}<span class="iconbtn">${ic("plus")}</span></div>`;
       const [icon, name, color] = KIND[e.kind] || KIND.work;
       const meta = [e.kind === "work" ? name : "", e.note ? esc(e.note.split("\n")[0]) : "", e.provisional ? "⏳ läuft noch" : "", e.waiting ? "📮 wartet aufs Senden" : "", SOURCE[e.source] || ""].filter(Boolean);
       const hrs = e.kind === "pauschal" ? eur(e.amount) : e.kind === "frei" ? "0" : h2(e.hours);
-      return `<div class="dayrow ${iso === d.today ? "today" : ""}" data-a="open" data-d="${iso}" style="--cc:${color}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><span class="kd" style="--kc:${color}">${ic(icon)}</span><div class="n"><b data-noicon>${this._dayText(e)}</b>${meta.length ? `<div class="meta">${meta.map((x) => `<span class="tag">${x}</span>`).join("")}</div>` : ""}</div><span class="hrs">${hrs}</span></div>`;
+      return `<div class="dayrow ${iso === d.today ? "today" : ""}" data-a="open" data-d="${iso}" style="--cc:${color}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><span class="kd" style="--kc:${color}">${ic(icon)}</span><div class="n"><b data-noicon>${this._dayText(e)}</b>${meta.length ? `<div class="meta">${meta.map((x) => `<span class="tag">${x}</span>`).join("")}</div>` : ""}</div><span class="hrs">${boss}${hrs}</span></div>`;
     }).join("");
+  }
+  // 📄 Zettel vom Chef: rote Zahl links neben deinen Stunden – nur wo es anders ist
+  _bossMark(iso, e) {
+    const b = ((this._d.months_meta || {})[iso.slice(0, 7)] || {}).boss?.days?.[iso];
+    if (!b) return "";
+    const tag = (t) => `<span class="boss" title="laut Zettel vom Chef">${t}</span>`;
+    if (b.kind) {
+      const same = e && (e.kind === b.kind || (b.kind === "feiertag_halb" && e.kind === "feiertag"));
+      if (same || (!e && b.h == null)) return "";
+      return tag({ krank: "Krank", feiertag: "Feiertag", feiertag_halb: "½ Feiertag", urlaub: "Urlaub" }[b.kind] || b.kind);
+    }
+    const mine = e && e.kind === "work" ? Number(e.hours) || 0 : null;
+    if (mine != null && Math.abs(mine - b.h) < 0.005) return "";
+    return tag(h2(b.h));
+  }
+  _bossBox(row) {
+    const b = ((this._d.months_meta || {})[this._month] || {}).boss;
+    if (!b) return "";
+    const r = (icon, label, val, cls = "") => `<div class="zr ${cls}"><span>${ic(icon)}${label}</span><span>${val}</span></div>`;
+    const n = Object.keys(b.days || {}).filter((iso) => this._bossMark(iso, this._d.days[iso])).length;
+    const mine = row ? (row.now ?? row.total) : null;
+    const dEnd = b.saldo_ue != null && mine != null ? mine - b.saldo_ue : null;
+    const altDiff = row && b.saldo_vm != null && Math.abs(row.old - b.saldo_vm) > 0.004;
+    return `<div class="ghead"><span class="gdot" style="--gc:#e53935">${ic("file-document-outline")}</span><span>Zettel vom Chef</span></div>
+      <div class="zettel boss-box">
+      ${b.gesamt != null ? r("sigma", "Gesamt (Chef)", `${h2(b.gesamt)} Std.`) : ""}${b.soll != null ? r("cash", "Sollzeit (Chef)", `−${h2(b.soll)} Std.`) : ""}
+      ${b.saldo_vm != null ? r("history", "Saldo Vormonat (Chef)", this._mv(hs(b.saldo_vm), "bvm" + this._month)) : ""}
+      ${b.saldo_ue != null ? r("scale-balance", "Saldo Übertrag (Chef)", this._mv(`${hs(b.saldo_ue)} Std.`, "bue" + this._month), "tot") : ""}
+      ${dEnd != null ? `<div class="zr sub"><span><span>Karte</span>&nbsp;${this._mv(hs(mine), "bk" + this._month)}</span><span class="${Math.abs(dEnd) < 0.005 ? "" : dEnd < 0 ? "vneg" : "vpos"}">${Math.abs(dEnd) < 0.005 ? "gleich ✅" : this._mv(hs(dEnd), "bd" + this._month)}</span></div>` : ""}
+      ${r("calendar-alert", "Tage mit Abweichung", n ? `<span class="boss">${n}</span>` : "keine 🎉")}</div>
+      <div class="btnrow">${altDiff ? `<button class="btn small" data-a="bossalt">${ic("history")}Saldo Vormonat als Ü.-Alt übernehmen</button>` : ""}<button class="btn small" data-a="bossdel">${ic("delete-outline")}Zettel entfernen</button></div>`;
   }
   _dayForm(iso) {
     const d = this._d, st = this._st;
@@ -1352,16 +1393,16 @@ class StundenzettelCard extends HTMLElement {
     let h = `<div class="yearnav"><button class="iconbtn" data-a="mon" data-v="-1" title="Monat zurück">${ic("chevron-left")}</button><b>${monthName(this._month)}</b><button class="iconbtn" data-a="mon" data-v="1" title="Monat vor">${ic("chevron-right")}</button></div>`;
     h += this._dayRows(isos);
     h += this._zettel(row);
-    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Lohnabrechnung / Korrektur</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button></div>`;
+    h += this._bossBox(row);
+    h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Lohnabrechnung / Korrektur</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button>${this._app ? "" : `<span class="bossrow"><button class="btn small" data-a="bosspick">${ic("file-document-outline")}Zettel vom Chef</button>${this._ib("boss")}<input type="file" id="bossfile" accept=".pdf,application/pdf" hidden></span>`}</div>`;
+    if (!this._app) h += `${this._ih("boss", "📄 Geht nur mit Zetteln vom Typ <b>„Zeitsaldenliste“</b> als <b>PDF vom Computer</b> (aus dem Zeiterfassungs-Programm deines Chefs). Fotos, Scans und andere Stundenzettel gehen nicht – dann sagt die Karte Bescheid und ändert nichts.", "🔴 An deinen Tagen ändert sich nichts. Die Stunden vom Chef stehen nur <b>rot links neben deinen</b>, wo sie anders sind. Unten siehst du seinen Saldo und kannst „Saldo Vormonat“ als Ü.-Alt übernehmen.")}`;
     if (this._monthForm) {
       const meta = (d.months_meta || {})[this._month] || {};
-      h += `<form class="edit" data-form="month"><b>🗓️ ${monthName(this._month)}</b><div class="f">
+      h += `<form class="edit" data-form="month"><div class="flab"><b>🗓️ ${monthName(this._month)}</b>${this._ib("monthform")}</div>${this._ih("monthform", "💶 <b>Ü.-Alt laut Lohnabrechnung</b> = der Überstunden-Stand, den dein Chef auf der Abrechnung vom Vormonat stehen hat. Dann rechnet die Karte ab diesem Monat mit seiner Zahl weiter.", `💡 <b>Korrektur</b> = Stunden, die nicht aus den Tagen kommen (ausgezahlt = Minus, geschenkt = Plus). <b>Soll</b> leer = normal (${h2(this._st.paid_hours)}).`)}<div class="f">
         <label class="wide">💶 Ü.-Alt laut Lohnabrechnung<input name="alt" inputmode="decimal" value="${meta.alt != null ? esc(String(meta.alt).replace(".", ",")) : ""}" placeholder="leer = Stand vom Vormonat (${row ? hs(row.calc_old ?? row.old) : "–"})"></label>
         <label>Korrektur (Std.)<input name="adjust" inputmode="decimal" value="${meta.adjust != null ? esc(String(meta.adjust).replace(".", ",")) : ""}" placeholder="z. B. −20 ausgezahlt"></label>
         <label>Soll nur diesen Monat<input name="paid" inputmode="decimal" value="${meta.paid != null ? esc(String(meta.paid).replace(".", ",")) : ""}" placeholder="${row ? h2(row.paid) : ""}"></label>
         <label class="wide">Notiz<input name="note" value="${esc(meta.note || "")}" placeholder="z. B. 20 Überstunden ausgezahlt"></label></div>
-        <p class="small">💶 <b>Ü.-Alt laut Lohnabrechnung</b> = der Überstunden-Stand, den dein Chef auf der Abrechnung vom Vormonat stehen hat. Dann rechnet die Karte ab diesem Monat mit seiner Zahl weiter.</p>
-        <p class="small">💡 <b>Korrektur</b> = Stunden, die nicht aus den Tagen kommen (ausgezahlt = Minus, geschenkt = Plus). <b>Soll</b> leer = normal (${h2(this._st.paid_hours)}).</p>
         <div class="btnrow end"><button type="button" class="btn" data-a="monthform">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>`;
     }
     return h;
@@ -1557,7 +1598,8 @@ class StundenzettelCard extends HTMLElement {
     return `<p class="small">${d.pin ? "🔒 PIN ist <b>an</b>. ⚙️ fragt nach der PIN." : "Mit einer PIN (4–8 Ziffern) sperrst du ⚙️ – z. B. auf dem Tablet in der Küche, damit keiner dein Soll oder den Kalender umstellt. Stempeln und Tage eintragen gehen weiter ohne PIN."}</p>
       <div class="btnrow">${d.pin ? `<button class="btn main" data-a="padstart" data-v="set">${ic("lock-reset")}PIN ändern</button><button class="btn" data-a="padstart" data-v="off">${ic("lock-open-variant-outline")}PIN ausschalten</button>` : `<button class="btn main" data-a="padstart" data-v="set">${ic("lock-outline")}PIN einschalten</button>`}</div>
       ${d.pin ? this._sw("lock_all", "lock-outline", "Ganze Karte sperren", "Aus = nur ⚙️. An = ohne PIN sieht man gar nichts (auch keine Überstunden).", !!st.lock_all) : ""}
-      <p class="small">Die PIN liegt nur als Prüfsumme in Home Assistant. Vergessen? Admin → <b>Geräte & Dienste → Stundenzettel → Konfigurieren → „PIN zurücksetzen“</b>. 5× falsch = 1 Minute Pause. Ohne Netz prüft die Karte die PIN selbst. Nach 10 Minuten ohne Tippen sperrt sie wieder.</p>`;
+      <div class="ghead"><span class="gdot" style="--gc:#f4511e">${ic("help-circle-outline")}</span><span>PIN vergessen?</span>${this._ib("pinmore")}</div>
+      ${this._ih("pinmore", "Die PIN liegt nur als Prüfsumme in Home Assistant. Vergessen? Admin → <b>Geräte & Dienste → Stundenzettel → Konfigurieren → „PIN zurücksetzen“</b>. 5× falsch = 1 Minute Pause. Ohne Netz prüft die Karte die PIN selbst. Nach 10 Minuten ohne Tippen sperrt sie wieder.")}`;
   }
   async _pin(type, payload) {
     if (this._hass?.connected === false) { this._toast("📴 PIN ändern oder ausschalten geht nur mit Netz – entsperren klappt auch offline"); return null; }
@@ -1566,8 +1608,11 @@ class StundenzettelCard extends HTMLElement {
   }
 
   // ---------------------------------------------------------------- ⚙️ Einstellungen
-  _sw(key, icon, title, sub, on) { return `<label class="switch"><span>${ic(icon)}<span class="vt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span></span><input type="checkbox" class="swchk" data-a="setb" data-v="${key}" ${on ? "checked" : ""}></label>`; }
-  _num(key, icon, title, val, unit) { return `<div class="switch"><span>${ic(icon)}${title}</span><span><input data-a="setn" data-v="${key}" inputmode="decimal" value="${esc(String(val ?? 0).replace(".", ","))}" style="width:90px;text-align:right"> ${unit}</span></div>`; }
+  // ⓘ Hilfe zum Antippen: kleines i neben dem Feld, Erklärung klappt darunter auf (statt Textwand)
+  _ib(id) { const open = this._tipOpen?.has(id); return `<button type="button" class="finfo" data-a="finfo" data-v="${id}" aria-expanded="${open ? "true" : "false"}" title="Was ist das?" aria-label="Was ist das?">i</button>`; }
+  _ih(id, ...ps) { return `<div class="fhint" data-tip="${id}" ${this._tipOpen?.has(id) ? "" : "hidden"}>${ps.filter(Boolean).map((p) => `<p class="small">${p}</p>`).join("")}</div>`; }
+  _sw(key, icon, title, sub, on, help) { return `<label class="switch"><span>${ic(icon)}<span class="vt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span>${help ? this._ib(key) : ""}</span><input type="checkbox" class="swchk" data-a="setb" data-v="${key}" ${on ? "checked" : ""}></label>${help ? this._ih(key, ...[].concat(help)) : ""}`; }
+  _num(key, icon, title, val, unit, help) { return `<div class="switch"><span>${ic(icon)}${title}${help ? this._ib(key) : ""}</span><span><input data-a="setn" data-v="${key}" inputmode="decimal" value="${esc(String(val ?? 0).replace(".", ","))}" style="width:90px;text-align:right"> ${unit}</span></div>${help ? this._ih(key, ...[].concat(help)) : ""}`; }
   _entSel(key, domain, value, empty = "– keiner –") {
     const ents = Object.keys(this._hass?.states || {}).filter((e) => e.startsWith(domain + ".")).sort();
     if (value && !ents.includes(value)) ents.unshift(value);
@@ -1580,59 +1625,52 @@ class StundenzettelCard extends HTMLElement {
     return {
       work: { icon: "cash-clock", color: "#43a047", title: "Bezahlte Stunden & Konto", info: `${h2(st.paid_hours)} Std. pro Monat · Start ${hs(st.start_balance)}`, html: () => `
         <div class="hero" style="--hc:#43a047"><div class="lbl">💶 Aktuell bezahlt</div><div class="big">${h2(st.paid_hours)} Std.</div><div class="lbl">pro Monat (Soll)</div></div>
-        ${this._num("paid_hours", "cash", "Aktuell bezahlte Stunden pro Monat", st.paid_hours, "Std.")}
-        <p class="small">So viele Stunden bezahlt dein Chef jeden Monat. Alles darüber landet auf dem Überstunden-Konto, alles darunter geht runter.</p>
-        <div class="ghead"><span class="gdot" style="--gc:#43a047">${ic("calendar-range")}</span><span>Früher anders?</span><span class="n"><button class="btn small" data-a="addperiod">${ic("plus")}Neu</button></span></div>
+        ${this._num("paid_hours", "cash", "Aktuell bezahlte Stunden pro Monat", st.paid_hours, "Std.", "So viele Stunden bezahlt dein Chef jeden Monat. Alles darüber landet auf dem Überstunden-Konto, alles darunter geht runter.")}
+        <div class="ghead"><span class="gdot" style="--gc:#43a047">${ic("calendar-range")}</span><span>Früher anders?</span>${this._ib("periods")}<span class="n"><button class="btn small" data-a="addperiod">${ic("plus")}Neu</button></span></div>
+        ${this._ih("periods", "Beispiel: Bis Dezember 2019 waren es 160 Stunden, seitdem 175 → oben 175 eintragen und hier „bis Dezember 2019: 160“.")}
         ${[...(st.paid_until || [])].map((p, i) => [p, i]).sort((x, y) => (x[0].until < y[0].until ? 1 : -1)).map(([p, i]) => `<div class="item"><span class="kd" style="--kc:#43a047">${ic("calendar-end")}</span><div class="n"><b>bis ${monthName(p.until)}</b><div class="meta"><span class="tag">${h2(p.hours)} Std. pro Monat</span></div></div><button class="iconbtn" data-a="delperiod" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("")}
         ${(st.paid_periods || []).map((p, i) => `<div class="item"><span class="kd" style="--kc:#9e9e9e">${ic("calendar-start")}</span><div class="n"><b>ab ${monthName(p.from)}</b><div class="meta"><span class="tag">${h2(p.hours)} Std. pro Monat</span><span class="tag">alte Schreibweise</span></div></div><button class="iconbtn" data-a="deloldperiod" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("")}
         ${!(st.paid_until || []).length && !(st.paid_periods || []).length ? `<p class="small">Keine – es gilt immer das Soll oben.</p>` : ""}
         ${this._addPeriod ? `<form class="edit" data-form="period"><div class="f"><label>Bis einschließlich<input type="month" name="until" required></label><label>Stunden pro Monat<input name="hours" inputmode="decimal" required placeholder="160"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addperiod">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : ""}
-        <p class="small">Beispiel: Bis Dezember 2019 waren es 160 Stunden, seitdem 175 → oben 175 eintragen und hier „bis Dezember 2019: 160“.</p>
-        ${this._sw("payslip_hint", "bell-ring-outline", "An die Lohnabrechnung erinnern", "am Monatsanfang unter Heute: „Ü.-Alt eintragen“", st.payslip_hint !== false)}
-        <p class="small">💶 Die Zahl vom Chef trägst du unter <b>Monat → Lohnabrechnung / Korrektur</b> als <b>Ü.-Alt</b> ein.</p>
-        ${this._num("start_balance", "piggy-bank-outline", "Überstunden, bevor es losging", st.start_balance, "Std.")}
-        <p class="small">💡 Tipp: Unter <b>📥 Import</b> → <b>„Konto stellen“</b> kannst du sagen „Ende Oktober stand das Konto bei 32“ – die Karte rechnet die Korrektur selbst aus.</p>` },
+        ${this._sw("payslip_hint", "bell-ring-outline", "An die Lohnabrechnung erinnern", "am Monatsanfang unter Heute: „Ü.-Alt eintragen“", st.payslip_hint !== false, "💶 Die Zahl vom Chef trägst du unter <b>Monat → Lohnabrechnung / Korrektur</b> als <b>Ü.-Alt</b> ein.")}
+        ${this._num("start_balance", "piggy-bank-outline", "Überstunden, bevor es losging", st.start_balance, "Std.", "💡 Tipp: Unter <b>📥 Import</b> → <b>„Konto stellen“</b> kannst du sagen „Ende Oktober stand das Konto bei 32“ – die Karte rechnet die Korrektur selbst aus.")}` },
       pause: { icon: "coffee-outline", color: "#6d4c41", title: "Pausen-Regeln", info: (st.pause_rules || []).map((r) => (st.pause_by === "ende" ? `nach ${szClock(r.from)} → ${h2(r.pause)}` : `ab ${h2(r.from).replace(",00", "")} Std. → ${h2(r.pause)}`)).join(" · ") || "keine Pause", html: () => `
+        <div class="ghead"><span class="gdot" style="--gc:#6d4c41">${ic("coffee-outline")}</span><span>Pause richtet sich nach</span>${this._ib("pauseby")}</div>
+        ${this._ih("pauseby", st.pause_by === "ende" ? "Die Pause richtet sich danach, <b>wann du gehst</b>. Es zählt die <b>größte</b> Regel, deren Uhrzeit du <b>überschreitest</b>. Beispiel: Gehen bis 12:00 → 0,25 Pause · Gehen nach 12:00 → 0,50 Pause." : "Die Pause wird automatisch abgezogen. Es zählt die <b>größte</b> Regel, deren Grenze du <b>überschreitest</b>. Beispiel: 6:30–16:15 = 9,75 Std. da → mehr als 6 → 0,50 Pause → <b>9,25 Std.</b>", "Einzelne Tage mit anderer Pause trägst du direkt am Tag ein. Steht im Kalender-Termin „(+0,50 h Pause)“, nimmt die Karte genau das.")}
         <div class="seg"><button class="${st.pause_by !== "ende" ? "on" : ""}" data-a="pauseby" data-v="dauer">${ic("timer-sand")}Nach Dauer</button><button class="${st.pause_by === "ende" ? "on" : ""}" data-a="pauseby" data-v="ende">${ic("clock-end")}Nach Uhrzeit beim Gehen</button></div>
-        ${st.pause_by === "ende" ? `<p class="small">Die Pause richtet sich danach, <b>wann du gehst</b>. Es zählt die <b>größte</b> Regel, deren Uhrzeit du <b>überschreitest</b>. Beispiel: Gehen bis 12:00 → 0,25 Pause · Gehen nach 12:00 → 0,50 Pause.</p>`
-          : `<p class="small">Die Pause wird automatisch abgezogen. Es zählt die <b>größte</b> Regel, deren Grenze du <b>überschreitest</b>. Beispiel: 6:30–16:15 = 9,75 Std. da → mehr als 6 → 0,50 Pause → <b>9,25 Std.</b></p>`}
         ${(st.pause_rules || []).map((r, i) => `<div class="item"><span class="kd" style="--kc:#6d4c41">${ic("coffee-outline")}</span><div class="n"><b>${st.pause_by === "ende" ? (r.from > 0 ? `Gehen nach ${szClock(r.from)} Uhr` : "Gehen egal wann") : `mehr als ${h2(r.from)} Std. da`}</b><div class="meta"><span class="tag">${h2(r.pause)} Std. Pause</span></div></div><button class="iconbtn" data-a="delrule" data-v="${i}" title="Löschen">${ic("delete-outline")}</button></div>`).join("") || `<p class="small">Keine Regeln – es wird keine Pause abgezogen.</p>`}
-        ${this._addRule ? `<form class="edit" data-form="rule"><div class="f">${st.pause_by === "ende" ? `<label>Gehen nach … Uhr<input type="time" name="from" required value="12:00" step="300"></label>` : `<label>Mehr als … Std. da<input name="from" inputmode="decimal" required placeholder="6"></label>`}<label>… Std. Pause<input name="pause" inputmode="decimal" required placeholder="0,5"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addrule">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : `<div class="btnrow"><button class="btn small" data-a="addrule">${ic("plus")}Neue Regel</button></div>`}
-        <p class="small">Einzelne Tage mit anderer Pause trägst du direkt am Tag ein. Steht im Kalender-Termin „(+0,50 h Pause)“, nimmt die Karte genau das.</p>` },
+        ${this._addRule ? `<form class="edit" data-form="rule"><div class="f">${st.pause_by === "ende" ? `<label>Gehen nach … Uhr<input type="time" name="from" required value="12:00" step="300"></label>` : `<label>Mehr als … Std. da<input name="from" inputmode="decimal" required placeholder="6"></label>`}<label>… Std. Pause<input name="pause" inputmode="decimal" required placeholder="0,5"></label></div><div class="btnrow end"><button type="button" class="btn" data-a="addrule">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` : `<div class="btnrow"><button class="btn small" data-a="addrule">${ic("plus")}Neue Regel</button></div>`}` },
       plan: { icon: "calendar-week", color: "#1e88e5", title: "Normaler Tag", info: planN ? `${planN} Arbeitstage pro Woche` : "kein Plan", html: () => `
-        <p class="small">Dein normaler Tag pro Wochentag. Daraus kommen der Knopf <b>„📋 Normaler Tag“</b>, die Vorschläge beim Eintragen und das <b>Soll heute</b>. Wochentage ohne Haken = frei.</p>
+        <div class="ghead"><span class="gdot" style="--gc:#1e88e5">${ic("calendar-week")}</span><span>Dein normaler Tag</span>${this._ib("plan")}</div>
+        ${this._ih("plan", "Dein normaler Tag pro Wochentag. Daraus kommen der Knopf <b>„📋 Normaler Tag“</b>, die Vorschläge beim Eintragen und das <b>Soll heute</b>. Wochentage ohne Haken = frei.")}
         <form data-form="plan">${[1, 2, 3, 4, 5, 6, 7].map((w) => { const p = (st.plan || {})[String(w)]; return `<div class="planrow"><label><input type="checkbox" class="swchk" name="on${w}" ${p ? "checked" : ""}>${WD[w]}</label><input type="time" name="a${w}" value="${esc(p?.[0] || "06:30")}" step="300"><input type="time" name="b${w}" value="${esc(p?.[1] || "16:15")}" step="300"></div>`; }).join("")}
         <div class="btnrow end"><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>` },
       absence: { icon: "beach", color: "#00897b", title: "Urlaub, Krank & Co.", info: `${h2(st.absence_hours)} Std. pro Tag · ${st.vacation_days} Urlaubstage`, html: () => `
         ${this._num("absence_hours", "beach", "Ein Urlaubs-, Kranken- oder Feiertag zählt", st.absence_hours, "Std.")}
         ${this._num("vacation_days", "calendar-star", "Urlaubstage pro Jahr", st.vacation_days, "Tage")}
-        <div class="switch"><span>${ic("briefcase-outline")}Resturlaub aus ${this._year - 1} (für ${this._year})</span><span><input data-a="setcarry" data-v="${this._year}" inputmode="decimal" value="${esc(String((st.vacation_carry || {})[this._year] ?? 0).replace(".", ","))}" style="width:90px;text-align:right"> Tage</span></div>
-        <p class="small">🧳 Übrige Urlaubstage vom Vorjahr kommen zum Anspruch dazu. Für ein anderes Jahr: oben unter Jahr das Jahr wählen, dann hier eintragen.</p>
-        ${this._num("long_day", "food-variant", "„… Stunden und →“ zählt Tage ab", st.long_day, "Std.")}
-        <p class="small">„8 Stunden und →“ zählt die Tage, an denen du mindestens so viele Stunden gearbeitet hast (ohne Pause gerechnet – wie auf dem Zettel).</p>` },
+        <div class="switch"><span>${ic("briefcase-outline")}Resturlaub aus ${this._year - 1} (für ${this._year})${this._ib("carry")}</span><span><input data-a="setcarry" data-v="${this._year}" inputmode="decimal" value="${esc(String((st.vacation_carry || {})[this._year] ?? 0).replace(".", ","))}" style="width:90px;text-align:right"> Tage</span></div>
+        ${this._ih("carry", "🧳 Übrige Urlaubstage vom Vorjahr kommen zum Anspruch dazu. Für ein anderes Jahr: oben unter Jahr das Jahr wählen, dann hier eintragen.")}
+        ${this._num("long_day", "food-variant", "„… Stunden und →“ zählt Tage ab", st.long_day, "Std.", "„8 Stunden und →“ zählt die Tage, an denen du mindestens so viele Stunden gearbeitet hast (ohne Pause gerechnet – wie auf dem Zettel).")}` },
       cal: { icon: "calendar-sync-outline", color: "#3949ab", title: "Kalender", info: st.calendar ? `${st.calendar} · „${st.event_title}“` : "nicht verbunden", html: () => `
-        <p class="small">In deinem Kalender steht jeden Tag ein Termin <b>„${esc(st.event_title || "Arbeiten")}“</b> mit Anfang und Ende? Dann holt die Karte ihn sich alle 15 Minuten.</p>
-        <div class="switch"><span>${ic("calendar-outline")}Kalender</span>${this._entSel("calendar", "calendar", st.calendar)}</div>
+        <div class="switch"><span>${ic("calendar-outline")}Kalender${this._ib("calendar")}</span>${this._entSel("calendar", "calendar", st.calendar)}</div>
+        ${this._ih("calendar", `In deinem Kalender steht jeden Tag ein Termin <b>„${esc(st.event_title || "Arbeiten")}“</b> mit Anfang und Ende? Dann holt die Karte ihn sich alle 15 Minuten.`, "✋ Was du in der Karte selbst änderst, überschreibt der Kalender nie wieder.")}
         <div class="switch"><span>${ic("format-title")}So heißt der Termin</span><input data-a="sets" data-v="event_title" value="${esc(st.event_title || "")}" style="width:160px"></div>
         ${this._sw("cal_read", "calendar-import", "Termine in die Liste holen", "die letzten 40 Tage, alle 15 Minuten", st.cal_read !== false)}
-        ${this._sw("cal_write", "calendar-export", "Änderungen in den Kalender schreiben", "Karte ist die Chefin: deine Zeiten landen im Termin", !!st.cal_write)}
+        ${this._sw("cal_write", "calendar-export", "Änderungen in den Kalender schreiben", "Karte ist die Chefin: deine Zeiten landen im Termin", !!st.cal_write, [`✍️ Was du in der Karte einträgst (oder stempelst), schreibt sie als Termin „${esc(st.event_title)}“ mit <code>[9,25 Stunden (+0,50 h Pause)]</code> in den Kalender. Krank/Urlaub/Frei → der Arbeits-Termin des Tages wird gelöscht. <b>Google</b> kann Termine über Home Assistant nicht ändern, nur löschen und neu anlegen – das macht die Karte dann automatisch.`, "🔁 Fehlt bei einem deiner Arbeitstage der Termin (z. B. aus Versehen im Kalender gelöscht), legt die Karte ihn beim nächsten Abgleich wieder an – für die letzten 40 Tage. Doppelte Termine gibt es nicht."])}
         ${st.cal_write ? `<div class="switch"><span>${ic("map-marker-outline")}Ort im Termin</span><input data-a="sets" data-v="location" value="${esc(st.location || "")}" placeholder="leer = keiner" style="width:180px"></div>
-        <p class="small">✍️ Was du in der Karte einträgst (oder stempelst), schreibt sie als Termin „${esc(st.event_title)}“ mit <code>[9,25 Stunden (+0,50 h Pause)]</code> in den Kalender. Krank/Urlaub/Frei → der Arbeits-Termin des Tages wird gelöscht. <b>Google</b> kann Termine über Home Assistant nicht ändern, nur löschen und neu anlegen – das macht die Karte dann automatisch.</p>
-        <p class="small">🔁 Fehlt bei einem deiner Arbeitstage der Termin (z. B. aus Versehen im Kalender gelöscht), legt die Karte ihn beim nächsten Abgleich wieder an – für die letzten 40 Tage. Doppelte Termine gibt es nicht.</p>
-        <div class="ghead"><span class="gdot" style="--gc:#3949ab">${ic("calendar-export")}</span><span>Alle Tage in den Kalender schreiben</span></div>
-        <form class="edit" data-form="calrange"><div class="f"><label>Von<input type="date" name="from" required value="${esc(d.today.slice(0, 8) + "01")}"></label><label>Bis<input type="date" name="to" required value="${esc(d.today)}"></label></div><div class="btnrow end"><button class="btn main" type="submit">${ic("calendar-export")}Jetzt schreiben</button></div></form>
-        <p class="small">Schreibt jeden Arbeitstag im Zeitraum als Termin „${esc(st.event_title)}“ (höchstens gut ein Jahr auf einmal). Was schon richtig drinsteht, bleibt wie es ist.</p>` : ""}
-        <div class="switch"><span>${ic("party-popper")}Feiertage automatisch</span>${this._entSel("holiday_calendar", "calendar", st.holiday_calendar, "– aus –")}</div>
-        <p class="small">🎌 Tipp: Die Integration „Feiertage“ (z. B. <code>calendar.deutschland_nw</code>) kennt genau die Feiertage deines Bundeslandes.</p>
-        <p class="small">✋ Was du in der Karte selbst änderst, überschreibt der Kalender nie wieder.</p>
+        <div class="ghead"><span class="gdot" style="--gc:#3949ab">${ic("calendar-export")}</span><span>Alle Tage in den Kalender schreiben</span>${this._ib("calrange")}</div>
+        ${this._ih("calrange", `Schreibt jeden Arbeitstag im Zeitraum als Termin „${esc(st.event_title)}“ (höchstens gut ein Jahr auf einmal). Was schon richtig drinsteht, bleibt wie es ist.`)}
+        <form class="edit" data-form="calrange"><div class="f"><label>Von<input type="date" name="from" required value="${esc(d.today.slice(0, 8) + "01")}"></label><label>Bis<input type="date" name="to" required value="${esc(d.today)}"></label></div><div class="btnrow end"><button class="btn main" type="submit">${ic("calendar-export")}Jetzt schreiben</button></div></form>` : ""}
+        <div class="switch"><span>${ic("party-popper")}Feiertage automatisch${this._ib("holiday")}</span>${this._entSel("holiday_calendar", "calendar", st.holiday_calendar, "– aus –")}</div>
+        ${this._ih("holiday", "🎌 Tipp: Die Integration „Feiertage“ (z. B. <code>calendar.deutschland_nw</code>) kennt genau die Feiertage deines Bundeslandes.")}
         ${c.error ? `<p class="small" style="color:var(--kc-red)">⚠️ ${esc(c.error)}</p>` : c.ok ? `<p class="small">✅ Verbunden${c.can?.length ? ` · kann: ${c.can.map((x) => ({ create: "anlegen", delete: "löschen", update: "ändern" })[x] || x).join(", ")}` : ""}</p>` : ""}
         <div class="btnrow"><button class="btn main" data-a="sync">${ic("refresh")}Jetzt abgleichen</button></div>` },
       stamp: { icon: "map-marker-radius-outline", color: "#e53935", title: "Stempeln per Handy", info: st.stamp_person && st.stamp_zone ? `${st.stamp_person} in ${st.stamp_zone}` : "aus", html: () => `
-        <p class="small">Kommt dein Handy in die Zone (z. B. „Arbeit“), stempelt die Karte ein. Verlässt es die Zone, stempelt sie aus und trägt den Tag ein. Mehrmals rein und raus? Dann zählt <b>erstes Kommen bis letztes Gehen</b>.</p>
-        <div class="switch"><span>${ic("account-outline")}Person</span>${this._entSel("stamp_person", "person", st.stamp_person, "– aus –")}</div>
-        <div class="switch"><span>${ic("map-marker-outline")}Zone</span>${this._entSel("stamp_zone", "zone", st.stamp_zone, "– aus –")}</div>
-        <div class="switch"><span>${ic("rounded-corner")}Zeiten runden</span><span class="seg">${[[0, "nicht"], [5, "5 Min."], [15, "15 Min."]].map(([v, t]) => `<button class="${Number(st.round) === v ? "on" : ""}" data-a="round" data-v="${v}">${t}</button>`).join("")}</span></div>
-        <p class="small">💡 Eine Zone legst du in Home Assistant an: <b>Einstellungen → Bereiche, Labels & Zonen → Zonen</b>. Die HA-App auf dem Handy braucht Standort-Zugriff.</p>` },
+        <div class="switch"><span>${ic("account-outline")}Person${this._ib("sperson")}</span>${this._entSel("stamp_person", "person", st.stamp_person, "– aus –")}</div>
+        ${this._ih("sperson", "Kommt dein Handy in die Zone (z. B. „Arbeit“), stempelt die Karte ein. Verlässt es die Zone, stempelt sie aus und trägt den Tag ein. Mehrmals rein und raus? Dann zählt <b>erstes Kommen bis letztes Gehen</b>.")}
+        <div class="switch"><span>${ic("map-marker-outline")}Zone${this._ib("szone")}</span>${this._entSel("stamp_zone", "zone", st.stamp_zone, "– aus –")}</div>
+        ${this._ih("szone", "💡 Eine Zone legst du in Home Assistant an: <b>Einstellungen → Bereiche, Labels & Zonen → Zonen</b>. Die HA-App auf dem Handy braucht Standort-Zugriff.")}
+        <div class="switch"><span>${ic("rounded-corner")}Zeiten runden</span><span class="seg">${[[0, "nicht"], [5, "5 Min."], [15, "15 Min."]].map(([v, t]) => `<button class="${Number(st.round) === v ? "on" : ""}" data-a="round" data-v="${v}">${t}</button>`).join("")}</span></div>` },
       imp: { icon: "database-import-outline", color: "#1e88e5", title: "Import & Sicherung", info: "alter Zettel, Konto stellen, Sicherung", html: () => this._importHtml(admin) },
       log: { icon: "history", color: "#5e35b1", title: "Verlauf", info: `${(d.log || []).length} Einträge`, html: () => `${this._sw("log_on", "history", "Verlauf führen", "wer hat wann was geändert", st.log_on !== false)}
         ${(d.log || []).map((l) => `<div class="logrow small" style="margin:6px 4px"><b>${new Date(l.ts).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</b> ${esc(l.text)}${l.user ? ` · ${esc(l.user)}` : ""}</div>`).join("") || `<p class="small">Noch nichts passiert.</p>`}` },
@@ -1641,8 +1679,8 @@ class StundenzettelCard extends HTMLElement {
         ${this._sw("labels", "format-text", "Beschriftungen unter den Symbolen", "auch ohne: lange auf ein Symbol drücken", !!st.labels)}
         ${this._sw("veil", "eye-off-outline", "Überstunden verschleiern", "PC: Maus drüber · Handy: antippen = 4 Sekunden sichtbar", !!st.veil)}
         ${[["monat", "calendar-month-outline", "Reiter „Monat“", "Tage, Zettel, Drucken"], ["jahr", "chart-bar", "Reiter „Jahr“", "Übersicht pro Monat"], ["stat", "chart-line", "Reiter „Statistik“", "Kurven, Wochentage, Rekorde"]].map(([k, i, t, sub]) => `<label class="switch"><span>${ic(i)}<span class="vt"><b>${t}</b><small>${sub}</small></span></span><input type="checkbox" class="swchk" data-a="setview" data-v="${k}" ${(st.view || {})[k] !== false ? "checked" : ""}></label>`).join("")}
-        <p class="small">🌍 <b>Sprache:</b> Die Karte spricht automatisch wie dein Home Assistant (Deutsch oder Englisch). Fest einstellen: Karte bearbeiten → „Sprache / Language“.</p>
-        <p class="small">📌 Den Stundenzettel gibt's auch als eigenen Eintrag in der <b>Seitenleiste</b>: Einstellungen → Geräte & Dienste → Stundenzettel → Konfigurieren.</p>` },
+        <div class="ghead"><span class="gdot" style="--gc:#00897b">${ic("lightbulb-outline")}</span><span>Gut zu wissen</span>${this._ib("viewmore")}</div>
+        ${this._ih("viewmore", "🌍 <b>Sprache:</b> Die Karte spricht automatisch wie dein Home Assistant (Deutsch oder Englisch). Fest einstellen: Karte bearbeiten → „Sprache / Language“.", "📌 Den Stundenzettel gibt's auch als eigenen Eintrag in der <b>Seitenleiste</b>: Einstellungen → Geräte & Dienste → Stundenzettel → Konfigurieren.")}` },
       mascot: { icon: "alarm", color: "#ec407a", title: "Maskottchen", info: st.mascot ? "Wecker ist da" : "aus", html: () => `
         ${this._sw("mascot", "alarm", "Wecker oben links zeigen", "für alle · Standard aus", !!st.mascot)}
         <p class="small">Der kleine Wecker zeigt, wie es läuft:</p>
@@ -1650,16 +1688,15 @@ class StundenzettelCard extends HTMLElement {
         <p class="small">Und er zieht sich passend zur Jahreszeit an:</p>
         <div class="mascotprev">${[["spring", "Frühling"], ["summer", "Sommer"], ["autumn", "Herbst"], ["winter", "Winter"], ["bunny", "Ostern"], ["pumpkin", "Halloween"], ["santa", "Advent"], ["party", "Silvester"]].map(([c, t]) => `<span class="${szMascotDeco() === c ? "now" : ""}">${szMascotSvg("happy", c)}<small>${t}</small></span>`).join("")}</div>` },
       calm: { icon: "meditation", color: "#5c6bc0", title: "Ruhiger Modus", info: store.get(CALMKEY, false) ? "an – nur dieses Gerät" : "aus", html: () => `
-        <label class="switch"><span>${ic("meditation")}Ruhiger Modus</span><input type="checkbox" class="swchk" data-a="setcalm" ${store.get(CALMKEY, false) ? "checked" : ""}></label>
-        <p class="small">Nur für <b>dieses Gerät</b>. Gedämpfte Farben, keine Animationen – angenehm für alte Tablets.</p>` },
+        <label class="switch"><span>${ic("meditation")}Ruhiger Modus${this._ib("calm")}</span><input type="checkbox" class="swchk" data-a="setcalm" ${store.get(CALMKEY, false) ? "checked" : ""}></label>
+        ${this._ih("calm", "Nur für <b>dieses Gerät</b>. Gedämpfte Farben, keine Animationen – angenehm für alte Tablets.")}` },
       ...(this._app ? { theme: { icon: "theme-light-dark", color: "#37474f", title: "Hell / Dunkel", info: { light: "☀️ Hell", dark: "🌙 Dunkel" }[szTheme()] || "🌓 Automatisch", html: () => `
         <p class="small">Nur für die Offline-App auf diesem Gerät.</p>
         <div class="btnrow">${[["auto", "🌓 Automatisch"], ["light", "☀️ Hell"], ["dark", "🌙 Dunkel"]].map(([v, l]) => `<button class="btn ${szTheme() === v ? "main" : ""}" data-a="theme" data-v="${v}">${l}</button>`).join("")}</div>` } } : {}),
       app: { icon: "cellphone-arrow-down", color: "#3949ab", title: "Offline-App", info: "stempeln auch ohne Netz", html: () => `
         <p class="small">Eine eigene kleine App nur für den Stundenzettel. Sie öffnet sich auch <b>ohne Netz</b> (z. B. im Keller der Baustelle), zeigt den letzten Stand, lässt dich <b>stempeln und Tage eintragen</b> und schickt alles nach, sobald wieder Netz da ist. Die Uhrzeit vom Knopfdruck bleibt dabei erhalten.</p>
         <ol class="small steps"><li>Auf dem Handy im <b>Browser</b> (Chrome oder Safari, nicht in der HA-App) die Adresse unten öffnen.</li><li>Einmal mit deinem Home-Assistant-Benutzer <b>anmelden</b>.</li><li>Im Browser-Menü <b>„Zum Startbildschirm hinzufügen“</b> – fertig, eigenes Symbol.</li><li>Tipp: <b>Lange aufs App-Symbol drücken</b> → „Kommen“ oder „Gehen“ stempelt direkt (Android).</li></ol>
-        <p class="small">Unten in der App: <b>„👆 Fingerabdruck-Sperre“</b>. <b>Abmelden</b> meldet nur das Handy ab – in Home Assistant bleibt alles. Es braucht eine <b>https</b>-Adresse (z. B. Nabu Casa).</p>
-        ${d.app_url ? `<p class="small"><b>Deine Adresse für die App:</b></p><input id="appUrl" readonly value="${esc(d.app_url)}" translate="no"><div class="btnrow"><button class="btn main" data-a="appcopy">${ic("content-copy")}Kopieren</button></div>`
+        ${d.app_url ? `<div class="ghead"><span class="gdot" style="--gc:#3949ab">${ic("web")}</span><span>Deine Adresse für die App</span>${this._ib("appmore")}</div>${this._ih("appmore", "Unten in der App: <b>„👆 Fingerabdruck-Sperre“</b>. <b>Abmelden</b> meldet nur das Handy ab – in Home Assistant bleibt alles. Es braucht eine <b>https</b>-Adresse (z. B. Nabu Casa).")}<input id="appUrl" readonly value="${esc(d.app_url)}" translate="no"><div class="btnrow"><button class="btn main" data-a="appcopy">${ic("content-copy")}Kopieren</button></div>`
         : `<p class="small">⚠️ Home Assistant kennt keine https-Adresse für unterwegs. Mit <b>Nabu Casa</b> oder einer eigenen https-Adresse klappt es. Zu Hause geht auch: <code>${esc(location.origin)}/stundenzettel/app/</code></p>`}` },
       pin: { icon: d.pin ? "lock-outline" : "lock-open-variant-outline", color: "#f4511e", title: "Schutz", info: d.pin ? (st.lock_all ? "PIN für die ganze Karte" : "PIN fürs Zahnrad") : "keine PIN", html: () => this._pinSetHtml() },
       errors: { icon: "bug-outline", color: "#e53935", title: "Fehler-Protokoll", info: (d.errors || []).length ? `${d.errors.length} Meldungen` : "keine Fehler 🎉", html: () => `${(d.errors || []).map((e) => `<p class="small"><b>${new Date(e.ts).toLocaleString("de-DE")}</b> ${esc(e.text)}</p>`).join("") || `<p class="small">Alles ruhig. 🎉</p>`}${(d.errors || []).length ? `<div class="btnrow"><button class="btn small" data-a="errclear">${ic("broom")}Leeren</button></div>` : ""}` },
@@ -1682,13 +1719,14 @@ class StundenzettelCard extends HTMLElement {
   _importHtml(admin) {
     const p = this._impPrev;
     const lastKey = (this._d.months || []).filter((m) => m.tracked && m.month < this._d.today.slice(0, 7)).map((m) => m.month).pop() || "";
-    return `<p class="small"><b>📥 Alter Zettel</b> – markiere in deiner Tabelle (Google Tabellen, Excel oder PDF) einfach alles, kopiere es und füge es hier ein. Die Karte sucht sich Zeilen wie <code>15.03.2012  7:00 - 17:00  9,5</code>, <code>02.08.2012 Urlaub 8</code> oder <code>14.04.2012 8:00 - 11:00 33,00 Euro</code> selbst raus. Die Stunden vom Zettel werden genau übernommen (die Pause passt sich an). Kopierst du aus Google Tabellen oder Excel, kommen auch die <b>Monatswerte</b> mit: Summe, Ü.-Alt (Lohnabrechnung), Ü.-Gesamt und „8 Stunden und →“ – genau so, wie sie im Zettel stehen.</p>
+    return `<div class="ghead"><span class="gdot" style="--gc:#1e88e5">${ic("database-import-outline")}</span><span>Alter Zettel</span>${this._ib("impold")}</div>
+      <div class="fhint" data-tip="impold" ${this._tipOpen?.has("impold") ? "" : "hidden"}><p class="small"><b>📥 Alter Zettel</b> – markiere in deiner Tabelle (Google Tabellen, Excel oder PDF) einfach alles, kopiere es und füge es hier ein. Die Karte sucht sich Zeilen wie <code>15.03.2012  7:00 - 17:00  9,5</code>, <code>02.08.2012 Urlaub 8</code> oder <code>14.04.2012 8:00 - 11:00 33,00 Euro</code> selbst raus. Die Stunden vom Zettel werden genau übernommen (die Pause passt sich an). Kopierst du aus Google Tabellen oder Excel, kommen auch die <b>Monatswerte</b> mit: Summe, Ü.-Alt (Lohnabrechnung), Ü.-Gesamt und „8 Stunden und →“ – genau so, wie sie im Zettel stehen.</p></div>
       <textarea id="imptext" rows="6" placeholder="Hier einfügen …">${esc(this._impText || "")}</textarea>
       ${this._sw("_overwrite", "file-replace-outline", "Schon vorhandene Tage überschreiben", "aus = nur fehlende Tage ergänzen", !!this._overwrite)}
       <div class="btnrow"><button class="btn" data-a="impprev">${ic("magnify")}Vorschau</button>${p && p.found ? `<button class="btn main" data-a="impgo">${ic("check")}${p.found} Tage übernehmen</button>` : ""}</div>
       ${p ? `<p class="small">${p.found ? `🔎 Gefunden: <b>${p.found} Tage</b> (${p.first ? dm(p.first) + p.first.slice(0, 4) : ""} bis ${p.last ? dm(p.last) + p.last.slice(0, 4) : ""}) · neu: ${p.new} · schon da: ${p.clash}${p.months ? ` · Monatswerte: <b>${p.months} Monate</b>` : ""}${p.skipped ? ` · übersprungen: ${p.skipped} (z. B. Wochenende)` : ""}` : "🤷 Nichts gefunden – sind Datum und Uhrzeit drin?"}${p.applied != null ? ` · ✅ <b>${p.applied} übernommen</b>` : ""}</p>` : ""}
-      <div class="ghead"><span class="gdot" style="--gc:#fb8c00">${ic("target")}</span><span>Konto stellen</span></div>
-      <p class="small">Auf deinem alten Zettel stand am Ende eines Monats ein anderer Überstunden-Stand (z. B. weil mal welche ausgezahlt wurden)? Sag der Karte einfach, was da stand – sie trägt die Korrektur selbst ein.</p>
+      <div class="ghead"><span class="gdot" style="--gc:#fb8c00">${ic("target")}</span><span>Konto stellen</span>${this._ib("fix")}</div>
+      <div class="fhint" data-tip="fix" ${this._tipOpen?.has("fix") ? "" : "hidden"}><p class="small">Auf deinem alten Zettel stand am Ende eines Monats ein anderer Überstunden-Stand (z. B. weil mal welche ausgezahlt wurden)? Sag der Karte einfach, was da stand – sie trägt die Korrektur selbst ein.</p></div>
       <form class="edit" data-form="fix"><div class="f"><label>Monat<input type="month" name="month" value="${esc(lastKey)}" required></label><label>Ü.-Gesamt laut Zettel<input name="value" inputmode="decimal" required placeholder="z. B. 32"></label></div><div class="btnrow end"><button class="btn main" type="submit">${ic("target")}Konto stellen</button></div></form>
       <div class="ghead"><span class="gdot" style="--gc:#43a047">${ic("content-save-outline")}</span><span>Sicherung</span></div>
       <div class="btnrow"><button class="btn" data-a="backup">${ic("download")}Sicherung speichern</button>${admin ? `<button class="btn" data-a="restore">${ic("upload")}Sicherung einspielen</button><input type="file" id="restorefile" accept=".json,application/json" hidden>` : ""}<button class="btn" data-a="csvall">${ic("file-delimited-outline")}Alles als CSV</button></div>`;
@@ -1703,7 +1741,7 @@ class StundenzettelCard extends HTMLElement {
       <p class="elcv"><b>Stundenzettel</b> v${SZ_VERSION}</p>
       <p>Gemacht von <b>Mister-M</b> – mit Hilfe von Claude 🤖</p>
       <p>Ich versuche, Updates und Fehler-Korrekturen zeitnah zu erledigen.</p>
-      <p class="elcsmall">📅 Neue offizielle Versionen kommen immer sonntags. An den anderen Tagen gibt es nur Test-Versionen (Beta) – die siehst du in HACS unter „Beta-Versionen anzeigen“.</p>
+      <p class="elcsmall">📅 Neue offizielle Versionen kommen immer sonntags. An den anderen Tagen gibt es nur Test-Versionen (Beta) – die siehst du in HACS (ab Home Assistant 2026.11: Einstellungen &gt; Marketplace) unter „Beta-Versionen anzeigen“.</p>
       <div class="elcbtns">
         <a class="elcbtn" href="${REPO}" target="_blank" rel="noopener">🐙 GitHub</a>
         <a class="elcbtn" href="${REPO}/discussions" target="_blank" rel="noopener">💡 Idee oder Wunsch</a>
@@ -1893,10 +1931,12 @@ class StundenzettelCard extends HTMLElement {
     if (imp) imp.addEventListener("input", () => { this._impText = imp.value; });
     const rf = root.getElementById("restorefile");
     if (rf) rf.addEventListener("change", () => this._restore(rf.files?.[0]));
+    const bf = root.getElementById("bossfile");
+    if (bf) bf.addEventListener("change", () => this._bossImport(bf.files?.[0]));
     root.querySelectorAll("[data-a]").forEach((el) => {
       if (el.tagName === "FORM") return;
       const ev = el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA" ? "change" : "click";
-      el.addEventListener(ev, (e) => { e.stopPropagation(); if (el.tagName === "A") e.preventDefault(); this._act(el, e); });
+      el.addEventListener(ev, (e) => { e.stopPropagation(); if (el.tagName === "A" || el.dataset.a === "finfo") e.preventDefault(); this._act(el, e); });
     });
   }
   _redraw() { this._force = true; this._render(); }
@@ -1931,6 +1971,14 @@ class StundenzettelCard extends HTMLElement {
       case "theme": try { v === "auto" ? localStorage.removeItem(THEMEKEY) : localStorage.setItem(THEMEKEY, v); } catch (_) { /* egal */ } if (v === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", v); return this._redraw();
       case "appcopy": { const inp = this.shadowRoot.getElementById("appUrl"); szCopy(d.app_url || "", inp).then(() => this._toast("📋 Adresse kopiert")); return; }
       case "setview": return this._set("view", { ...(st.view || {}), [v]: !!el.checked });
+      case "finfo": { // ⓘ auf-/zuklappen, ohne neu zu zeichnen
+        this._tipOpen = this._tipOpen || new Set();
+        const open = !this._tipOpen.has(v);
+        if (open) this._tipOpen.add(v); else this._tipOpen.delete(v);
+        this.shadowRoot.querySelectorAll(`.fhint[data-tip="${v}"]`).forEach((h) => { h.hidden = !open; });
+        el.setAttribute("aria-expanded", String(open));
+        return;
+      }
       case "setgrp": this._setOpen = this._setOpen === v ? null : v; return this._redraw();
       case "sheet": this._view = "set"; this._sheet = v; return this._redraw();
       case "reload": location.reload(); return;
@@ -2025,10 +2073,26 @@ class StundenzettelCard extends HTMLElement {
         return;
       }
       case "restore": this.shadowRoot.getElementById("restorefile")?.click(); return;
+      case "bosspick": this.shadowRoot.getElementById("bossfile")?.click(); return;
+      case "bossalt": { const b = ((d.months_meta || {})[this._month] || {}).boss; if (b?.saldo_vm != null) { this._send({ type: "month_set", month: this._month, alt: b.saldo_vm }); this._toast(`💶 Ü.-Alt = ${hs(b.saldo_vm)} (laut Chef)`); } return; }
+      case "bossdel": if (szConfirm("Zettel vom Chef für diesen Monat entfernen? Deine Tage bleiben, wie sie sind.")) this._send({ type: "month_set", month: this._month, boss: null }); return;
       case "errclear": await this._hass.callWS({ type: "stundenzettel/errors_clear" }); return;
       case "factory": if (!szConfirm("Wirklich ALLES löschen? Das geht nicht rückgängig.")) return; await this._hass.callWS({ type: "stundenzettel/factory_reset" }); this._toast("💣 Alles gelöscht"); this._view = "heute"; this._sheet = null; return this._redraw();
       default: return undefined;
     }
+  }
+  async _bossImport(file) {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { this._toast("⚠️ Die Datei ist zu groß – ein Zettel hat meist unter 1 MB"); return; }
+    try {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+      const r = await this._hass.callWS({ type: "stundenzettel/boss_import", data: btoa(bin) });
+      if (r.month && r.month !== this._month) this._month = r.month;
+      this._toast(`📄 Zettel für ${monthName(r.month)} eingelesen (${r.days} Tage)`);
+      this._redraw();
+    } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
   }
   async _restore(file) {
     if (!file) return;
