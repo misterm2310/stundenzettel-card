@@ -69,6 +69,7 @@ DEFAULT_SETTINGS: dict = {
     "payslip_hint": True,       # 💶 am Monatsanfang erinnern: „Lohnabrechnung da? Ü.-Alt eintragen“              # 🙈 Überstunden & Summen verschleiern (antippen = kurz zeigen)
     "view": {},                 # 👁️ Reiter ausblenden: {"monat": False} / {"jahr": False} / {"stat": False}
     # 🔒 Schutz
+    "lock_edit": False,         # ✏️ Ändern (Tage, Stempeln, Monat) nur nach PIN
     "lock_all": False,          # ganze Karte mit PIN sperren (sonst nur ⚙️)
 }
 

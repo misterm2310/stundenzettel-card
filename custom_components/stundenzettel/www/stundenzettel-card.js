@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.7";
+const SZ_VERSION = "0.2.0-beta.8";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["0.2.0-beta.8", "📝 Notizen stehen in Heute und Monat nur noch als kleines Symbol – antippen zeigt sie · 🔒 Neu in ⚙️ Schutz: <b>Ändern nur mit PIN</b> (ansehen geht frei, danach 10 Minuten frei) · 📄 Zettel vom Chef: <b>grün</b>, wo der Chef mehr Stunden hat, <b>rot</b>, wo weniger – seine Salden grün im Plus, rot im Minus"],
   ["0.2.0-beta.7", "📱 <b>Zettel vom Chef</b> jetzt auch in der Offline-App (Knopf im Monat, nur wenn die App Netz hat)"],
   ["0.2.0-beta.6", "📄 <b>Zettel vom Chef</b> im Monat: „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie rot links neben deinen, unten sein Saldo, „Saldo Vormonat“ mit einem Tipp als Ü.-Alt (geht nur mit diesem Zettel-Typ, siehe ⓘ) · ⓘ <b>Hilfe zum Antippen</b>: In ⚙️ und bei „Lohnabrechnung / Korrektur“ steht neben den Feldern ein kleines ⓘ statt langer Texte · 🏪 Hinweis: Ab Home Assistant 2026.11 heißt HACS „Marketplace“ (Einstellungen &gt; Marketplace)"],
   ["0.2.0-beta.5", "🎨 Heute: <b>Kommen</b> (grün) und <b>Gehen</b> (rot) stehen auch auf dem Handy nebeneinander, mit farbigem ⏱️-Knopf · 📥 Import erkennt Monatsnamen auch abgekürzt (z. B. „Septem“) · 📅 Nach dem Start von Home Assistant versucht die Karte den Kalender noch ein paar Mal, statt gleich „nicht gefunden“ zu melden"],
@@ -152,6 +153,8 @@ const szLoc = () => (SZ_LANG === "en" ? "en-GB" : "de-DE");
 // 🔒 Entsperrt gilt für alle Stundenzettel-Karten dieser Seite, bis 🔒 angetippt wird oder 10 Minuten nichts passiert
 const PIN_LOCK = { until: 0 };
 const pinOpen = () => PIN_LOCK.until > Date.now();
+// 🔒 Diese Knöpfe ändern etwas – mit „Ändern nur mit PIN“ fragen sie erst nach der PIN
+const SZ_EDIT_ACTS = new Set(["in", "out", "cancelstamp", "open", "quick", "monthform", "payslip", "unsheet", "kg", "kgnow", "bosspick", "bossalt", "bossdel", "undo"]);
 const pinTouch = () => { if (pinOpen()) PIN_LOCK.until = Date.now() + 10 * 60 * 1000; };
 // 📴 PIN ohne Netz prüfen: HA schickt einen Offline-Schlüssel (PBKDF2-SHA256), die Karte rechnet genauso nach.
 // Ohne https (z. B. http://192.168…) gibt es kein crypto.subtle – dann rechnet ein kleines SHA-256 hier im Code.
@@ -804,6 +807,10 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .kg.ghost .kgf input { color:var(--secondary-text-color); font-weight:400; }
 .kgh { margin:-4px 4px 10px; }
 .boss { color:var(--kc-red); font-weight:600; font-size:.85em; margin-right:6px; font-variant-numeric:tabular-nums; }
+.boss.up { color:var(--kc-green); }
+.notebtn { display:inline-flex; align-items:center; border:0; cursor:pointer; font:inherit; color:inherit; }
+.notebtn ha-icon, .notebtn svg { width:15px; height:15px; --mdc-icon-size:15px; }
+.notetext { margin-top:4px; padding:6px 8px; border-radius:8px; white-space:pre-wrap; font-size:.9em; background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); }
 .bossrow { display:inline-flex; align-items:center; gap:6px; }
 .finfo { flex:none; width:20px; height:20px; padding:0; border-radius:50%; border:1.5px solid var(--pc); background:none; color:var(--pc); font:700 11px/1 serif; font-style:italic; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-transform:none; letter-spacing:0; }
 .finfo[aria-expanded="true"] { background:var(--pc); color:#fff; }
@@ -1164,7 +1171,7 @@ class StundenzettelCard extends HTMLElement {
     this._lockAll = lockAll && locked;
     if (lockAll && !locked) { clearTimeout(this._relockT); this._relockT = setTimeout(() => { this._force = true; this._render(); }, Math.max(1000, PIN_LOCK.until - Date.now() + 500)); }
     if (locked && this._pad?.step !== "unlock") this._pad = { purpose: "unlock", step: "unlock", buf: "", back: "heute" };
-    if (!locked && this._pad?.step === "unlock") this._pad = null;
+    if (!locked && this._pad?.step === "unlock" && (this._pad.back !== "edit" || pinOpen())) this._pad = null;
     const vw = this._st.view || {};
     if ((this._view === "monat" && vw.monat === false) || (this._view === "jahr" && vw.jahr === false) || (this._view === "stat" && vw.stat === false)) this._view = "heute";
     let body;
@@ -1328,16 +1335,16 @@ class StundenzettelCard extends HTMLElement {
       if (!e && !showEmpty && we) return `<div class="dayrow we empty-day" data-a="open" data-d="${iso}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><div class="n"><b>Wochenende</b></div>${boss ? `<span class="hrs">${boss}</span>` : ""}</div>`;
       if (!e) return `<div class="dayrow empty-day ${iso === d.today ? "today" : ""} ${iso > d.today ? "future" : ""}" data-a="open" data-d="${iso}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><div class="n"><b>${iso > d.today ? "–" : "noch nichts eingetragen"}</b></div>${boss ? `<span class="hrs">${boss}</span>` : ""}<span class="iconbtn">${ic("plus")}</span></div>`;
       const [icon, name, color] = KIND[e.kind] || KIND.work;
-      const meta = [e.kind === "work" ? name : "", e.note ? esc(e.note.split("\n")[0]) : "", e.provisional ? "⏳ läuft noch" : "", e.waiting ? "📮 wartet aufs Senden" : "", SOURCE[e.source] || ""].filter(Boolean);
+      const meta = [e.kind === "work" ? name : "", e.note ? `<button class="tag notebtn" data-a="shownote" data-d="${iso}" title="Notiz ansehen" aria-label="Notiz ansehen">${ic("note-text-outline")}</button>` : "", e.provisional ? "⏳ läuft noch" : "", e.waiting ? "📮 wartet aufs Senden" : "", SOURCE[e.source] || ""].filter(Boolean);
       const hrs = e.kind === "pauschal" ? eur(e.amount) : e.kind === "frei" ? "0" : h2(e.hours);
-      return `<div class="dayrow ${iso === d.today ? "today" : ""}" data-a="open" data-d="${iso}" style="--cc:${color}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><span class="kd" style="--kc:${color}">${ic(icon)}</span><div class="n"><b data-noicon>${this._dayText(e)}</b>${meta.length ? `<div class="meta">${meta.map((x) => `<span class="tag">${x}</span>`).join("")}</div>` : ""}</div><span class="hrs">${boss}${hrs}</span></div>`;
+      return `<div class="dayrow ${iso === d.today ? "today" : ""}" data-a="open" data-d="${iso}" style="--cc:${color}"><span class="wd"><b>${WD[wd]}</b><small>${dm(iso)}</small></span><span class="kd" style="--kc:${color}">${ic(icon)}</span><div class="n"><b data-noicon>${this._dayText(e)}</b>${meta.length ? `<div class="meta">${meta.map((x) => x.startsWith("<button") ? x : `<span class="tag">${x}</span>`).join("")}</div>` : ""}${e.note && this._noteOpen === iso ? `<div class="notetext">${esc(e.note)}</div>` : ""}</div><span class="hrs">${boss}${hrs}</span></div>`;
     }).join("");
   }
   // 📄 Zettel vom Chef: rote Zahl links neben deinen Stunden – nur wo es anders ist
   _bossMark(iso, e) {
     const b = ((this._d.months_meta || {})[iso.slice(0, 7)] || {}).boss?.days?.[iso];
     if (!b) return "";
-    const tag = (t) => `<span class="boss" title="laut Zettel vom Chef">${t}</span>`;
+    const tag = (t, up) => `<span class="boss${up ? " up" : ""}" title="laut Zettel vom Chef${up ? " – mehr als bei dir" : ""}">${t}</span>`;
     if (b.kind) {
       const same = e && (e.kind === b.kind || (b.kind === "feiertag_halb" && e.kind === "feiertag"));
       if (same || (!e && b.h == null)) return "";
@@ -1345,7 +1352,7 @@ class StundenzettelCard extends HTMLElement {
     }
     const mine = e && e.kind === "work" ? Number(e.hours) || 0 : null;
     if (mine != null && Math.abs(mine - b.h) < 0.005) return "";
-    return tag(h2(b.h));
+    return tag(h2(b.h), mine == null || b.h > mine); // 🟢 Chef hat mehr (gut für dich) · 🔴 Chef hat weniger
   }
   _bossBox(row) {
     const b = ((this._d.months_meta || {})[this._month] || {}).boss;
@@ -1358,8 +1365,8 @@ class StundenzettelCard extends HTMLElement {
     return `<div class="ghead"><span class="gdot" style="--gc:#e53935">${ic("file-document-outline")}</span><span>Zettel vom Chef</span></div>
       <div class="zettel boss-box">
       ${b.gesamt != null ? r("sigma", "Gesamt (Chef)", `${h2(b.gesamt)} Std.`) : ""}${b.soll != null ? r("cash", "Sollzeit (Chef)", `−${h2(b.soll)} Std.`) : ""}
-      ${b.saldo_vm != null ? r("history", "Saldo Vormonat (Chef)", this._mv(hs(b.saldo_vm), "bvm" + this._month)) : ""}
-      ${b.saldo_ue != null ? r("scale-balance", "Saldo Übertrag (Chef)", this._mv(`${hs(b.saldo_ue)} Std.`, "bue" + this._month), "tot") : ""}
+      ${b.saldo_vm != null ? r("history", "Saldo Vormonat (Chef)", this._mv(`<span class="${b.saldo_vm < 0 ? "vneg" : "vpos"}">${hs(b.saldo_vm)}</span>`, "bvm" + this._month)) : ""}
+      ${b.saldo_ue != null ? r("scale-balance", "Saldo Übertrag (Chef)", this._mv(`<span class="${b.saldo_ue < 0 ? "vneg" : "vpos"}">${hs(b.saldo_ue)}</span> Std.`, "bue" + this._month), "tot") : ""}
       ${dEnd != null ? `<div class="zr sub"><span><span>Karte</span>&nbsp;${this._mv(hs(mine), "bk" + this._month)}</span><span class="${Math.abs(dEnd) < 0.005 ? "" : dEnd < 0 ? "vneg" : "vpos"}">${Math.abs(dEnd) < 0.005 ? "gleich ✅" : this._mv(hs(dEnd), "bd" + this._month)}</span></div>` : ""}
       ${r("calendar-alert", "Tage mit Abweichung", n ? `<span class="boss">${n}</span>` : "keine 🎉")}</div>
       <div class="btnrow">${altDiff ? `<button class="btn small" data-a="bossalt">${ic("history")}Saldo Vormonat als Ü.-Alt übernehmen</button>` : ""}<button class="btn small" data-a="bossdel">${ic("delete-outline")}Zettel entfernen</button></div>`;
@@ -1396,7 +1403,7 @@ class StundenzettelCard extends HTMLElement {
     h += this._zettel(row);
     h += this._bossBox(row);
     h += `<div class="btnrow"><button class="btn small" data-a="monthform">${ic("pencil-outline")}Lohnabrechnung / Korrektur</button><button class="btn small" data-a="share" data-v="month">${ic("share-variant-outline")}Drucken & Teilen</button><button class="btn small" data-a="csv">${ic("file-delimited-outline")}CSV</button>${this._hass?.connected === false ? "" : `<span class="bossrow"><button class="btn small" data-a="bosspick">${ic("file-document-outline")}Zettel vom Chef</button>${this._ib("boss")}<input type="file" id="bossfile" accept=".pdf,application/pdf" hidden></span>`}</div>`;
-    if (this._hass?.connected !== false) h += `${this._ih("boss", "📄 Geht nur mit Zetteln vom Typ <b>„Zeitsaldenliste“</b> als <b>PDF vom Computer</b> (aus dem Zeiterfassungs-Programm deines Chefs). Fotos, Scans und andere Stundenzettel gehen nicht – dann sagt die Karte Bescheid und ändert nichts.", "🔴 An deinen Tagen ändert sich nichts. Die Stunden vom Chef stehen nur <b>rot links neben deinen</b>, wo sie anders sind. Unten siehst du seinen Saldo und kannst „Saldo Vormonat“ als Ü.-Alt übernehmen.")}`;
+    if (this._hass?.connected !== false) h += `${this._ih("boss", "📄 Geht nur mit Zetteln vom Typ <b>„Zeitsaldenliste“</b> als <b>PDF vom Computer</b> (aus dem Zeiterfassungs-Programm deines Chefs). Fotos, Scans und andere Stundenzettel gehen nicht – dann sagt die Karte Bescheid und ändert nichts.", "🟢🔴 An deinen Tagen ändert sich nichts. Die Stunden vom Chef stehen nur links neben deinen, wo sie anders sind: <b>grün</b> = Chef hat mehr, <b>rot</b> = Chef hat weniger. Unten siehst du seinen Saldo und kannst „Saldo Vormonat“ als Ü.-Alt übernehmen.")}`;
     if (this._monthForm) {
       const meta = (d.months_meta || {})[this._month] || {};
       h += `<form class="edit" data-form="month"><div class="flab"><b>🗓️ ${monthName(this._month)}</b>${this._ib("monthform")}</div>${this._ih("monthform", "💶 <b>Ü.-Alt laut Lohnabrechnung</b> = der Überstunden-Stand, den dein Chef auf der Abrechnung vom Vormonat stehen hat. Dann rechnet die Karte ab diesem Monat mit seiner Zahl weiter.", `💡 <b>Korrektur</b> = Stunden, die nicht aus den Tagen kommen (ausgezahlt = Minus, geschenkt = Plus). <b>Soll</b> leer = normal (${h2(this._st.paid_hours)}).`)}<div class="f">
@@ -1542,7 +1549,7 @@ class StundenzettelCard extends HTMLElement {
   _padPage() {
     const p = this._pad;
     const t = {
-      unlock: ["PIN eingeben", this._lockAll ? "Der Stundenzettel ist gesperrt. Mit der PIN geht's weiter." : "Für die <b>⚙️ Einstellungen</b> brauchst du die PIN. Stempeln und Tage eintragen gehen auch ohne."],
+      unlock: ["PIN eingeben", this._lockAll ? "Der Stundenzettel ist gesperrt. Mit der PIN geht's weiter." : p.back === "edit" ? "Zum <b>Ändern</b> brauchst du die PIN. Danach ist 10 Minuten Ruhe." : this._st.lock_edit ? "Für die <b>⚙️ Einstellungen</b> brauchst du die PIN." : "Für die <b>⚙️ Einstellungen</b> brauchst du die PIN. Stempeln und Tage eintragen gehen auch ohne."],
       old: ["Alte PIN", p.purpose === "off" ? "Zum Ausschalten erst die jetzige PIN eintippen." : "Erst die jetzige PIN eintippen."],
       new: ["Neue PIN", "4 bis 8 Ziffern, dann ✔."],
       new2: ["Neue PIN nochmal", "Zur Sicherheit noch einmal dieselbe PIN."],
@@ -1598,6 +1605,7 @@ class StundenzettelCard extends HTMLElement {
     const d = this._d, st = this._st;
     return `<p class="small">${d.pin ? "🔒 PIN ist <b>an</b>. ⚙️ fragt nach der PIN." : "Mit einer PIN (4–8 Ziffern) sperrst du ⚙️ – z. B. auf dem Tablet in der Küche, damit keiner dein Soll oder den Kalender umstellt. Stempeln und Tage eintragen gehen weiter ohne PIN."}</p>
       <div class="btnrow">${d.pin ? `<button class="btn main" data-a="padstart" data-v="set">${ic("lock-reset")}PIN ändern</button><button class="btn" data-a="padstart" data-v="off">${ic("lock-open-variant-outline")}PIN ausschalten</button>` : `<button class="btn main" data-a="padstart" data-v="set">${ic("lock-outline")}PIN einschalten</button>`}</div>
+      ${d.pin ? this._sw("lock_edit", "pencil-lock-outline", "Ändern nur mit PIN", "", !!st.lock_edit, ["Ansehen geht weiter ohne PIN.", "Kommen/Gehen, Tage eintragen, Monat ändern und Zettel vom Chef gehen erst nach der PIN – danach 10 Minuten frei."]) : ""}
       ${d.pin ? this._sw("lock_all", "lock-outline", "Ganze Karte sperren", "Aus = nur ⚙️. An = ohne PIN sieht man gar nichts (auch keine Überstunden).", !!st.lock_all) : ""}
       <div class="ghead"><span class="gdot" style="--gc:#f4511e">${ic("help-circle-outline")}</span><span>PIN vergessen?</span>${this._ib("pinmore")}</div>
       ${this._ih("pinmore", "Die PIN liegt nur als Prüfsumme in Home Assistant. Vergessen? Admin → <b>Geräte & Dienste → Stundenzettel → Konfigurieren → „PIN zurücksetzen“</b>. 5× falsch = 1 Minute Pause. Ohne Netz prüft die Karte die PIN selbst. Nach 10 Minuten ohne Tippen sperrt sie wieder.")}`;
@@ -1949,11 +1957,16 @@ class StundenzettelCard extends HTMLElement {
   async _act(el) {
     const a = el.dataset.a, v = el.dataset.v, iso = el.dataset.d;
     const d = this._d, st = this._st;
+    // 🔒 „Ändern nur mit PIN“: erst PIN, dann 10 Minuten frei
+    if (SZ_EDIT_ACTS.has(a) && d?.pin && st.lock_edit && !pinOpen()) {
+      this._pad = { purpose: "unlock", step: "unlock", buf: "", back: "edit" };
+      return this._redraw();
+    }
     switch (a) {
       case "tab": this._view = v; this._sheet = null; this._share = null; this._open = null; this._fkind = null; this._monthForm = false; if (this._pad?.step !== "unlock") this._pad = null; return this._redraw();
       case "back":
         if (this._share && !this._pad) { this._share = null; return this._redraw(); }
-        if (this._pad) { const back = this._pad.back; this._pad = null; if (back !== "sheet") { this._view = "heute"; this._sheet = null; } }
+        if (this._pad) { const back = this._pad.back; this._pad = null; if (back !== "sheet" && back !== "edit") { this._view = "heute"; this._sheet = null; } }
         else if (this._view === "set" && this._sheet) this._sheet = null; else this._view = "heute";
         this._addRule = this._addPeriod = false; return this._redraw();
       case "lock": {
@@ -1986,6 +1999,7 @@ class StundenzettelCard extends HTMLElement {
       case "in": return this._send({ type: "stamp_in", ts: Date.now() });
       case "out": return this._send({ type: "stamp_out", ts: Date.now() });
       case "cancelstamp": if (szConfirm("Stempeln abbrechen? Es wird nichts eingetragen.")) this._send({ type: "stamp_cancel" }); return;
+      case "shownote": this._noteOpen = this._noteOpen === iso ? null : iso; return this._redraw();
       case "open": this._open = this._open === iso ? null : iso; this._fkind = null; return this._redraw();
       case "close": this._open = null; this._fkind = null; return this._redraw();
       case "fkind": this._fkind = v; return this._redraw();

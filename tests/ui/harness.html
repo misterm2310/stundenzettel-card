@@ -72,6 +72,7 @@ fetch("demo.json").then((r) => r.json()).then(async (j) => {
   if (fake.pin) j.pin = true;
   if (location.hash.includes("mascot")) j.settings.mascot = true;
   if (location.hash.includes("lockall")) j.settings.lock_all = true;
+  if (location.hash.includes("lockedit")) j.settings.lock_edit = true;
   if (location.hash.includes("empty")) { j.days = {}; j.months = []; j.settings.calendar = ""; j.stamp = null; j.summary.balance = 0; }
   await import("../../custom_components/stundenzettel/www/stundenzettel-card.js");
   const c = document.getElementById("c1");

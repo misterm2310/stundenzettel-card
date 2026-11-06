@@ -127,6 +127,16 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(bossN >= 3, `Zettel vom Chef: rote Stunden nur an abweichenden Tagen (${bossN})`);
   const firstBoss = await card(page).locator(".dayrow .hrs").filter({ has: page.locator(".boss") }).first().innerText();
   ok(/^\d+,\d\d\s*\d+,\d\d$/.test(firstBoss.trim()), `Rote Zahl steht links neben den eigenen Stunden („${firstBoss.trim().replace(/\s+/, " ")}“)`);
+  const up = await card(page).locator(".dayrow .boss.up").count(), down = await card(page).locator(".dayrow .boss:not(.up)").count();
+  ok(up >= 1 && down >= 1, `Zettel vom Chef: grün wo der Chef mehr hat (${up}), rot wo weniger (${down})`);
+  ok(await card(page).locator(".boss-box .vpos").count() >= 2, "Zettel vom Chef: Salden im Plus sind grün");
+  // 📝 Notizen nur als Symbol
+  const mt = await txt();
+  ok(!/Musterstadt – Terrasse/.test(mt) && await card(page).locator(".dayrow .notebtn").count() >= 5, "Monat: Notizen nur als 📝-Symbol, kein Text");
+  await click(page, '.dayrow .notebtn');
+  ok(await card(page).locator(".dayrow .notetext").count() === 1 && await card(page).locator('form[data-form="day"]').count() === 0, "📝 antippen zeigt die Notiz (ohne den Tag zu öffnen)");
+  await click(page, '.dayrow .notebtn');
+  ok(await card(page).locator(".dayrow .notetext").count() === 0, "📝 nochmal antippen: Notiz wieder zu");
   await shot(page, "2b-zettel-vom-chef");
   await click(page, '[data-a="bossalt"]');
   await page.waitForTimeout(150);
@@ -184,6 +194,26 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '[data-a="tab"][data-v="set"]');
   ok(/PIN eingeben/.test(await card(page).locator("ha-card").innerText()), "Schloss angetippt: wieder zu");
   ok(!errors.length, "PIN: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{ // 🔒 Ändern nur mit PIN
+  const { page, errors } = await open("#pin-lockedit");
+  const t0 = await card(page).locator("ha-card").innerText();
+  ok(/Überstunden-Konto/.test(t0) && !/PIN eingeben/.test(t0), "Ändern nur mit PIN: Ansehen geht ohne PIN");
+  await click(page, '.dayrow[data-a="open"]');
+  ok(/Zum Ändern brauchst du die PIN/.test(await card(page).locator("ha-card").innerText()), "Ändern nur mit PIN: Tag antippen fragt nach der PIN");
+  await shot(page, "9b-aendern-pin");
+  await click(page, '[data-a="back"]');
+  ok(await card(page).locator(".pinpad").count() === 0 && /Überstunden-Konto/.test(await card(page).locator("ha-card").innerText()), "Abbrechen: zurück, nichts geändert");
+  await click(page, '[data-a="kgnow"][data-v="end"]');
+  ok(await card(page).locator(".pinpad").count() === 1, "Ändern nur mit PIN: ⏱️ Gehen fragt auch nach der PIN");
+  const n0 = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").length);
+  for (const k of ["1", "2", "3", "4", "✔"]) await click(page, `[data-a="pkey"][data-v="${k}"]`);
+  await page.waitForTimeout(150);
+  ok(await card(page).locator(".pinpad").count() === 0 && n0 === 0, "Richtige PIN: Tastenfeld weg, vorher wurde nichts geschickt");
+  await click(page, '.dayrow[data-a="open"]');
+  ok(await card(page).locator('form[data-form="day"]').count() === 1, "Nach der PIN: Tag lässt sich ändern");
+  ok(!errors.length, "Ändern nur mit PIN: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
 { // 🔒 ganze Karte gesperrt
