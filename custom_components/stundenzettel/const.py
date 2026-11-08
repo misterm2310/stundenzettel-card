@@ -35,7 +35,9 @@ ABSENCE_KINDS = ("urlaub", "krank", "feiertag")
 DEFAULT_SETTINGS: dict = {
     # ⏱️ Arbeitszeit
     "paid_hours": 175.0,        # 💶 so viele Stunden bezahlt der Chef pro Monat (Soll)
+    "paid_until": [],           # 🗓️ früher anders? [{"until": "2019-12", "hours": 160}] – gilt BIS einschließlich diesem Monat
     "paid_periods": [],         # 🗓️ früher anders? [{"from": "2012-03", "hours": 160}] – gilt ab diesem Monat
+    "pause_by": "dauer",        # ☕ Pause nach „dauer“ (Stunden da) oder „ende“ (Uhrzeit beim Gehen)
     "pause_rules": [            # ☕ Pause automatisch: ab MEHR als „from“ Std. Anwesenheit → „pause“ Std. abziehen
         {"from": 0, "pause": 0.25},
         {"from": 6, "pause": 0.5},
@@ -44,6 +46,7 @@ DEFAULT_SETTINGS: dict = {
     "round": 15,                # 🔄 Stempelzeiten auf 15 Minuten runden (0 = gar nicht)
     "long_day": 8.0,            # 🥪 „8 Stunden und →“: Tage, an denen man mindestens so lange weg war
     "vacation_days": 30,        # 🏖️ Urlaubsanspruch pro Jahr
+    "vacation_carry": {},       # 🧳 Resturlaub aus dem Vorjahr je Jahr, z. B. {"2026": 9}
     "start_balance": 0.0,       # 🐷 Überstunden-Stand, bevor es mit der Karte losging
     "plan": {                   # 📋 normaler Tag je Wochentag (1 = Montag … 7 = Sonntag) – Vorschlag & Kalender-Vorlage
         "1": ["06:30", "16:15"], "2": ["06:30", "16:15"], "3": ["06:30", "16:15"], "4": ["06:30", "16:15"], "5": ["06:30", "12:00"],
@@ -62,9 +65,11 @@ DEFAULT_SETTINGS: dict = {
     "labels": False,
     "log_on": True,
     "mascot": False,            # ⏰ Maskottchen (Wecker) oben links – Standard aus, wie bei den anderen Karten
-    "veil": False,              # 🙈 Überstunden & Summen verschleiern (antippen = kurz zeigen)
-    "view": {},                 # 👁️ Reiter ausblenden: {"monat": False} / {"jahr": False}
+    "veil": False,
+    "payslip_hint": True,       # 💶 am Monatsanfang erinnern: „Lohnabrechnung da? Ü.-Alt eintragen“              # 🙈 Überstunden & Summen verschleiern (antippen = kurz zeigen)
+    "view": {},                 # 👁️ Reiter ausblenden: {"monat": False} / {"jahr": False} / {"stat": False}
     # 🔒 Schutz
+    "lock_edit": False,         # ✏️ Ändern (Tage, Stempeln, Monat) nur nach PIN
     "lock_all": False,          # ganze Karte mit PIN sperren (sonst nur ⚙️)
 }
 

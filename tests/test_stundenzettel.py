@@ -45,6 +45,22 @@ def test_monate_und_konto():
     assert jan["long"] == 1  # 9,75 Std. weg ≥ 8
 
 
+
+def test_kommende_monate_zaehlen_nicht():
+    """🔮 Schon eingetragener Urlaub im Dezember darf das Konto im November nicht runterziehen."""
+    days = {
+        "2026-10-05": {"kind": "work", "start": "06:30", "end": "16:15"},
+        "2026-11-02": {"kind": "work", "start": "06:30", "end": "16:15"},
+        "2026-12-21": {"kind": "urlaub"},
+        "2026-12-22": {"kind": "urlaub"},
+    }
+    st = {**ST, "paid_hours": 9.25, "start_balance": 0}
+    rows = mgr.compute_months(days, {}, st, date(2026, 11, 4))
+    okt, nov, dez = rows
+    assert okt["total"] == 0 and "now" in nov and nov["future"] is False
+    assert dez["future"] is True and dez["tracked"] is False and dez["paid"] == 0
+    assert dez["total"] == nov["total"] and dez["urlaub"] == 2
+
 def test_soll_frueher_anders():
     st = {**ST, "paid_hours": 175, "paid_periods": [{"from": "2012-03", "hours": 160}, {"from": "2023-01", "hours": 175}]}
     assert mgr.paid_for("2015-06", st) == 160 and mgr.paid_for("2024-02", st) == 175 and mgr.paid_for("2010-01", st) == 175
@@ -258,3 +274,190 @@ async def test_offline_app_seite(hass: HomeAssistant, hass_client_no_auth):
     assert r.status == 200 and r.headers.get("Service-Worker-Allowed") == "/stundenzettel/app/"
     assert (await client.get("/stundenzettel/app/manifest.webmanifest")).status == 200
     assert (await client.get("/stundenzettel/app/geheim.json")).status == 404
+
+
+async def test_resturlaub_vorjahr(hass: HomeAssistant) -> None:
+    """🧳 Resturlaub aus dem Vorjahr zählt zum Anspruch dazu, Unsinn wird aussortiert."""
+    m = mgr.StundenzettelManager(hass)
+    y = str(m.today().year)
+    assert m._clean_setting("vacation_carry", {y: "9", "abc": 3, "2025": 0}) == {y: 9.0}
+    m.data["settings"]["vacation_carry"] = {y: 9}
+    m.data["days"][f"{y}-01-02"] = {"kind": "urlaub"}
+    s = m.summary()
+    assert s["vacation_carry"] == 9 and s["vacation_left"] == 30 + 9 - 1
+
+
+def test_pause_nach_uhrzeit_beim_gehen():
+    """☕ Marco: Gehen bis 12 Uhr → 0,25 Pause, danach 0,50."""
+    st = {**ST, "pause_by": "ende", "pause_rules": [{"from": 0, "pause": 0.25}, {"from": 12, "pause": 0.5}]}
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "12:00"}, st)["hours"] == 5.25
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "12:15"}, st)["pause"] == 0.5
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "16:15"}, st)["hours"] == 9.25
+    assert mgr.day_hours({"kind": "work", "start": "06:30", "end": "16:15", "pause": 0}, st)["hours"] == 9.75  # von Hand bleibt von Hand
+
+
+def test_bezahlt_bis_monat():
+    """💶 „bis Dezember 2019: 160“, danach das aktuelle Soll."""
+    st = {**ST, "paid_hours": 175, "paid_until": [{"until": "2019-12", "hours": 160}]}
+    assert mgr.paid_for("2015-06", st) == 160 and mgr.paid_for("2019-12", st) == 160 and mgr.paid_for("2020-01", st) == 175
+
+
+async def test_pause_set_und_pdf(hass: HomeAssistant) -> None:
+    """📝 Snapshot sagt, ob die Pause wirklich eingetragen ist · 📄 PDF-Link für die HA-App."""
+    from custom_components.stundenzettel.pdf_share import get_pdf, store_pdf
+
+    m = mgr.StundenzettelManager(hass)
+    m.data["days"]["2026-11-02"] = {"kind": "work", "start": "06:30", "end": "16:15"}
+    m.data["days"]["2026-11-03"] = {"kind": "work", "start": "06:30", "end": "16:15", "pause": 0.25}
+    days = m.snapshot()["days"]
+    assert days["2026-11-02"]["pause_set"] is False and days["2026-11-02"]["pause"] == 0.5
+    assert days["2026-11-03"]["pause_set"] is True
+    import base64
+
+    r = store_pdf(hass, base64.b64encode(b"%PDF-1.4 test").decode(), "Stundenzettel Nov")
+    assert r["url"].startswith("/api/stundenzettel/pdf/") and r["url"].endswith("/Stundenzettel-Nov.pdf")
+    assert get_pdf(hass, r["url"].split("/")[4])["data"].startswith(b"%PDF")
+    with pytest.raises(ValueError):
+        store_pdf(hass, base64.b64encode(b"keine pdf").decode())
+
+
+async def test_fehlender_termin_kommt_zurueck(hass: HomeAssistant, monkeypatch):
+    """📤 Karte ist die Chefin: im Kalender gelöschter Termin wird beim Abgleich neu angelegt – ohne Doppelte."""
+    cal = FakeCal()
+    monkeypatch.setattr(mgr, "_cal_entity", lambda hass, eid: cal)
+    m = await _setup(hass)
+    d0 = (dt_util.now().date() - timedelta(days=2)).isoformat()
+    m.apply([{"type": "set", "key": "calendar", "value": "calendar.test"}, {"type": "set", "key": "cal_write", "value": True}])
+    m.apply([{"type": "day_set", "date": d0, "kind": "work", "start": "06:30", "end": "16:15"}])
+    await hass.async_block_till_done()
+    assert len(cal.events) == 1
+    cal.events = []  # 🗑️ aus Versehen im Kalender gelöscht
+    res = await m.async_sync()
+    await hass.async_block_till_done()
+    assert res.get("write") == 1 and len(cal.events) == 1 and m.data["days"][d0]["source"] == "card"
+    await m.async_sync()
+    await hass.async_block_till_done()
+    assert len(cal.events) == 1  # keine doppelten Termine
+    # 📤 Zeitraum nachschreiben
+    cal.events = []
+    assert m.cal_write_range(date.fromisoformat(d0), dt_util.now().date()) == 1
+    await hass.async_block_till_done()
+    assert len(cal.events) == 1
+
+
+TSV = "\n".join([
+    "Oktober\t2026\t\t\tNovember\t2026",
+    "Datum\tZeit\tStunden\t\tDatum\tZeit\tStunden",
+    "01.10.2026\t6:30 - 16:15\t9,25\t\t02.11.2026\t6:30 - 16:15\t9,25",
+    "02.10.2026\t6:30 - 16:15\t9,25",
+    "\t\t20,5",
+    "Bezahlt\t-175\t-154,5\t\tBezahlt\t-175\t-165,75",
+    "Ü.-Alt\t\t31\t\tÜ.-Alt\t\t0",
+    "Ü.-Gesamt\t\t-123,5\t\tÜ.-Gesamt\t\t-165,75",
+    "Urlaubstage\t\t0",
+    "Kranktage\t\t0",
+    "8 Stunden und ->\t\t2",
+])
+
+
+async def test_import_monatswerte_und_lohnabrechnung(hass: HomeAssistant) -> None:
+    """🧾 Import übernimmt die Monatswerte 1:1 · 💶 Ü.-Alt laut Lohnabrechnung · laufender Monat bleibt frei."""
+    months = mgr.parse_import_months(TSV)
+    assert months["2026-10"] == {"sum": 20.5, "alt": 31.0, "ges": -123.5, "urlaub": 0.0, "krank": 0.0, "long": 2.0}
+    m = mgr.StundenzettelManager(hass)
+    m.data["months"]["2026-10"] = {"adjust": -10}
+    res = m.import_text(TSV, apply=True, overwrite=False)
+    assert res["months"] == 1 and "2026-11" not in m.data["months"]  # November wartet auf die Lohnabrechnung
+    assert "adjust" not in m.data["months"]["2026-10"]
+    rows = {r["month"]: r for r in m.months()}
+    okt = rows["2026-10"]
+    assert okt["old"] == 31 and okt["hours"] == 20.5 and okt["total"] == -123.5 and okt["sheet"] and okt["long"] == 2
+    assert rows["2026-11"]["old"] == -123.5
+    # 💶 Lohnabrechnung für November: Konto rechnet mit der Zahl vom Chef weiter, Abweichung sichtbar
+    m.apply([{"type": "month_set", "month": "2026-11", "alt": -120}])
+    nov = {r["month"]: r for r in m.months()}["2026-11"]
+    assert nov["old"] == -120 and nov["alt"] and nov["calc_old"] == -123.5
+    m.apply([{"type": "month_set", "month": "2026-11", "alt": None}])
+    assert {r["month"]: r for r in m.months()}["2026-11"]["old"] == -123.5
+    # 🧮 „Mit Karte neu rechnen“ → Tage zählen wieder
+    m.apply([{"type": "month_set", "month": "2026-10", "sheet": None}])
+    assert {r["month"]: r for r in m.months()}["2026-10"]["hours"] == 18.5
+    # 🥪 8 Stunden und → zählt ohne Pause
+    m.data["days"]["2026-09-01"] = {"kind": "work", "start": "06:30", "end": "14:45"}  # 8,25 da, 7,75 ohne Pause
+    assert {r["month"]: r for r in m.months()}["2026-09"]["long"] == 0
+
+
+# ---------------------------------------------------------------- 📄 Zettel vom Chef (AUSGEDACHT, Max Mustermann)
+def _fake_zeitsaldenliste() -> bytes:
+    """Baut eine kleine PDF wie aus „Microsoft Print to PDF“: Schrift mit Glyph-Nummern (Identity-H) + ToUnicode."""
+    import zlib
+
+    def hx(t: str) -> str:
+        return "".join(f"<{ord(c):04X}>" for c in t)
+
+    rows = [  # (y, [(x, Text oder [Text, Abstand, Text …])])
+        (70, [(75, "Zeitsaldenliste Juni 2026")]),
+        (90, [(75, "Mitarbeiter :     1, Mustermann, Max")]),
+        (120, [(60, "01.06.2026"), (120, "Mo"), (150, ["K", -4000, "G"]), (160, "06:20"), (230, "16:15"), (300, "09:15"), (340, "09:15"), (380, "08:05"), (420, "00:30"), (500, "01:10")]),
+        (135, [(60, "02.06.2026"), (120, "Di  K"), (150, ["N", -4000, "N"]), (160, "00:00"), (230, "00:00"), (380, "08:05"), (460, "08:05")]),
+        (150, [(60, "04.06.2026"), (120, "DoVF"), (150, ["N", -4000, "N"]), (160, "00:00"), (230, "00:00"), (380, "08:05"), (460, "08:05")]),
+        (165, [(60, "05.06.2026"), (120, "Fr"), (150, ["K", -4000, "G"]), (160, "06:15"), (230, "12:00"), (300, "05:15"), (340, "05:15"), (380, "08:05"), (420, "00:15")]),
+        (200, [(100, "Gesamt"), (300, "30:36")]),
+        (215, [(100, "Sollzeit"), (300, "32:20")]),
+        (230, [(100, "Saldo Vormonat"), (300, "10:30")]),
+        (245, [(100, "Saldo Übertrag"), (300, "-2:45")]),
+    ]
+    ops = []
+    for y, cells in rows:
+        for x, t in cells:
+            arr = "".join(hx(p) if isinstance(p, str) else f"{p}" for p in (t if isinstance(t, list) else [t]))
+            ops.append(f"BT /F1 10 Tf 1 0 0 -1 {x} {y} Tm [{arr}] TJ ET")
+    content = zlib.compress("\n".join(ops).encode())
+    chars = sorted({ord(c) for _, cells in rows for _, t in cells for c in "".join(p for p in (t if isinstance(t, list) else [t]) if isinstance(p, str))})
+    cmap = ("/CIDInit /ProcSet findresource begin begincmap 1 begincodespacerange <0000> <FFFF> endcodespacerange "
+            f"{len(chars)} beginbfchar " + " ".join(f"<{c:04X}> <{c:04X}>" for c in chars) + " endbfchar endcmap end").encode()
+    objs = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        b"<< /Filter /FlateDecode /Length %d >>\nstream\n" % len(content) + content + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type0 /BaseFont /F1 /Encoding /Identity-H /DescendantFonts [ << /W [ 32 [ 250 ] 48 57 500 ] /DW 500 >> ] /ToUnicode 6 0 R >>",
+        b"<< /Length %d >>\nstream\n" % len(cmap) + cmap + b"\nendstream",
+    ]
+    out = b"%PDF-1.7\n" + b"".join(b"%d 0 obj\n" % (i + 1) + o + b"\nendobj\n" for i, o in enumerate(objs))
+    return out + b"%%EOF"
+
+
+def test_zettel_vom_chef_lesen():
+    from custom_components.stundenzettel import zettel
+
+    z = zettel.read_zettel(_fake_zeitsaldenliste())
+    assert z["month"] == "2026-06"
+    assert z["days"]["2026-06-01"] == {"h": 9.25, "in": "06:20", "out": "16:15", "pause": 0.5}
+    assert z["days"]["2026-06-02"]["kind"] == "krank" and z["days"]["2026-06-04"]["kind"] == "feiertag"
+    assert z["days"]["2026-06-05"]["h"] == 5.25
+    assert z["saldo_vm"] == 10.5 and z["saldo_ue"] == -2.75 and z["gesamt"] == 30.6 and z["soll"] == 32.33
+    # 📋 Kopierter Text geht genauso
+    text = "Zeitsaldenliste Juni 2026\n01.06.2026 Mo K 06:20 G 16:15 09:15 09:15 08:05 00:30 01:10\nSaldo Übertrag -2:45\n"
+    assert zettel.read_zettel(text.encode())["days"]["2026-06-01"]["h"] == 9.25
+    # 🚫 Andere Zettel / Fotos: klare Meldung
+    for bad in (b"%PDF-1.4\n1 0 obj << >> endobj", b"irgendein Text", b"\xff\xd8\xff\xe0JPEG"):
+        with pytest.raises(zettel.ZettelError):
+            zettel.read_zettel(bad)
+
+
+async def test_zettel_vom_chef_beim_monat(hass: HomeAssistant) -> None:
+    from homeassistant.exceptions import HomeAssistantError
+
+    m = mgr.StundenzettelManager(hass)
+    m.data["days"]["2026-06-01"] = {"kind": "work", "start": "06:30", "end": "16:15"}
+    res = m.boss_import(_fake_zeitsaldenliste(), "Max")
+    assert res["month"] == "2026-06" and res["days"] == 4 and res["saldo_vm"] == 10.5
+    assert m.data["months"]["2026-06"]["boss"]["days"]["2026-06-01"]["h"] == 9.25
+    assert m.data["days"]["2026-06-01"]["end"] == "16:15"  # ✋ eigene Tage bleiben, wie sie sind
+    with pytest.raises(HomeAssistantError):
+        m.boss_import(b"kein Zettel", "Max")
+    m.apply([{"type": "month_set", "month": "2026-06", "alt": 10.5}])
+    assert m.data["months"]["2026-06"]["alt"] == 10.5 and "boss" in m.data["months"]["2026-06"]
+    m.apply([{"type": "month_set", "month": "2026-06", "boss": None}])
+    assert "boss" not in m.data["months"]["2026-06"]

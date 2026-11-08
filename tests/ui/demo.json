@@ -1,8 +1,10 @@
 {
- "version": "0.1.0",
+ "version": "0.2.0-beta.7",
  "settings": {
   "paid_hours": 175.0,
+  "paid_until": [],
   "paid_periods": [],
+  "pause_by": "dauer",
   "pause_rules": [
    {
     "from": 0,
@@ -17,6 +19,7 @@
   "round": 15,
   "long_day": 8.0,
   "vacation_days": 30,
+  "vacation_carry": {},
   "start_balance": 12.0,
   "plan": {
    "1": [
@@ -49,7 +52,12 @@
   "stamp_person": "person.max",
   "stamp_zone": "zone.arbeit",
   "labels": false,
-  "log_on": true
+  "log_on": true,
+  "mascot": false,
+  "veil": false,
+  "payslip_hint": true,
+  "view": {},
+  "lock_all": false
  },
  "days": {
   "2026-06-01": {
@@ -1165,7 +1173,13 @@
    "euro": 0.0,
    "days": 22,
    "tracked": true,
-   "note": ""
+   "note": "",
+   "future": false,
+   "alt": false,
+   "calc_old": 12.0,
+   "sheet": false,
+   "calc_hours": 190.5,
+   "calc_long": 18
   },
   {
    "month": "2026-07",
@@ -1183,7 +1197,13 @@
    "euro": 40.0,
    "days": 24,
    "tracked": true,
-   "note": "10 Std. ausgezahlt"
+   "note": "10 Std. ausgezahlt",
+   "future": false,
+   "alt": false,
+   "calc_old": 27.5,
+   "sheet": false,
+   "calc_hours": 193.0,
+   "calc_long": 17
   },
   {
    "month": "2026-08",
@@ -1201,7 +1221,13 @@
    "euro": 40.0,
    "days": 22,
    "tracked": true,
-   "note": ""
+   "note": "",
+   "future": false,
+   "alt": false,
+   "calc_old": 35.5,
+   "sheet": false,
+   "calc_hours": 174.25,
+   "calc_long": 9
   },
   {
    "month": "2026-09",
@@ -1219,7 +1245,13 @@
    "euro": 0.0,
    "days": 22,
    "tracked": true,
-   "note": ""
+   "note": "",
+   "future": false,
+   "alt": false,
+   "calc_old": 34.75,
+   "sheet": false,
+   "calc_hours": 188.0,
+   "calc_long": 17
   },
   {
    "month": "2026-10",
@@ -1237,7 +1269,13 @@
    "euro": 40.0,
    "days": 23,
    "tracked": true,
-   "note": ""
+   "note": "",
+   "future": false,
+   "alt": false,
+   "calc_old": 47.75,
+   "sheet": false,
+   "calc_hours": 184.75,
+   "calc_long": 17
   },
   {
    "month": "2026-11",
@@ -1256,6 +1294,12 @@
    "days": 2,
    "tracked": true,
    "note": "",
+   "future": false,
+   "alt": false,
+   "calc_old": 57.5,
+   "sheet": false,
+   "calc_hours": 18.75,
+   "calc_long": 2,
    "paid_today": 25.0,
    "now": 51.25
   }
