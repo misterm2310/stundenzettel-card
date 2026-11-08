@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "0.2.0-beta.8";
+const SZ_VERSION = "1.0.0";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.0", "🎉 <b>Erste offizielle Version!</b> Alles aus 8 Betas ist jetzt fest drin – danke fürs Testen! · ⏱️ Heute mit Kommen/Gehen, Stempeln per Knopf oder Handy-Zone · 📅 Kalender-Abgleich · 💰 Überstunden-Konto mit Ü.-Alt laut Lohnabrechnung und Resturlaub · 📊 Statistik · 📄 Zettel vom Chef einlesen (grün/rot) · 📤 Drucken &amp; Teilen als PDF · 🔒 PIN, auch nur fürs Ändern · 📱 Offline-App · 📝 Notizen als Symbol"],
   ["0.2.0-beta.8", "📝 Notizen stehen in Heute und Monat nur noch als kleines Symbol – antippen zeigt sie · 🔒 Neu in ⚙️ Schutz: <b>Ändern nur mit PIN</b> (ansehen geht frei, danach 10 Minuten frei) · 📄 Zettel vom Chef: <b>grün</b>, wo der Chef mehr Stunden hat, <b>rot</b>, wo weniger – seine Salden grün im Plus, rot im Minus"],
   ["0.2.0-beta.7", "📱 <b>Zettel vom Chef</b> jetzt auch in der Offline-App (Knopf im Monat, nur wenn die App Netz hat)"],
   ["0.2.0-beta.6", "📄 <b>Zettel vom Chef</b> im Monat: „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie rot links neben deinen, unten sein Saldo, „Saldo Vormonat“ mit einem Tipp als Ü.-Alt (geht nur mit diesem Zettel-Typ, siehe ⓘ) · ⓘ <b>Hilfe zum Antippen</b>: In ⚙️ und bei „Lohnabrechnung / Korrektur“ steht neben den Feldern ein kleines ⓘ statt langer Texte · 🏪 Hinweis: Ab Home Assistant 2026.11 heißt HACS „Marketplace“ (Einstellungen &gt; Marketplace)"],
