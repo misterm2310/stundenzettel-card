@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.1-beta.1";
+const SZ_VERSION = "1.0.1-beta.2";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.1-beta.2", "🧾 Die <b>Rechnung im Monat</b> ist jetzt einfach wie ein Kassenzettel: Gearbeitet − Soll = Dieser Monat, + Vom Vormonat = Dein Konto · Urlaub, Krank und 8 Std.+ als kleine Knöpfe darunter · 📄 Zettel vom Chef: <b>Laut Chef</b>, <b>Laut mir</b> und <b>Unterschied</b> – darunter wählst du, ob der nächste Monat mit der Zahl vom Chef oder mit deiner startet"],
   ["1.0.1-beta.1", "📅 Heute: mit <b>‹ ›</b> oben in der Stunden-Kachel oder per <b>Wischen</b> durch die Tage blättern (Datum antippen = zurück zu heute) · 🔒 „Ändern nur mit PIN“ gilt jetzt nur noch im <b>Monat</b> und für ältere Tage – heute und gestern gehen in Heute ohne PIN · 📝 <b>Schnellwähler</b> bei der Notiz: deine Orte und Tätigkeiten als Knöpfe, jeder Ort in einer neuen Zeile · 🧪 „Was ist neu“ steht immer nach Version sortiert, das Neueste oben"],
   ["1.0.0", "🎉 <b>Erste offizielle Version!</b> Alles aus 8 Betas ist jetzt fest drin – danke fürs Testen! · ⏱️ Heute mit Kommen/Gehen, Stempeln per Knopf oder Handy-Zone · 📅 Kalender-Abgleich · 💰 Überstunden-Konto mit Ü.-Alt laut Lohnabrechnung und Resturlaub · 📊 Statistik · 📄 Zettel vom Chef einlesen (grün/rot) · 📤 Drucken &amp; Teilen als PDF · 🔒 PIN, auch nur fürs Ändern · 📱 Offline-App · 📝 Notizen als Symbol"],
   ["0.2.0-beta.8", "📝 Notizen stehen in Heute und Monat nur noch als kleines Symbol – antippen zeigt sie · 🔒 Neu in ⚙️ Schutz: <b>Ändern nur mit PIN</b> (ansehen geht frei, danach 10 Minuten frei) · 📄 Zettel vom Chef: <b>grün</b>, wo der Chef mehr Stunden hat, <b>rot</b>, wo weniger – seine Salden grün im Plus, rot im Minus"],
@@ -157,7 +158,7 @@ const PIN_LOCK = { until: 0 };
 const pinOpen = () => PIN_LOCK.until > Date.now();
 // 🔒 Diese Knöpfe ändern etwas – mit „Ändern nur mit PIN“ fragen sie erst nach der PIN
 const szAddDays = (iso, n) => { const t = new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)) + n); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
-const SZ_EDIT_ACTS = new Set(["in", "out", "cancelstamp", "open", "quick", "monthform", "payslip", "unsheet", "kg", "kgnow", "bosspick", "bossalt", "bossdel", "undo"]);
+const SZ_EDIT_ACTS = new Set(["in", "out", "cancelstamp", "open", "quick", "monthform", "payslip", "unsheet", "kg", "kgnow", "bosspick", "bossue", "bossmine", "bossalt", "bossdel", "undo"]);
 const pinTouch = () => { if (pinOpen()) PIN_LOCK.until = Date.now() + 10 * 60 * 1000; };
 // 📴 PIN ohne Netz prüfen: HA schickt einen Offline-Schlüssel (PBKDF2-SHA256), die Karte rechnet genauso nach.
 // Ohne https (z. B. http://192.168…) gibt es kein crypto.subtle – dann rechnet ein kleines SHA-256 hier im Code.
@@ -889,6 +890,17 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .zettel .zr > span:first-child { color:var(--secondary-text-color); display:flex; align-items:center; gap:6px; }
 .zettel .zr.tot { font-weight:700; background:color-mix(in srgb, var(--hc, var(--kc-green)) 10%, transparent); }
 .zettel .zr.tot > span:last-child { color:var(--hc, var(--kc-green)); }
+.zettel.simple .zr.res { border-top:2px solid var(--divider-color); font-weight:600; }
+.zettel.simple .zr > span:last-child { white-space:nowrap; }
+.zettel.simple .zr.tot { font-size:1.15em; border-top:2px solid var(--divider-color); }
+.bpick { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin:10px 2px 4px; }
+.bpick > span { display:flex; align-items:center; gap:6px; font-weight:600; }
+.bpick .seg { display:flex; border:1.5px solid var(--divider-color); border-radius:999px; overflow:hidden; }
+.bpick .seg button { display:flex; align-items:center; gap:4px; border:0; background:transparent; color:var(--secondary-text-color); padding:6px 12px; font:inherit; font-size:.9em; cursor:pointer; }
+.bpick .seg button.on { background:var(--primary-color, #03a9f4); color:#fff; }
+.zchips { display:flex; flex-wrap:wrap; gap:6px; margin:8px 2px 4px; }
+.zchip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:999px; font-size:.85em; background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); color:var(--secondary-text-color); }
+.zchip b { color:var(--primary-text-color); }
 .vpos { color:var(--kc-green); } .vneg { color:var(--kc-red); }
 .dayrow.future { opacity:.6; }
 .ytab { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:.92em; }
@@ -1392,16 +1404,20 @@ class StundenzettelCard extends HTMLElement {
     const n = Object.keys(b.days || {}).filter((iso) => this._bossMark(iso, this._d.days[iso])).length;
     const mine = row ? (row.now ?? row.total) : null;
     const dEnd = b.saldo_ue != null && mine != null ? mine - b.saldo_ue : null;
-    const altDiff = row && b.saldo_vm != null && Math.abs(row.old - b.saldo_vm) > 0.004;
+    const col = (v) => (v < 0 ? "vneg" : "vpos");
+    const [y, m] = this._month.split("-").map(Number), next = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}`;
+    const nextAlt = ((this._d.months_meta || {})[next] || {}).alt;
+    const chefOn = b.saldo_ue != null && nextAlt != null && Math.abs(nextAlt - b.saldo_ue) < 0.005;
     return `<div class="ghead"><span class="gdot" style="--gc:#e53935">${ic("file-document-outline")}</span><span>Zettel vom Chef</span></div>
-      <div class="zettel boss-box">
-      ${b.gesamt != null ? r("sigma", "Gesamt (Chef)", `${h2(b.gesamt)} Std.`) : ""}${b.soll != null ? r("cash", "Sollzeit (Chef)", `−${h2(b.soll)} Std.`) : ""}
-      ${b.saldo_vm != null ? r("history", "Saldo Vormonat (Chef)", this._mv(`<span class="${b.saldo_vm < 0 ? "vneg" : "vpos"}">${hs(b.saldo_vm)}</span>`, "bvm" + this._month)) : ""}
-      ${b.saldo_ue != null ? r("scale-balance", "Saldo Übertrag (Chef)", this._mv(`<span class="${b.saldo_ue < 0 ? "vneg" : "vpos"}">${hs(b.saldo_ue)}</span> Std.`, "bue" + this._month), "tot") : ""}
-      ${dEnd != null ? `<div class="zr sub"><span><span>Karte</span>&nbsp;${this._mv(hs(mine), "bk" + this._month)}</span><span class="${Math.abs(dEnd) < 0.005 ? "" : dEnd < 0 ? "vneg" : "vpos"}">${Math.abs(dEnd) < 0.005 ? "gleich ✅" : this._mv(hs(dEnd), "bd" + this._month)}</span></div>` : ""}
-      ${r("calendar-alert", "Tage mit Abweichung", n ? `<span class="boss">${n}</span>` : "keine 🎉")}</div>
-      <div class="btnrow">${altDiff ? `<button class="btn small" data-a="bossalt">${ic("history")}Saldo Vormonat als Ü.-Alt übernehmen</button>` : ""}<button class="btn small" data-a="bossdel">${ic("delete-outline")}Zettel entfernen</button></div>`;
+      <div class="zettel simple boss-box">
+      ${b.saldo_ue != null ? r("account-tie-outline", "Laut Chef <small>(Übertrag)</small>", this._mv(`<span class="${col(b.saldo_ue)}">${hs(b.saldo_ue)} Std.</span>`, "bue" + this._month)) : ""}
+      ${mine != null ? r("account-outline", "Laut mir", this._mv(`<span class="${col(mine)}">${hs(mine)} Std.</span>`, "bk" + this._month)) : ""}
+      ${dEnd != null ? r("scale-unbalanced", "Unterschied", Math.abs(dEnd) < 0.005 ? "gleich ✅" : this._mv(`<span class="${col(dEnd)}">${hs(dEnd)} Std.</span>`, "bd" + this._month), "res") : ""}
+      <div class="zr sub"><span>Tage, an denen der Chef anders rechnet</span><span>${n ? `<span class="boss">${n}</span>` : "keine 🎉"}</span></div></div>
+      ${b.saldo_ue != null && mine != null ? `<div class="bpick"><span>${ic("arrow-right-bold-outline")}<span>${MONTHS[Number(next.slice(5)) - 1]} startet mit:</span></span><div class="seg"><button class="${chefOn ? "on" : ""}" data-a="bossue" data-v="${next}">${ic("account-tie-outline")}<span>Chef ${hs(b.saldo_ue)}</span></button><button class="${chefOn ? "" : "on"}" data-a="bossmine" data-v="${next}">${ic("account-outline")}<span>Mir ${hs(mine)}</span></button></div></div>` : ""}
+      <div class="btnrow"><button class="btn small" data-a="bossdel">${ic("delete-outline")}Zettel entfernen</button></div>`;
   }
+
   // 📝 Schnellwähler: lernt Orte und Tätigkeiten aus den alten Notizen („Ort - Tätigkeit“, eine Zeile pro Ort)
   _noteChips() {
     const pl = new Map(), ac = new Map();
@@ -1467,11 +1483,7 @@ class StundenzettelCard extends HTMLElement {
     }
     return h;
   }
-  _altRow(row, r) {
-    const off = row.old - (row.calc_old ?? row.old);
-    const line = r("history", row.alt ? "Ü.-Alt (Lohnabrechnung)" : "Ü.-Alt (Vormonat)", this._mv(hs(row.old), "old" + row.month));
-    return row.alt && Math.abs(off) > 0.004 ? line + `<div class="zr sub"><span>Karte hätte ${this._mv(hs(row.calc_old), "co" + row.month)}</span><span class="${off < 0 ? "vneg" : "vpos"}">${this._mv(hs(off), "cd" + row.month)}</span></div>` : line;
-  }
+
   _sheetNote(row) {
     if (!row?.sheet) return "";
     const dh = Math.abs((row.calc_hours ?? row.hours) - row.hours) > 0.004;
@@ -1480,35 +1492,20 @@ class StundenzettelCard extends HTMLElement {
   _zettel(row) {
     if (!row) return `<div class="empty">In diesem Monat steht noch nichts. ✍️</div>`;
     const r = (icon, label, val, cls = "") => `<div class="zr ${cls}"><span>${ic(icon)}${label}</span><span>${val}</span></div>`;
-    if (row.now != null) { // 📍 laufender Monat: fair rechnen – Soll nur bis heute
-      const diff = row.hours - row.paid_today;
-      return `<div class="zettel" style="--hc:${row.now < 0 ? "var(--kc-red)" : "var(--kc-green)"}">
-      ${r("sigma", "Summe bisher", `${h2(row.hours)} Std.`)}
-      ${r("cash", `Soll bis heute <small>(ganzer Monat ${h2(row.paid)})</small>`, `−${h2(row.paid_today)} Std.`)}
-      ${r("plus-minus-variant", "Plus/Minus bisher", `<span class="${diff < 0 ? "vneg" : "vpos"}">${hs(diff)}</span>`)}
-      ${this._altRow(row, r)}
-      ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, hs(row.adjust)) : ""}
-      ${r("scale-balance", "Stand heute", this._mv(`${hs(row.now)} Std.`, "now"), "tot")}
-      ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}
-      ${r("food-variant", `${h2(this._st.long_day).replace(",00", "")} Stunden und →`, row.long)}${row.euro ? r("cash", "Pauschal", eur(row.euro)) : ""}</div>
-      <p class="small">Der Monat läuft noch – darum zählt das Soll nur bis heute. Den fertigen Zettel (mit vollem Soll) gibt es ab dem 1. des nächsten Monats.</p>`;
+    const chips = `<div class="zchips">${[["beach", "Urlaub", row.urlaub], ["emoticon-sick-outline", "Krank", row.krank], ...(row.feiertag ? [["party-popper", "Feiertag", row.feiertag]] : []), ["food-variant", `${h2(this._st.long_day).replace(",00", "")} Std.+`, row.long], ...(row.euro ? [["cash", "Pauschal", eur(row.euro)]] : [])].map(([i, l, v]) => `<span class="zchip">${ic(i)}<b>${v}</b>${l}</span>`).join("")}</div>`;
+    if (row.future) {
+      return `<div class="zettel">${r("sigma", "Schon eingetragen", `${h2(row.hours)} Std.`)}</div>${chips}<p class="small">🔮 Dieser Monat kommt erst noch – zählt fürs Konto erst, wenn er dran ist.</p>`;
     }
-    if (row.future) { // 🔮 Monat kommt erst noch – Eingetragenes (z. B. Urlaub) zeigen, Konto bleibt unberührt
-      return `<div class="zettel">
-      ${r("sigma", "Schon eingetragen", `${h2(row.hours)} Std.`)}
-      ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}</div>
-      <p class="small">🔮 Dieser Monat kommt erst noch. Was hier schon steht, zählt fürs Überstunden-Konto erst, wenn der Monat dran ist.</p>`;
-    }
-    const totCol = row.total < 0 ? "var(--kc-red)" : "var(--kc-green)";
-    return `<div class="zettel" style="--hc:${totCol}">
-      ${r("sigma", "Summe", `${h2(row.hours)} Std.`)}
-      ${r("cash", "Bezahlt (Soll)", `−${h2(row.paid)} Std.`)}
-      ${r("plus-minus-variant", "Plus/Minus", `<span class="${row.diff < 0 ? "vneg" : "vpos"}">${hs(row.diff)}</span>`)}
-      ${this._altRow(row, r)}
-      ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, hs(row.adjust)) : ""}
-      ${r("scale-balance", "Ü.-Gesamt", this._mv(`${hs(row.total)} Std.`, "tot" + row.month), "tot")}
-            ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}
-      ${r("food-variant", `${h2(this._st.long_day).replace(",00", "")} Stunden und →`, row.long)}${row.euro ? r("cash", "Pauschal", eur(row.euro)) : ""}</div>${this._sheetNote(row)}`;
+    const run = row.now != null;
+    const soll = run ? row.paid_today : row.paid, diff = row.hours - soll, end = run ? row.now : row.total;
+    const col = end < 0 ? "var(--kc-red)" : "var(--kc-green)";
+    return `<div class="zettel simple" style="--hc:${col}">
+      ${r("arm-flex-outline", run ? "Gearbeitet bis heute" : "Gearbeitet", `${h2(row.hours)} Std.`)}
+      ${r("clipboard-check-outline", run ? "Soll bis heute" : "Soll", `− ${h2(soll)} Std.`)}
+      ${r("equal", "Dieser Monat", `<span class="${diff < 0 ? "vneg" : "vpos"}">${hs(diff)} Std.</span>`, "res")}
+      ${r("history", row.alt ? "Vom Chef (Lohnabrechnung)" : "Vom Vormonat", `${hs(row.old)} Std.`)}${row.alt && Math.abs(row.old - (row.calc_old ?? row.old)) > 0.004 ? `<div class="zr sub"><span>Laut mir wären es ${this._mv(hs(row.calc_old), "co" + row.month)}</span><span class="${row.old - row.calc_old < 0 ? "vneg" : "vpos"}">${this._mv(hs(row.old - row.calc_old), "cd" + row.month)}</span></div>` : ""}
+      ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, `${hs(row.adjust)} Std.`) : ""}
+      ${r("scale-balance", run ? "Dein Konto heute" : `Konto Ende ${MONTHS[Number(row.month.slice(5)) - 1]}`, this._mv(`${hs(end)} Std.`, "tot" + row.month), "tot")}</div>${chips}${this._sheetNote(row)}`;
   }
 
   // ---------------------------------------------------------------- 📊 Jahr
@@ -2157,6 +2154,8 @@ class StundenzettelCard extends HTMLElement {
       }
       case "restore": this.shadowRoot.getElementById("restorefile")?.click(); return;
       case "bosspick": if (this._hass?.connected === false) { this._toast("📴 Zettel vom Chef geht nur mit Netz"); return; } this.shadowRoot.getElementById("bossfile")?.click(); return;
+      case "bossue": { const b = ((d.months_meta || {})[this._month] || {}).boss; if (b?.saldo_ue != null) { this._send({ type: "month_set", month: v, alt: b.saldo_ue }); this._toast(`💶 ${MONTHS[Number(v.slice(5)) - 1]} startet mit ${hs(b.saldo_ue)} (laut Chef)`); } return; }
+      case "bossmine": { this._send({ type: "month_set", month: v, alt: null }); this._toast(`💶 ${MONTHS[Number(v.slice(5)) - 1]} startet mit deiner Zahl`); return; }
       case "bossalt": { const b = ((d.months_meta || {})[this._month] || {}).boss; if (b?.saldo_vm != null) { this._send({ type: "month_set", month: this._month, alt: b.saldo_vm }); this._toast(`💶 Ü.-Alt = ${hs(b.saldo_vm)} (laut Chef)`); } return; }
       case "bossdel": if (szConfirm("Zettel vom Chef für diesen Monat entfernen? Deine Tage bleiben, wie sie sind.")) this._send({ type: "month_set", month: this._month, boss: null }); return;
       case "errclear": await this._hass.callWS({ type: "stundenzettel/errors_clear" }); return;

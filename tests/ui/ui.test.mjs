@@ -44,10 +44,10 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(await card(page).locator(".kg.running input[data-v='start']").inputValue() !== "" && /Eingestempelt seit/.test(await txt()), "Heute: eingestempelt → Felder Kommen/Gehen, Kommen läuft");
   await shot(page, "1-heute");
   await click(page, '[data-a="tab"][data-v="monat"]');
-  ok(/Stand heute/.test(await txt()) && /Soll bis heute/.test(await txt()), "Monat (läuft noch): Soll nur bis heute");
+  ok(/Dein Konto heute/.test(await txt()) && /Soll bis heute/.test(await txt()) && /Gearbeitet bis heute/.test(await txt()), "Monat (läuft noch): Soll nur bis heute");
   await shot(page, "2-monat");
   await click(page, '[data-a="mon"][data-v="-1"]');
-  ok(/Oktober 2026/.test(await txt()) && /Ü\.-Gesamt/.test(await txt()) && /Bezahlt/.test(await txt()), "Vormonat: Zettel mit Summe/Bezahlt/Ü.-Gesamt");
+  ok(/Oktober 2026/.test(await txt()) && /Konto Ende Oktober/.test(await txt()) && /Dieser Monat/.test(await txt()) && await card(page).locator(".zchip").count() >= 3, "Vormonat: Zettel mit Summe/Bezahlt/Ü.-Gesamt");
   await shot(page, "2b-monat-oktober");
   await click(page, '[data-a="mon"][data-v="1"]');
   await click(page, '.dayrow[data-d="2026-11-03"]');
@@ -122,7 +122,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(/Zeitsaldenliste/.test(await card(page).locator('.fhint[data-tip="boss"]').innerText()), "Monat: ⓘ neben „Zettel vom Chef“ sagt, welche Zettel gehen");
   await card(page).locator("#bossfile").setInputFiles({ name: "zettel.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 ausgedacht") });
   await page.waitForTimeout(250);
-  ok(/Oktober 2026/.test(await txt()) && /Saldo Übertrag \(Chef\)/.test(await txt()), "Zettel vom Chef: springt zum Monat und zeigt den Saldo vom Chef");
+  ok(/Oktober 2026/.test(await txt()) && /Laut Chef/.test(await txt()) && /Laut mir/.test(await txt()) && /Unterschied/.test(await txt()), "Zettel vom Chef: springt zum Monat und zeigt den Saldo vom Chef");
   const bossN = await card(page).locator(".dayrow .boss").count();
   ok(bossN >= 3, `Zettel vom Chef: rote Stunden nur an abweichenden Tagen (${bossN})`);
   const firstBoss = await card(page).locator(".dayrow .hrs").filter({ has: page.locator(".boss") }).first().innerText();
@@ -138,10 +138,14 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '.dayrow .notebtn');
   ok(await card(page).locator(".dayrow .notetext").count() === 0, "📝 nochmal antippen: Notiz wieder zu");
   await shot(page, "2b-zettel-vom-chef");
-  await click(page, '[data-a="bossalt"]');
+  await click(page, '[data-a="bossue"]');
   await page.waitForTimeout(150);
-  const bOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
-  ok(bOps.some((o) => o.type === "month_set" && o.month === "2026-10" && o.alt === 30.5), "„Saldo Vormonat als Ü.-Alt übernehmen“ schickt month_set");
+  const uOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(uOps.some((o) => o.type === "month_set" && o.month === "2026-11" && o.alt === 40.12), "„Chef“ wählen: November startet mit dem Übertrag vom Chef – month_set für den nächsten Monat");
+  await click(page, '[data-a="bossmine"]');
+  await page.waitForTimeout(150);
+  const mOps2 = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(mOps2.some((o) => o.type === "month_set" && o.month === "2026-11" && o.alt === null), "„Mir“ wählen: November rechnet wieder mit der eigenen Zahl");
   await click(page, '[data-a="mon"][data-v="1"]');
   // ⓘ in den Einstellungen
   await click(page, '[data-a="tab"][data-v="set"]');
