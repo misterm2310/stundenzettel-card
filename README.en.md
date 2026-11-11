@@ -29,7 +29,9 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 - 📥 Import an old sheet by pasting text. From Google Sheets/Excel the monthly values come along too (total, carried over, balance, 8 hours and more), otherwise „set the balance“ to the value of the paper sheet.
 - 📤 Print & share month or year as PDF (WhatsApp, mail, iPhone printing), print or as text, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
 - 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
-- 🔒 PIN lock for ⚙️, for changes (viewing stays free) or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
+- 📅 Flip through days in Today: ‹ › at the top of the hours tile or swipe.
+- 📝 Quick picker for notes: your places and activities as buttons (learned from your notes), each place on a new line.
+- 🔒 PIN lock for ⚙️, for changes in the month and to older days (today and yesterday stay free) or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
 - ⏰ Mascot: a little alarm clock with moods and seasonal costumes (off by default). 🙈 Veil overtime, ↩️ undo, 🧘 calm mode, hide tabs.
 
 ## 📦 Installation

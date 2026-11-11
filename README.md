@@ -34,7 +34,9 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - 📥 **Alten Zettel übernehmen**: einfach aus Google Tabellen/Excel/PDF kopieren und einfügen. Aus Tabellen kommen auch die **Monatswerte** mit (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) – jeder alte Monat sieht aus wie auf dem Zettel. Sonst **„Konto stellen“** auf den Stand vom Zettel.
 - 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
 - 📱 **Offline-App** fürs Handy: stempeln und Tage eintragen auch **ohne Netz** (z. B. im Keller der Baustelle) – wird nachgeschickt, die Uhrzeit vom Knopfdruck bleibt. Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol, Fingerabdruck-Sperre.
-- 🔒 **PIN-Sperre** für ⚙️, fürs Ändern (ansehen geht frei) oder die ganze Karte – prüft auch ohne Netz, sperrt nach 10 Minuten wieder.
+- 📅 **Tage blättern** in Heute: ‹ › oben in der Stunden-Kachel oder wischen.
+- 📝 **Schnellwähler für Notizen**: deine Orte und Tätigkeiten als Knöpfe (lernt aus deinen Notizen), jeder Ort in einer neuen Zeile.
+- 🔒 **PIN-Sperre** für ⚙️, fürs Ändern im Monat und älterer Tage (Heute und gestern gehen frei) oder die ganze Karte – prüft auch ohne Netz, sperrt nach 10 Minuten wieder.
 - 🌍 **Deutsch und Englisch** (automatisch wie dein Home Assistant).
 - ⏰ **Maskottchen**: ein kleiner Wecker mit Laune und Jahreszeiten-Kostüm (Standard aus).
 - 🙈 **Überstunden verschleiern**, ↩️ **Rückgängig** nach dem Löschen, 🧘 **Ruhiger Modus**, Reiter ausblenden.

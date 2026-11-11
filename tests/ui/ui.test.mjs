@@ -196,24 +196,61 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(!errors.length, "PIN: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
-{ // 🔒 Ändern nur mit PIN
+{ // 🔒 Ändern nur mit PIN – nur im Monat und für ältere Tage, Heute (heute + gestern) frei
   const { page, errors } = await open("#pin-lockedit");
   const t0 = await card(page).locator("ha-card").innerText();
   ok(/Überstunden-Konto/.test(t0) && !/PIN eingeben/.test(t0), "Ändern nur mit PIN: Ansehen geht ohne PIN");
   await click(page, '.dayrow[data-a="open"]');
-  ok(/Zum Ändern brauchst du die PIN/.test(await card(page).locator("ha-card").innerText()), "Ändern nur mit PIN: Tag antippen fragt nach der PIN");
-  await shot(page, "9b-aendern-pin");
+  ok(await card(page).locator('form[data-form="day"]').count() === 1 && await card(page).locator(".pinpad").count() === 0, "Heute: heutigen Tag ändern geht ohne PIN");
+  await click(page, '[data-a="close"]');
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  ok(/Gestern/.test(await card(page).locator(".hero").innerText()), "‹ springt auf gestern");
+  await click(page, '.dayrow[data-a="open"]');
+  ok(await card(page).locator(".pinpad").count() === 0, "Heute: gestern ändern geht ohne PIN");
+  await click(page, '[data-a="close"]');
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  await click(page, '.dayrow[data-a="open"]');
+  ok(/Zum Ändern brauchst du die PIN/.test(await card(page).locator("ha-card").innerText()), "Heute: ältere Tage nur ansehen – Ändern fragt nach der PIN");
   await click(page, '[data-a="back"]');
-  ok(await card(page).locator(".pinpad").count() === 0 && /Überstunden-Konto/.test(await card(page).locator("ha-card").innerText()), "Abbrechen: zurück, nichts geändert");
-  await click(page, '[data-a="kgnow"][data-v="end"]');
-  ok(await card(page).locator(".pinpad").count() === 1, "Ändern nur mit PIN: ⏱️ Gehen fragt auch nach der PIN");
+  ok(await card(page).locator(".pinpad").count() === 0 && await card(page).locator(".hero").count() === 1, "Abbrechen: zurück in Heute, nichts geändert");
+  await click(page, '.hero .hday');
+  ok(/Heute,/.test(await card(page).locator(".hero").innerText()), "Datum antippen: zurück zu heute");
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  ok(/Zum Ändern brauchst du die PIN/.test(await card(page).locator("ha-card").innerText()), "Monat: Tag antippen fragt nach der PIN");
+  await shot(page, "9b-aendern-pin");
   const n0 = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").length);
   for (const k of ["1", "2", "3", "4", "✔"]) await click(page, `[data-a="pkey"][data-v="${k}"]`);
   await page.waitForTimeout(150);
   ok(await card(page).locator(".pinpad").count() === 0 && n0 === 0, "Richtige PIN: Tastenfeld weg, vorher wurde nichts geschickt");
   await click(page, '.dayrow[data-a="open"]');
-  ok(await card(page).locator('form[data-form="day"]').count() === 1, "Nach der PIN: Tag lässt sich ändern");
+  ok(await card(page).locator('form[data-form="day"]').count() === 1, "Nach der PIN: Tag im Monat lässt sich ändern");
   ok(!errors.length, "Ändern nur mit PIN: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{ // 📅 Heute: Tage blättern + 📝 Notiz-Schnellwähler + 🧪 Was ist neu sortiert
+  const { page, errors } = await open("");
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  const h = await card(page).locator(".hero").innerText();
+  ok(!/Heute|Gestern/.test(h.split("\n")[0]) && /\d\d\.\d\d\./.test(h) && await card(page).locator('[data-a="kgnow"]').count() === 0, `Heute: zwei Tage zurück zeigt den Tag, ohne ⏱️ jetzt („${h.split("\n")[0]}“)`);
+  await click(page, '[data-a="tday"][data-v="1"]');
+  await click(page, '[data-a="tday"][data-v="1"]');
+  ok(/Heute,/.test(await card(page).locator(".hero").innerText()), "› zurück bis heute");
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  const chips = await card(page).locator('[data-a="nplace"]').count();
+  ok(chips >= 2 && await card(page).locator('[data-a="nact"]').count() >= 2, `Notiz: Schnellwähler mit Orten (${chips}) und Tätigkeiten`);
+  const ta = card(page).locator('textarea[name="note"]');
+  await ta.fill("");
+  const p1 = await card(page).locator('[data-a="nplace"]').first().getAttribute("data-v");
+  await click(page, '[data-a="nplace"]');
+  await click(page, '[data-a="nact"]');
+  await card(page).locator('[data-a="nplace"]').nth(1).click(); await page.waitForTimeout(120);
+  const v = await ta.inputValue();
+  ok(v.split("\n").length === 2 && v.startsWith(p1 + " - ") && /^.+ - .+$/.test(v.split("\n")[0]), `Notiz: jeder Ort in eigener Zeile, Tätigkeit dahinter („${v.replace(/\n/g, " ⏎ ")}“)`);
+  await shot(page, "3b-notiz-schnellwahl");
+  ok(!errors.length, "Blättern & Schnellwähler: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
 { // 🔒 ganze Karte gesperrt
