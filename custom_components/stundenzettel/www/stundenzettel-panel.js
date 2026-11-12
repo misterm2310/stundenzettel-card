@@ -29,7 +29,8 @@ class StundenzettelPanel extends HTMLElement {
       if (!customElements.get("stundenzettel-card")) await import(this._panel?.config?.card_url || "/stundenzettel/files/stundenzettel-card.js");
       await customElements.whenDefined("stundenzettel-card");
       const card = document.createElement("stundenzettel-card");
-      card.setConfig({ title: "Stundenzettel" });
+      const pc = this._panel?.config || {};
+      card.setConfig({ title: pc.title || "Stundenzettel", ...(pc.entry ? { entry: pc.entry } : {}) }); // 👥 welcher Stundenzettel
       this._card = card;
       this._wrap.append(card);
       if (this._hass) card.hass = this._hass;

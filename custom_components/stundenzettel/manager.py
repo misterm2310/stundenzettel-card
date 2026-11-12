@@ -404,11 +404,12 @@ def _local(v: Any) -> datetime | None:
 class StundenzettelManager:
     """Speichert alles und schickt der Karte bei jeder Änderung den neuen Stand."""
 
-    def __init__(self, hass: HomeAssistant, entry_id: str = "", title: str = "Stundenzettel") -> None:
+    def __init__(self, hass: HomeAssistant, entry_id: str = "", title: str = "Stundenzettel", storage_key: str = STORAGE_KEY) -> None:
         self.hass = hass
         self.entry_id = entry_id
         self.title = title
-        self.store: Store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        # 💾 Der erste Stundenzettel speichert wie bisher unter „stundenzettel“, jeder weitere in einer eigenen Datei
+        self.store: Store = Store(hass, STORAGE_VERSION, storage_key)
         self.data: dict[str, Any] = _empty()
         self._listeners: list[Callable[[], None]] = []
         self._unsubs: list[Callable[[], None]] = []
@@ -459,7 +460,7 @@ class StundenzettelManager:
                 fn()
             except Exception:  # noqa: BLE001
                 _LOGGER.exception("Stundenzettel: Karte konnte nicht benachrichtigt werden")
-        async_dispatcher_send(self.hass, SIGNAL_UPDATE)
+        async_dispatcher_send(self.hass, f"{SIGNAL_UPDATE}_{self.entry_id}")  # 📊 nur die Sensoren DIESES Stundenzettels
 
     def _err(self, text: str) -> None:
         self.errors.insert(0, {"ts": int(time.time() * 1000), "text": text})

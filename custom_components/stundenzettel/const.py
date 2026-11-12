@@ -20,6 +20,8 @@ APP_URL = "/stundenzettel/app/"
 PIN_OFF_ITER = 100_000  # 📴 Runden für den Offline-Schlüssel der PIN (PBKDF2) – Karte rechnet ohne Netz genauso nach
 
 CONF_SIDEBAR = "sidebar"
+CONF_ENTRY = "stundenzettel"  # 👥 Feld in den Aktionen: welcher Stundenzettel
+CONF_NAME = "name"
 SIGNAL_UPDATE = f"{DOMAIN}_update"
 
 # 📅 Was für ein Tag war das?

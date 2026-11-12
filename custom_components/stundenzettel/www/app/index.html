@@ -334,11 +334,12 @@ function update() {
   if (!card) {
     wrap.innerHTML = "";
     card = document.createElement("stundenzettel-card");
-    card.setConfig({ title: "Stundenzettel" });
+    const ent = get("szapp_entry", ""); // 👥 welcher Stundenzettel (leer = der erste)
+    card.setConfig({ title: "Stundenzettel", ...(ent ? { entry: ent } : {}) });
     wrap.append(card);
     const foot = document.createElement("div");
     foot.className = "foot";
-    foot.innerHTML = `<button id="lockBtn" hidden></button> <button id="logoutBtn">Abmelden</button><p class="small">Abmelden meldet nur dieses Handy ab. Deine Daten in Home Assistant bleiben komplett erhalten, nur die Kopie hier im Handy wird gelöscht.</p>`;
+    foot.innerHTML = `<label id="entryWrap" hidden>👥 Stundenzettel: <select id="entryPick"></select></label> <button id="lockBtn" hidden></button> <button id="logoutBtn">Abmelden</button><p class="small">Abmelden meldet nur dieses Handy ab. Deine Daten in Home Assistant bleiben komplett erhalten, nur die Kopie hier im Handy wird gelöscht.</p>`;
     wrap.append(foot);
     document.getElementById("lockBtn").addEventListener("click", () => (lock ? lockDisable() : lockEnable()));
     document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -355,10 +356,25 @@ function update() {
   }
   showLock();
   card.hass = makeHass();
+  pickEntries();
   // ⏱️ Kurzbefehl vom Startbildschirm (lange aufs App-Symbol drücken): „Kommen“ oder „Gehen“
   if (shortcut === "in" || shortcut === "out") { const what = shortcut; shortcut = null; setTimeout(() => card.stundenzettelShortcut?.(what), 400); }
 }
 let shortcut = new URLSearchParams(location.search).get("do");
+// 👥 Gibt es mehrere Stundenzettel (z. B. für zwei Personen)? Dann unten eine Auswahl zeigen.
+let entriesAsked = false;
+function pickEntries() {
+  if (entriesAsked || !card || navigator.onLine === false) return;
+  entriesAsked = true;
+  makeHass().callWS({ type: "stundenzettel/entries" }).then((r) => {
+    const ents = r?.entries || [], sel = document.getElementById("entryPick"), wrapEl = document.getElementById("entryWrap");
+    if (!sel || ents.length < 2) return;
+    const cur = get("szapp_entry", "");
+    sel.innerHTML = ents.map((e) => { const v = e.first ? "" : e.entry_id; return `<option value="${v}" ${v === cur ? "selected" : ""}>${String(e.title).replace(/[<>&"]/g, "")}</option>`; }).join("");
+    wrapEl.hidden = false;
+    sel.onchange = () => { put("szapp_entry", sel.value); card.setConfig({ title: "Stundenzettel", ...(sel.value ? { entry: sel.value } : {}) }); };
+  }).catch(() => { entriesAsked = false; });
+}
 function szKeys(...pre) { const out = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (pre.some((p) => k === p || k.startsWith(p + "_"))) out.push(k); } } catch (_) { /* egal */ } return out; }
 if (shortcut) history.replaceState(null, "", BASE);
 function logout(silent) {
@@ -367,7 +383,7 @@ function logout(silent) {
   localStorage.removeItem(K.auth);
   if (!silent) {
     // 🔒 Alles Persönliche aus dem Handy löschen
-    for (const k of [K.user, ...szKeys("stundenzettel_data", "stundenzettel_queue"), "stundenzettel_hidden", "stundenzettel_calm", LOCK_KEY]) localStorage.removeItem(k);
+    for (const k of [K.user, ...szKeys("stundenzettel_data", "stundenzettel_queue"), "stundenzettel_hidden", "stundenzettel_calm", "szapp_entry", LOCK_KEY]) localStorage.removeItem(k);
     user = null;
     if (refresh) fetch("/auth/token", { method: "POST", body: new URLSearchParams({ action: "revoke", token: refresh }) }).catch(() => {});
   }

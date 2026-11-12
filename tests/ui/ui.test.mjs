@@ -130,6 +130,8 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   const up = await card(page).locator(".dayrow .boss.up").count(), down = await card(page).locator(".dayrow .boss:not(.up)").count();
   ok(up >= 1 && down >= 1, `Zettel vom Chef: grün wo der Chef mehr hat (${up}), rot wo weniger (${down})`);
   ok(await card(page).locator(".boss-box .vpos").count() >= 2, "Zettel vom Chef: Salden im Plus sind grün");
+  const bbox = await card(page).locator(".boss-box").innerText();
+  ok(/\+40:07 Std\./.test(bbox) && !/40,12/.test(bbox) && /Chef \+40:07/.test(await card(page).locator(".bpick").innerText()), "Zettel vom Chef: Zahlen in Std:Min wie auf dem Lohnzettel (+40:07)");
   // 📝 Notizen nur als Symbol
   const mt = await txt();
   ok(!/Musterstadt – Terrasse/.test(mt) && await card(page).locator(".dayrow .notebtn").count() >= 5, "Monat: Notizen nur als 📝-Symbol, kein Text");
@@ -252,6 +254,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '[data-a="nact"]');
   await card(page).locator('[data-a="nplace"]').nth(1).click(); await page.waitForTimeout(120);
   const v = await ta.inputValue();
+  ok(await card(page).evaluate((el) => el.shadowRoot.activeElement?.name !== "note"), "Notiz: Schnellknöpfe holen keine Tastatur (Feld bekommt keinen Fokus)");
   ok(v.split("\n").length === 2 && v.startsWith(p1 + " - ") && /^.+ - .+$/.test(v.split("\n")[0]), `Notiz: jeder Ort in eigener Zeile, Tätigkeit dahinter („${v.replace(/\n/g, " ⏎ ")}“)`);
   await shot(page, "3b-notiz-schnellwahl");
   ok(!errors.length, "Blättern & Schnellwähler: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
@@ -285,6 +288,21 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(/Los geht's/.test(await card(page).locator("ha-card").innerText()), "Leerer Start zeigt die Einrichtungs-Hilfe");
   await shot(page, "7-start-hell-handy");
   ok(!errors.length, "leer & hell: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{ // 👥 zweiter Stundenzettel: jede Nachricht sagt, welcher gemeint ist
+  const page = await browser.newPage({ viewport: { width: 520, height: 1000 } });
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(base + "#entry2");
+  await page.waitForFunction(() => window.ready); await page.waitForTimeout(300);
+  await click(page, '.dayrow[data-a="open"], [data-a="tab"][data-v="monat"]');
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  await card(page).locator('form[data-form="day"] button[type="submit"]').first().click(); await page.waitForTimeout(200);
+  const msgs = await page.evaluate(() => fake.msgs);
+  ok(msgs.length >= 2 && msgs.every((m) => m.entry_id === "e2"), `Zweiter Stundenzettel: alle ${msgs.length} Nachrichten mit entry_id`);
+  ok(msgs.some((m) => m.type === "stundenzettel/apply"), "Zweiter Stundenzettel: Speichern geht an den richtigen");
+  ok(!errors.length, "Zweiter Stundenzettel: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
 await browser.close();

@@ -1,7 +1,21 @@
 kommen:
+  fields:
+    stundenzettel:
+      selector:
+        config_entry:
+          integration: stundenzettel
 gehen:
+  fields:
+    stundenzettel:
+      selector:
+        config_entry:
+          integration: stundenzettel
 tag_eintragen:
   fields:
+    stundenzettel:
+      selector:
+        config_entry:
+          integration: stundenzettel
     datum:
       required: true
       example: "2026-11-04"
@@ -48,4 +62,14 @@ tag_eintragen:
       selector:
         text:
 abgleichen:
+  fields:
+    stundenzettel:
+      selector:
+        config_entry:
+          integration: stundenzettel
 daten_abrufen:
+  fields:
+    stundenzettel:
+      selector:
+        config_entry:
+          integration: stundenzettel

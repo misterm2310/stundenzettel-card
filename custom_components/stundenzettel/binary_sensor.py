@@ -8,8 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, SIGNAL_UPDATE
-from .sensor import device_info
+from .const import SIGNAL_UPDATE
+from .sensor import device_info, entity_prefix, manager_of
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -26,16 +26,17 @@ class SzStamped(BinarySensorEntity):
         self.hass = hass
         self._attr_unique_id = f"{entry.entry_id}_stamped"
         self._attr_device_info = device_info(entry)
-        self.entity_id = "binary_sensor.stundenzettel_eingestempelt"
+        self._entry = entry
+        self.entity_id = f"binary_sensor.{entity_prefix(entry)}_eingestempelt"
 
     async def async_added_to_hass(self) -> None:
-        self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_UPDATE, self.async_write_ha_state))
+        self.async_on_remove(async_dispatcher_connect(self.hass, f"{SIGNAL_UPDATE}_{self._entry.entry_id}", self.async_write_ha_state))
 
     @property
     def is_on(self) -> bool:
-        return bool(self.hass.data[DOMAIN]["manager"].data.get("stamp"))
+        return bool(manager_of(self.hass, self._entry).data.get("stamp"))
 
     @property
     def extra_state_attributes(self):
-        st = self.hass.data[DOMAIN]["manager"].data.get("stamp") or {}
+        st = manager_of(self.hass, self._entry).data.get("stamp") or {}
         return {"seit": st.get("in"), "datum": st.get("date")}

@@ -801,5 +801,15 @@
  "Mir {}": "Me {0}",
  "🧾 Die <b>Rechnung im Monat</b> ist jetzt einfach wie ein Kassenzettel: Gearbeitet − Soll = Dieser Monat, + Vom Vormonat = Dein Konto · Urlaub, Krank und 8 Std.+ als kleine Knöpfe darunter · 📄 Zettel vom Chef: <b>Laut Chef</b>, <b>Laut mir</b> und <b>Unterschied</b> – darunter wählst du, ob der nächste Monat mit der Zahl vom Chef oder mit deiner startet": "🧾 The <b>calculation in the month</b> is now as simple as a receipt: Worked − Target = This month, + From last month = Your balance · Holiday, Sick and 8 h+ as small chips below · 📄 Employer's timesheet: <b>Employer says</b>, <b>I say</b> and <b>Difference</b> – below you choose whether the next month starts with your employer's figure or yours",
  "🧾 Die <b>Rechnung im Monat</b> ist jetzt einfach wie ein Kassenzettel: Gearbeitet − Soll = Dieser Monat, + Vom Vormonat = Dein Konto": "🧾 The <b>calculation in the month</b> is now as simple as a receipt: Worked − Target = This month, + From last month = Your balance",
- "📄 Zettel vom Chef: <b>Laut Chef</b>, <b>Laut mir</b> und <b>Unterschied</b> – darunter wählst du, ob der nächste Monat mit der Zahl vom Chef oder mit deiner startet": "📄 Employer's timesheet: <b>Employer says</b>, <b>I say</b> and <b>Difference</b> – below you choose whether the next month starts with your employer's figure or yours"
+ "📄 Zettel vom Chef: <b>Laut Chef</b>, <b>Laut mir</b> und <b>Unterschied</b> – darunter wählst du, ob der nächste Monat mit der Zahl vom Chef oder mit deiner startet": "📄 Employer's timesheet: <b>Employer says</b>, <b>I say</b> and <b>Difference</b> – below you choose whether the next month starts with your employer's figure or yours",
+ "👥 <b>Zweiter Stundenzettel</b>: Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen – eigene Zettel, eigene PIN, eigene Sensoren": "👥 <b>Second timesheet</b>: for a second person with their own employer simply add the integration again – own entries, own PIN, own sensors",
+ "Zweiter Stundenzettel": "Second timesheet",
+ ": Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen – eigene Zettel, eigene PIN, eigene Sensoren": ": for a second person with their own employer simply add the integration again – own entries, own PIN, own sensors",
+ "In der Karte (Dashboard → Karte bearbeiten) wählst du, welchen Stundenzettel sie zeigt, in der Offline-App unten": "In the card (dashboard → edit card) you choose which timesheet it shows, in the offline app at the bottom",
+ "🕐 Zettel vom Chef: Zahlen jetzt in <b>Std:Min</b> wie auf dem Lohnzettel (z. B. +24:29)": "🕐 Employer's timesheet: figures now in <b>h:mm</b> like on the payslip (e.g. +24:29)",
+ "🕐 Zettel vom Chef: Zahlen jetzt in": "🕐 Employer's timesheet: figures now in",
+ "Std:Min": "h:mm",
+ "wie auf dem Lohnzettel (z. B. +24:29)": "like on the payslip (e.g. +24:29)",
+ "⌨️ Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur": "⌨️ Note quick buttons no longer open the keyboard",
+ "Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur": "Note quick buttons no longer open the keyboard"
 }
