@@ -32,7 +32,7 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - 📄 **Zettel vom Chef vergleichen**: im Monat die „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie links neben deinen (grün = Chef hat mehr, rot = weniger), dazu sein Saldo. „Saldo Vormonat“ geht mit einem Tipp als Ü.-Alt rein. Geht nur mit diesem Zettel-Typ (PDF vom Computer, keine Fotos).
 - ⓘ **Hilfe zum Antippen**: In ⚙️ steht neben den Feldern ein kleines ⓘ statt langer Texte.
 - 📥 **Alten Zettel übernehmen**: einfach aus Google Tabellen/Excel/PDF kopieren und einfügen. Aus Tabellen kommen auch die **Monatswerte** mit (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) – jeder alte Monat sieht aus wie auf dem Zettel. Sonst **„Konto stellen“** auf den Stand vom Zettel.
-- 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
+- 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text – unten mit ✍️ **Unterschrift-Linien** für dich und den Chef, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
 - 📱 **Offline-App** fürs Handy: stempeln und Tage eintragen auch **ohne Netz** (z. B. im Keller der Baustelle) – wird nachgeschickt, die Uhrzeit vom Knopfdruck bleibt. Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol, Fingerabdruck-Sperre.
 - 📅 **Tage blättern** in Heute: ‹ › oben in der Stunden-Kachel oder wischen.
 - 📝 **Schnellwähler für Notizen**: deine Orte und Tätigkeiten als Knöpfe (lernt aus deinen Notizen), jeder Ort in einer neuen Zeile.

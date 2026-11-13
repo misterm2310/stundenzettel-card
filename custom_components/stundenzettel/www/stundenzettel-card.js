@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.1-beta.3";
+const SZ_VERSION = "1.0.1-beta.4";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.1-beta.4", "🆕 <b>Was ist neu</b> wie bei der Einkaufsliste: oben der orange Beta-Kasten mit allem, was in dieser Beta neu ist (höchste Beta oben), darunter „Die letzten Neuerungen bis Version …“ (höchstens 15, das Neueste oben) · ✍️ <b>Unterschrift im PDF</b>: Monat und Jahr haben unten je eine Linie für dich (Arbeitnehmer) und den Chef – auch beim Drucken"],
   ["1.0.1-beta.3", "👥 <b>Zweiter Stundenzettel</b>: Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen – eigene Zettel, eigene PIN, eigene Sensoren · In der Karte (Dashboard → Karte bearbeiten) wählst du, welchen Stundenzettel sie zeigt, in der Offline-App unten · 🕐 Zettel vom Chef: Zahlen jetzt in <b>Std:Min</b> wie auf dem Lohnzettel (z. B. +24:29) · ⌨️ Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur"],
   ["1.0.1-beta.2", "🧾 Die <b>Rechnung im Monat</b> ist jetzt einfach wie ein Kassenzettel: Gearbeitet − Soll = Dieser Monat, + Vom Vormonat = Dein Konto · Urlaub, Krank und 8 Std.+ als kleine Knöpfe darunter · 📄 Zettel vom Chef: <b>Laut Chef</b>, <b>Laut mir</b> und <b>Unterschied</b> – darunter wählst du, ob der nächste Monat mit der Zahl vom Chef oder mit deiner startet"],
   ["1.0.1-beta.1", "📅 Heute: mit <b>‹ ›</b> oben in der Stunden-Kachel oder per <b>Wischen</b> durch die Tage blättern (Datum antippen = zurück zu heute) · 🔒 „Ändern nur mit PIN“ gilt jetzt nur noch im <b>Monat</b> und für ältere Tage – heute und gestern gehen in Heute ohne PIN · 📝 <b>Schnellwähler</b> bei der Notiz: deine Orte und Tätigkeiten als Knöpfe, jeder Ort in einer neuen Zeile · 🧪 „Was ist neu“ steht immer nach Version sortiert, das Neueste oben"],
@@ -34,6 +35,8 @@ const SZ_NEWS = [
   ["0.2.0", "Heute zeigt oben groß die <b>Stunden von heute</b> (beim Stempeln läuft die Zeit mit), darunter Monat und Überstunden-Konto · 🔒 PIN-Sperre für ⚙️ oder die ganze Karte (geht auch ohne Netz) · 📱 Offline-App fürs Handy: stempeln ohne Netz, wird später nachgeschickt · Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol · 🌍 Englisch · ⏰ Maskottchen: ein kleiner Wecker mit Laune und Jahreszeiten-Kostüm · 🙈 Überstunden verschleiern · ↩️ Rückgängig nach dem Löschen · 🧘 Ruhiger Modus · Reiter ausblenden · Neues Symbol"],
   ["0.1.0", "Erste Version 🎉 · Termin „Arbeiten“ aus dem Kalender lesen und (wenn du willst) zurückschreiben · Kommen/Gehen per Knopf oder automatisch per Handy-Zone · Überstunden-Konto wie auf dem Papier-Zettel (Summe, Bezahlt, Ü.-Alt, Ü.-Gesamt) · Urlaub, Krank, Feiertag, Frei, Pauschal · Pausen-Regeln · Alte Tabelle als Text importieren · Drucken und CSV"],
 ];
+const SZ_SIGN = ["Datum, Unterschrift Arbeitnehmer", "Datum, Unterschrift Chef"]; // ✍️ Unterschrift-Linien unten im PDF und beim Drucken
+const SZ_NEWS_MAX = 15; // 🆕 so viele Neuerungen zeigt „Was ist neu“ höchstens
 const SZ_CARDS = new Set();
 
 const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -1004,6 +1007,12 @@ function szTablePdf(m) {
   y -= 10;
   if (y - 15 * m.sums.length < BOTTOM) { newPage(); y = PH - M - 10; }
   for (const [label, val, strong] of m.sums) { text(PW - M - 260, y, szPdfChars(label), 10.5, !!strong); right(PW - M, y, szPdfChars(val), 10.5, true, strong ? accent : [0.13, 0.13, 0.13]); y -= 15; }
+  if (m.sign) { // ✍️ Unterschrift: links Arbeitnehmer, rechts Chef – passt es nicht mehr, kommt eine neue Seite
+    if (y - 70 < BOTTOM) { newPage(); y = PH - M - 10; }
+    y -= 50;
+    const w = (PW - 2 * M - 40) / 2;
+    m.sign.forEach((lab, k) => { const x = M + k * (w + 40); line(x, y, x + w, y, [0.25, 0.25, 0.25], 0.8); text(x, y - 12, szPdfChars(lab), 9, false, gray); });
+  }
   pages.forEach((pg, k) => {
     ops = pg;
     const ft = szPdfChars(`Erstellt mit Stundenzettel${pages.length > 1 ? ` · ${k + 1}/${pages.length}` : ""}`);
@@ -1803,8 +1812,17 @@ class StundenzettelCard extends HTMLElement {
       <div class="btnrow"><button class="btn" data-a="backup">${ic("download")}Sicherung speichern</button>${admin ? `<button class="btn" data-a="restore">${ic("upload")}Sicherung einspielen</button><input type="file" id="restorefile" accept=".json,application/json" hidden>` : ""}<button class="btn" data-a="csvall">${ic("file-delimited-outline")}Alles als CSV</button></div>`;
   }
   _newsHtml() {
-    const li = (t) => `<ul>${t.split(" · ").map((x) => `<li>${x}</li>`).join("")}</ul>`;
-    return `${/-beta/.test(SZ_VERSION) ? `<div class="betabox"><b>🧪 Du bist in der Beta ${SZ_VERSION}</b></div>` : ""}<p class="small">Das Neueste steht oben.</p>${[...SZ_NEWS].sort((a, b) => szVerCmp(b[0], a[0])).map((n) => `<p style="margin:10px 0 0"><b>v${n[0]}</b></p>${li(n[1])}`).join("")}`;
+    // 🆕 wie bei der Einkaufsliste: oben der Beta-Kasten (nur in einer Beta), darunter höchstens 15 Neuerungen der offiziellen Versionen – das Neueste oben
+    const sorted = [...SZ_NEWS].sort((a, b) => szVerCmp(b[0], a[0]));
+    const base = (v) => String(v).replace(/-beta.*$/, "");
+    const isBeta = /-beta/.test(SZ_VERSION);
+    const betas = isBeta ? sorted.filter((n) => /-beta/.test(n[0]) && base(n[0]) === base(SZ_VERSION) && szVerCmp(n[0], SZ_VERSION) <= 0) : [];
+    const official = sorted.filter((n) => !betas.includes(n) && szVerCmp(n[0], SZ_VERSION) <= 0);
+    const newsVer = official.find((n) => !/-beta/.test(n[0]))?.[0] || official[0]?.[0] || SZ_VERSION;
+    const items = official.flatMap((n) => n[1].split(" · ")).slice(0, SZ_NEWS_MAX);
+    const box = isBeta && betas.length
+      ? `<div class="betabox"><b>🧪 Du bist in der Beta ${esc(SZ_VERSION)}</b><p class="small" style="margin:4px 0 2px">Neu in dieser Beta:</p><ul style="margin:0">${betas.flatMap((n) => n[1].split(" · ").map((x) => `<li><b>Beta ${esc(n[0].replace(/^.*-beta\./, ""))}</b> · ${x}</li>`)).join("")}</ul></div>` : "";
+    return `${box}<p class="small">Die letzten Neuerungen bis Version <b>${esc(newsVer)}</b> – das Neueste steht oben</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul>`;
   }
   _creditsHtml() {
     return `<div class="elcredits" translate="no">
@@ -1863,6 +1881,7 @@ class StundenzettelCard extends HTMLElement {
         cols: [{ t: "Monat", x: 0, w: 110 }, { t: "Stunden", x: 110, w: 70, right: true }, { t: "Soll", x: 185, w: 70, right: true }, { t: "+/-", x: 260, w: 70, right: true }, { t: "Konto", x: 335, w: 80, right: true }, { t: "Urlaub", x: 420, w: 50, right: true }, { t: "Krank", x: 473, w: 50, right: true }],
         rows: rows.map((r) => ({ gray: !r.tracked, cells: [MONTHS[Number(r.month.slice(5)) - 1], h2(r.hours), r.future ? "" : h2(r.paid), r.future ? "" : hs(r.diff + r.adjust), r.future ? "kommt noch" : hs(r.total), String(r.urlaub || ""), String(r.krank || "")] })),
         sums: [["Stunden gesamt", h2(sum("hours"))], ["Urlaub genommen", `${sum("urlaub")} / ${vac}`], ["Kranktage", String(sum("krank"))], [`Tage ab ${h2(st.long_day).replace(",00", "")} Std.`, String(sum("long"))], ...(last ? [["Überstunden-Konto", `${hs(last.total)} Std.`, true]] : [])],
+        sign: SZ_SIGN,
       };
     }
     const key = sh.key, [y, mo] = key.split("-").map(Number), last = new Date(y, mo, 0).getDate();
@@ -1879,6 +1898,7 @@ class StundenzettelCard extends HTMLElement {
       cols: [{ t: "Datum", x: 0, w: 75 }, { t: "Uhrzeit / Art", x: 78, w: 105 }, { t: "Pause", x: 186, w: 45, right: true }, { t: "Stunden", x: 236, w: 55, right: true }, { t: "Notiz", x: 302, w: 221 }],
       rows,
       sums: [["Summe", `${h2(row.hours)} Std.`], [now ? "Soll bis heute" : "Bezahlt (Soll)", `-${h2(now ? row.paid_today : row.paid)} Std.`], ["Plus/Minus", hs(row.hours - (now ? row.paid_today : row.paid))], ["Ü.-Alt (Vormonat)", hs(row.old)], ...(row.adjust ? [["Korrektur", hs(row.adjust)]] : []), [now ? "Stand heute" : "Ü.-Gesamt", `${hs(now ? row.now : row.total)} Std.`, true], ["Urlaubstage", String(row.urlaub)], ["Kranktage", String(row.krank)], [`${h2(st.long_day).replace(",00", "")} Stunden und mehr`, String(row.long)], ...(row.euro ? [["Pauschal", eur(row.euro)]] : [])],
+      sign: SZ_SIGN,
     };
   }
   _sharePdfBytes(m = this._shareModel()) { return szTablePdf(m); }
@@ -1900,9 +1920,9 @@ class StundenzettelCard extends HTMLElement {
   _shareHtmlDoc(m) {
     return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(m.title)}</title><style>@page{size:A4;margin:14mm}
       body{font-family:Roboto,Arial,sans-serif;font-size:11.5px;margin:0;color:#000} h1{font-size:18px;margin:0 0 2px} .sub{color:#666;margin:0 0 8px} table{border-collapse:collapse;width:100%} td,th{border-bottom:1px solid #ccc;padding:3px 5px;text-align:left;vertical-align:top} th{font-size:10px;color:#666;border-bottom:1.5px solid #999}
-      tr.gap td{color:#999} .sum{margin:10px 0 0 auto;width:auto} .sum td{border:0;padding:2px 6px} .sum td:last-child{text-align:right;font-weight:bold} .sum tr.tot td{color:#1e88e5;font-size:13px}</style></head><body>
+      tr.gap td{color:#999} .sum{margin:10px 0 0 auto;width:auto} .sum td{border:0;padding:2px 6px} .sum td:last-child{text-align:right;font-weight:bold} .sum tr.tot td{color:#1e88e5;font-size:13px} .sign{display:flex;gap:40px;margin-top:48px;break-inside:avoid} .sign div{flex:1;color:#666;font-size:10px} .sign span{display:block;border-top:1px solid #333;margin-bottom:3px}</style></head><body>
       <h1>${esc(m.title)}</h1>${m.sub ? `<p class="sub">${esc(m.sub)}</p>` : ""}<table><thead><tr>${m.cols.map((c) => `<th${c.right ? ' style="text-align:right"' : ""}>${esc(c.t)}</th>`).join("")}</tr></thead><tbody>${m.rows.map((r) => `<tr class="${r.gray ? "gap" : ""}">${r.cells.map((v, k) => `<td${m.cols[k].right ? ' style="text-align:right"' : ""}>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table>
-      <table class="sum">${m.sums.map(([l, v, s]) => `<tr class="${s ? "tot" : ""}"><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join("")}</table></body></html>`;
+      <table class="sum">${m.sums.map(([l, v, s]) => `<tr class="${s ? "tot" : ""}"><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join("")}</table>${m.sign ? `<div class="sign">${m.sign.map((l) => `<div><span></span>${esc(l)}</div>`).join("")}</div>` : ""}</body></html>`;
   }
   _sharePrint() {
     const f = document.createElement("iframe");
