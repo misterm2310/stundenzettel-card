@@ -6,6 +6,9 @@ import { extname, join, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const ROOT = resolve(import.meta.dirname, "../..");
+// 🏷️ Version aus manifest.json – in einer Beta wird der Beta-Kasten geprüft, in einer offiziellen Version nicht
+const VER = JSON.parse(await readFile(join(ROOT, "custom_components/stundenzettel/manifest.json"), "utf8")).version;
+const IS_BETA = /-beta/.test(VER);
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".webp": "image/webp" };
 const server = createServer(async (req, res) => {
   const p = join(ROOT, decodeURIComponent(req.url.split("?")[0]).replace(/^\/stundenzettel\/files\//, "/custom_components/stundenzettel/www/"));
@@ -77,8 +80,13 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   const sign = await card(page).evaluate((el) => { const b = el._sharePdfBytes(); let s = ""; for (const x of b) s += String.fromCharCode(x); return { pdf: /Unterschrift Arbeitnehmer/.test(s) && /Unterschrift Chef/.test(s), print: /Unterschrift Arbeitnehmer[\s\S]*Unterschrift Chef/.test(el._shareHtmlDoc(el._shareModel())) }; });
   ok(sign.pdf && sign.print, "PDF und Drucken: unten Unterschrift-Linien für Arbeitnehmer und Chef");
   const news = await card(page).evaluate((el) => { const d = document.createElement("div"); d.innerHTML = el._newsHtml(); return { box: d.querySelector(".betabox")?.innerText || "", rest: [...d.children].filter((x) => !x.classList.contains("betabox")).map((x) => x.innerText).join("\n"), n: d.querySelectorAll(":scope > ul > li").length }; });
-  ok(/Du bist in der Beta/.test(news.box) && /Neu in dieser Beta/.test(news.box) && news.box.indexOf("Beta 4 ·") > 0 && news.box.indexOf("Beta 4 ·") < news.box.indexOf("Beta 1 ·") && !/Erste offizielle/.test(news.box), "Was ist neu: oranger Beta-Kasten, höchste Beta oben");
-  ok(/Die letzten Neuerungen bis Version 1\.0\.0/.test(news.rest) && news.n > 0 && news.n <= 15 && !/Zweiter Stundenzettel/.test(news.rest), "Was ist neu: darunter höchstens 15 Neuerungen bis zur letzten offiziellen Version");
+  if (IS_BETA) {
+    ok(/Du bist in der Beta/.test(news.box) && /Neu in dieser Beta/.test(news.box) && /Beta \d+ ·/.test(news.box) && !/Erste offizielle/.test(news.box), "Was ist neu: oranger Beta-Kasten in der Beta");
+    ok(/Die letzten Neuerungen bis Version \d+\.\d+\.\d+ /.test(news.rest) && news.n > 0 && news.n <= 15, "Was ist neu: darunter höchstens 15 Neuerungen bis zur letzten offiziellen Version");
+  } else {
+    ok(!news.box, "Was ist neu: offizielle Version ohne Beta-Kasten");
+    ok(new RegExp("Die letzten Neuerungen bis Version " + VER.replace(/\./g, "\\.") + " ").test(news.rest) && news.n > 0 && news.n <= 15, "Was ist neu: höchstens 15 Neuerungen bis Version " + VER);
+  }
   await click(page, '[data-a="back"]');
   await click(page, '[data-a="tab"][data-v="set"]');
   for (const grp of ["Arbeitszeit", "Kalender & Stempeln", "Daten", "Ansicht", "App & Info"]) {
