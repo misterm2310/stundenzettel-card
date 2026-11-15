@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.1-beta.4";
+const SZ_VERSION = "1.0.1";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.1", "🎉 <b>Version 1.0.1</b>: Alles aus 4 Betas ist jetzt fest drin – danke fürs Testen!"],
   ["1.0.1-beta.4", "🆕 <b>Was ist neu</b> wie bei der Einkaufsliste: oben der orange Beta-Kasten mit allem, was in dieser Beta neu ist (höchste Beta oben), darunter „Die letzten Neuerungen bis Version …“ (höchstens 15, das Neueste oben) · ✍️ <b>Unterschrift im PDF</b>: Monat und Jahr haben unten je eine Linie für dich (Arbeitnehmer) und den Chef – auch beim Drucken"],
   ["1.0.1-beta.3", "👥 <b>Zweiter Stundenzettel</b>: Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen – eigene Zettel, eigene PIN, eigene Sensoren · In der Karte (Dashboard → Karte bearbeiten) wählst du, welchen Stundenzettel sie zeigt, in der Offline-App unten · 🕐 Zettel vom Chef: Zahlen jetzt in <b>Std:Min</b> wie auf dem Lohnzettel (z. B. +24:29) · ⌨️ Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur"],
   ["1.0.1-beta.2", "🧾 Die <b>Rechnung im Monat</b> ist jetzt einfach wie ein Kassenzettel: Gearbeitet − Soll = Dieser Monat, + Vom Vormonat = Dein Konto · Urlaub, Krank und 8 Std.+ als kleine Knöpfe darunter · 📄 Zettel vom Chef: <b>Laut Chef</b>, <b>Laut mir</b> und <b>Unterschied</b> – darunter wählst du, ob der nächste Monat mit der Zahl vom Chef oder mit deiner startet"],
