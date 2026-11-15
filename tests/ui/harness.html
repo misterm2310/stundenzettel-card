@@ -76,7 +76,7 @@ fetch("demo.json").then((r) => r.json()).then(async (j) => {
   if (location.hash.includes("empty")) { j.days = {}; j.months = []; j.settings.calendar = ""; j.stamp = null; j.summary.balance = 0; }
   await import("../../custom_components/stundenzettel/www/stundenzettel-card.js");
   const c = document.getElementById("c1");
-  c.setConfig({ type: "custom:stundenzettel-card" });
+  c.setConfig({ type: "custom:stundenzettel-card", ...(location.hash.includes("entry2") ? { entry: "e2" } : {}) }); // 👥 zweiter Stundenzettel
   c.hass = hass();
   window.ready = true;
   // 📴 Netz an/aus spielen

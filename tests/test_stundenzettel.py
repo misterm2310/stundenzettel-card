@@ -209,7 +209,8 @@ async def test_import_und_konto_stellen(hass: HomeAssistant):
     assert len(m.data["days"]) == 2
 
 
-async def test_einrichten_nur_einmal(hass: HomeAssistant):
+async def test_einrichten_mehrfach(hass: HomeAssistant):
+    """👥 Erster Stundenzettel wie bisher, jeder weitere braucht einen eigenen Namen."""
     from homeassistant import config_entries
 
     assert await async_setup_component(hass, "http", {})
@@ -218,9 +219,47 @@ async def test_einrichten_nur_einmal(hass: HomeAssistant):
         r = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
         assert r["type"] == "form"
         r = await hass.config_entries.flow.async_configure(r["flow_id"], {"sidebar": False})
-        assert r["type"] == "create_entry"
+        assert r["type"] == "create_entry" and r["title"] == "Stundenzettel" and r["result"].unique_id == DOMAIN
         r = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+        assert r["type"] == "form"
+        r = await hass.config_entries.flow.async_configure(r["flow_id"], {"name": "Stundenzettel", "sidebar": False})
+        assert r["type"] == "form" and r["errors"] == {"name": "name_needed"}
+        r = await hass.config_entries.flow.async_configure(r["flow_id"], {"name": "Erika Muster", "sidebar": False})
+        assert r["type"] == "create_entry" and r["title"] == "Erika Muster" and r["result"].unique_id == "erika_muster"
+        r = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+        r = await hass.config_entries.flow.async_configure(r["flow_id"], {"name": "Erika Muster", "sidebar": False})
         assert r["type"] == "abort"
+
+
+async def test_zwei_stundenzettel_getrennt(hass: HomeAssistant, hass_ws_client):
+    """👥 Zwei Personen, zwei Firmen: eigene Daten, eigene Sensoren, Karte wählt per entry_id."""
+    first = await _setup(hass)
+    e2 = MockConfigEntry(domain=DOMAIN, title="Erika Muster", unique_id="erika_muster", data={}, options={"sidebar": False})
+    e2.add_to_hass(hass)
+    with patch("custom_components.stundenzettel.frontend.add_extra_js_url"):
+        assert await hass.config_entries.async_setup(e2.entry_id)
+        await hass.async_block_till_done()
+    second = hass.data[DOMAIN]["managers"][e2.entry_id]
+    assert second is not first and hass.data[DOMAIN]["manager"] is first
+    assert second.store.key == f"{DOMAIN}.{e2.entry_id}" and first.store.key == DOMAIN
+    second.apply([{"type": "day_set", "date": "2026-11-03", "kind": "work", "start": "08:00", "end": "12:00"}])
+    await hass.async_block_till_done()
+    assert "2026-11-03" in second.data["days"] and "2026-11-03" not in first.data["days"]
+    assert hass.states.get("sensor.stundenzettel_erika_muster_stunden_diesen_monat") is not None
+    assert hass.states.get("sensor.stundenzettel_stunden_diesen_monat") is not None
+    assert hass.states.get("binary_sensor.stundenzettel_erika_muster_eingestempelt") is not None
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "stundenzettel/entries"})
+    res = (await client.receive_json())["result"]["entries"]
+    assert {e["title"] for e in res} == {"Stundenzettel", "Erika Muster"} and sum(e["first"] for e in res) == 1
+    await client.send_json({"id": 2, "type": "stundenzettel/apply", "entry_id": e2.entry_id,
+                            "ops": [{"type": "day_set", "date": "2026-11-02", "kind": "urlaub"}]})
+    assert (await client.receive_json())["success"]
+    assert "2026-11-02" in second.data["days"] and "2026-11-02" not in first.data["days"]
+    await hass.services.async_call(DOMAIN, "tag_eintragen", {"stundenzettel": e2.entry_id, "datum": "2026-11-05", "art": "krank"}, blocking=True)
+    assert "2026-11-05" in second.data["days"] and "2026-11-05" not in first.data["days"]
+    assert await hass.config_entries.async_unload(e2.entry_id)
+    assert e2.entry_id not in hass.data[DOMAIN]["managers"] and hass.data[DOMAIN]["manager"] is first
 
 
 async def test_pin(hass: HomeAssistant):

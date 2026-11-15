@@ -18,21 +18,33 @@ from .const import DOMAIN
 NOT_READY = "Der Stundenzettel ist noch nicht eingerichtet (Einstellungen → Geräte & Dienste → Integration hinzufügen → Stundenzettel)"
 
 
-def _m(hass: HomeAssistant):
-    return hass.data.get(DOMAIN, {}).get("manager")
+def _m(hass: HomeAssistant, msg: dict[str, Any] | None = None):
+    """👥 Welcher Stundenzettel? Die Karte schickt „entry_id“ mit – ohne = der erste (wie bisher)."""
+    from . import find_manager  # noqa: PLC0415
+
+    return find_manager(hass, (msg or {}).get("entry_id"))
 
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
-    for cmd in (ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check, ws_pdf_store, ws_cal_write_range, ws_boss_import):
+    for cmd in (ws_entries, ws_subscribe, ws_apply, ws_import, ws_sync, ws_backup, ws_restore, ws_factory_reset, ws_errors_clear, ws_pin_set, ws_pin_check, ws_pdf_store, ws_cal_write_range, ws_boss_import):
         websocket_api.async_register_command(hass, cmd)
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/subscribe"})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/entries"})
+@callback
+def ws_entries(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """👥 Welche Stundenzettel gibt es? (für den Karten-Editor und die Offline-App)"""
+    first = hass.data.get(DOMAIN, {}).get("manager")
+    managers = hass.data.get(DOMAIN, {}).get("managers", {})
+    connection.send_result(msg["id"], {"entries": [{"entry_id": eid, "title": m.title, "first": m is first} for eid, m in managers.items()]})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/subscribe", vol.Optional("entry_id"): str})
 @callback
 def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """Alles schicken – und bei jeder Änderung nochmal."""
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -46,10 +58,10 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
     push()
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/apply", vol.Required("ops"): vol.All([dict], vol.Length(max=500))})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/apply", vol.Optional("entry_id"): str, vol.Required("ops"): vol.All([dict], vol.Length(max=500))})
 @callback
 def ws_apply(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -58,13 +70,13 @@ def ws_apply(hass: HomeAssistant, connection: websocket_api.ActiveConnection, ms
 
 
 @websocket_api.websocket_command({
-    vol.Required("type"): "stundenzettel/import", vol.Required("text"): str,
+    vol.Required("type"): "stundenzettel/import", vol.Optional("entry_id"): str, vol.Required("text"): str,
     vol.Optional("apply", default=False): bool, vol.Optional("overwrite", default=False): bool,
 })
 @callback
 def ws_import(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """📥 Alte Tabelle als Text: erst ansehen (apply = False), dann übernehmen."""
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -75,11 +87,11 @@ def ws_import(hass: HomeAssistant, connection: websocket_api.ActiveConnection, m
         connection.send_error(msg["id"], "import_failed", str(err))
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/sync"})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/sync", vol.Optional("entry_id"): str})
 @websocket_api.async_response
 async def ws_sync(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """🔁 Jetzt mit dem Kalender abgleichen."""
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -88,21 +100,21 @@ async def ws_sync(hass: HomeAssistant, connection: websocket_api.ActiveConnectio
     connection.send_result(msg["id"], {**res, "cal": m.cal_status})
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/backup"})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/backup", vol.Optional("entry_id"): str})
 @callback
 def ws_backup(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
     connection.send_result(msg["id"], m.backup())
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/restore", vol.Required("data"): dict})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/restore", vol.Optional("entry_id"): str, vol.Required("data"): dict})
 @websocket_api.require_admin
 @callback
 def ws_restore(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -113,11 +125,11 @@ def ws_restore(hass: HomeAssistant, connection: websocket_api.ActiveConnection, 
         connection.send_error(msg["id"], "restore_failed", str(err))
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/factory_reset"})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/factory_reset", vol.Optional("entry_id"): str})
 @websocket_api.require_admin
 @callback
 def ws_factory_reset(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -125,21 +137,21 @@ def ws_factory_reset(hass: HomeAssistant, connection: websocket_api.ActiveConnec
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/errors_clear"})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/errors_clear", vol.Optional("entry_id"): str})
 @callback
 def ws_errors_clear(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is not None:
         m.errors.clear()
         m._notify()  # noqa: SLF001
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/pin/set", vol.Optional("pin"): vol.Any(str, None), vol.Optional("old"): vol.Any(str, None)})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/pin/set", vol.Optional("entry_id"): str, vol.Optional("pin"): vol.Any(str, None), vol.Optional("old"): vol.Any(str, None)})
 @callback
 def ws_pin_set(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """🔒 PIN festlegen, ändern oder (leer) ausschalten."""
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -150,11 +162,11 @@ def ws_pin_set(hass: HomeAssistant, connection: websocket_api.ActiveConnection, 
         connection.send_error(msg["id"], "pin", str(err))
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/pin/check", vol.Required("pin"): str})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/pin/check", vol.Optional("entry_id"): str, vol.Required("pin"): str})
 @callback
 def ws_pin_check(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """🔓 Stimmt die PIN? (5× falsch = 1 Minute Pause)"""
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -166,7 +178,7 @@ def ws_pin_check(hass: HomeAssistant, connection: websocket_api.ActiveConnection
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "stundenzettel/pdf/store",
+        vol.Required("type"): "stundenzettel/pdf/store", vol.Optional("entry_id"): str,
         vol.Required("data"): vol.All(str, vol.Length(max=7_000_000)),
         vol.Optional("name"): vol.All(str, vol.Length(max=120)),
     }
@@ -184,11 +196,11 @@ def ws_pdf_store(hass: HomeAssistant, connection: websocket_api.ActiveConnection
     connection.send_result(msg["id"], result)
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/cal_write_range", vol.Required("from"): str, vol.Required("to"): str})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/cal_write_range", vol.Optional("entry_id"): str, vol.Required("from"): str, vol.Required("to"): str})
 @callback
 def ws_cal_write_range(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """📤 Alle Arbeitstage von–bis in den Kalender schreiben."""
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return
@@ -202,11 +214,11 @@ def ws_cal_write_range(hass: HomeAssistant, connection: websocket_api.ActiveConn
         connection.send_error(msg["id"], "cal_failed", str(err))
 
 
-@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/boss_import", vol.Required("data"): vol.All(str, vol.Length(max=8_000_000))})
+@websocket_api.websocket_command({vol.Required("type"): "stundenzettel/boss_import", vol.Optional("entry_id"): str, vol.Required("data"): vol.All(str, vol.Length(max=8_000_000))})
 @callback
 def ws_boss_import(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """📄 Zettel vom Chef (PDF als base64) einlesen."""
-    m = _m(hass)
+    m = _m(hass, msg)
     if m is None:
         connection.send_error(msg["id"], "not_ready", NOT_READY)
         return

@@ -6,6 +6,9 @@ import { extname, join, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const ROOT = resolve(import.meta.dirname, "../..");
+// 🏷️ Version aus manifest.json – in einer Beta wird der Beta-Kasten geprüft, in einer offiziellen Version nicht
+const VER = JSON.parse(await readFile(join(ROOT, "custom_components/stundenzettel/manifest.json"), "utf8")).version;
+const IS_BETA = /-beta/.test(VER);
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".webp": "image/webp" };
 const server = createServer(async (req, res) => {
   const p = join(ROOT, decodeURIComponent(req.url.split("?")[0]).replace(/^\/stundenzettel\/files\//, "/custom_components/stundenzettel/www/"));
@@ -44,10 +47,10 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(await card(page).locator(".kg.running input[data-v='start']").inputValue() !== "" && /Eingestempelt seit/.test(await txt()), "Heute: eingestempelt → Felder Kommen/Gehen, Kommen läuft");
   await shot(page, "1-heute");
   await click(page, '[data-a="tab"][data-v="monat"]');
-  ok(/Stand heute/.test(await txt()) && /Soll bis heute/.test(await txt()), "Monat (läuft noch): Soll nur bis heute");
+  ok(/Dein Konto heute/.test(await txt()) && /Soll bis heute/.test(await txt()) && /Gearbeitet bis heute/.test(await txt()), "Monat (läuft noch): Soll nur bis heute");
   await shot(page, "2-monat");
   await click(page, '[data-a="mon"][data-v="-1"]');
-  ok(/Oktober 2026/.test(await txt()) && /Ü\.-Gesamt/.test(await txt()) && /Bezahlt/.test(await txt()), "Vormonat: Zettel mit Summe/Bezahlt/Ü.-Gesamt");
+  ok(/Oktober 2026/.test(await txt()) && /Konto Ende Oktober/.test(await txt()) && /Dieser Monat/.test(await txt()) && await card(page).locator(".zchip").count() >= 3, "Vormonat: Zettel mit Summe/Bezahlt/Ü.-Gesamt");
   await shot(page, "2b-monat-oktober");
   await click(page, '[data-a="mon"][data-v="1"]');
   await click(page, '.dayrow[data-d="2026-11-03"]');
@@ -74,6 +77,16 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '[data-a="share"][data-v="year"]');
   const pdfY = await card(page).evaluate((el) => el._sharePdfBytes().length);
   ok(/Stundenzettel 2026/.test(await txt()) && pdfY > 1500, "Jahr → Drucken & Teilen mit PDF");
+  const sign = await card(page).evaluate((el) => { const b = el._sharePdfBytes(); let s = ""; for (const x of b) s += String.fromCharCode(x); return { pdf: /Unterschrift Arbeitnehmer/.test(s) && /Unterschrift Chef/.test(s), print: /Unterschrift Arbeitnehmer[\s\S]*Unterschrift Chef/.test(el._shareHtmlDoc(el._shareModel())) }; });
+  ok(sign.pdf && sign.print, "PDF und Drucken: unten Unterschrift-Linien für Arbeitnehmer und Chef");
+  const news = await card(page).evaluate((el) => { const d = document.createElement("div"); d.innerHTML = el._newsHtml(); return { box: d.querySelector(".betabox")?.innerText || "", rest: [...d.children].filter((x) => !x.classList.contains("betabox")).map((x) => x.innerText).join("\n"), n: d.querySelectorAll(":scope > ul > li").length }; });
+  if (IS_BETA) {
+    ok(/Du bist in der Beta/.test(news.box) && /Neu in dieser Beta/.test(news.box) && /Beta \d+ ·/.test(news.box) && !/Erste offizielle/.test(news.box), "Was ist neu: oranger Beta-Kasten in der Beta");
+    ok(/Die letzten Neuerungen bis Version \d+\.\d+\.\d+ /.test(news.rest) && news.n > 0 && news.n <= 15, "Was ist neu: darunter höchstens 15 Neuerungen bis zur letzten offiziellen Version");
+  } else {
+    ok(!news.box, "Was ist neu: offizielle Version ohne Beta-Kasten");
+    ok(new RegExp("Die letzten Neuerungen bis Version " + VER.replace(/\./g, "\\.") + " ").test(news.rest) && news.n > 0 && news.n <= 15, "Was ist neu: höchstens 15 Neuerungen bis Version " + VER);
+  }
   await click(page, '[data-a="back"]');
   await click(page, '[data-a="tab"][data-v="set"]');
   for (const grp of ["Arbeitszeit", "Kalender & Stempeln", "Daten", "Ansicht", "App & Info"]) {
@@ -122,7 +135,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(/Zeitsaldenliste/.test(await card(page).locator('.fhint[data-tip="boss"]').innerText()), "Monat: ⓘ neben „Zettel vom Chef“ sagt, welche Zettel gehen");
   await card(page).locator("#bossfile").setInputFiles({ name: "zettel.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 ausgedacht") });
   await page.waitForTimeout(250);
-  ok(/Oktober 2026/.test(await txt()) && /Saldo Übertrag \(Chef\)/.test(await txt()), "Zettel vom Chef: springt zum Monat und zeigt den Saldo vom Chef");
+  ok(/Oktober 2026/.test(await txt()) && /Laut Chef/.test(await txt()) && /Laut mir/.test(await txt()) && /Unterschied/.test(await txt()), "Zettel vom Chef: springt zum Monat und zeigt den Saldo vom Chef");
   const bossN = await card(page).locator(".dayrow .boss").count();
   ok(bossN >= 3, `Zettel vom Chef: rote Stunden nur an abweichenden Tagen (${bossN})`);
   const firstBoss = await card(page).locator(".dayrow .hrs").filter({ has: page.locator(".boss") }).first().innerText();
@@ -130,6 +143,8 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   const up = await card(page).locator(".dayrow .boss.up").count(), down = await card(page).locator(".dayrow .boss:not(.up)").count();
   ok(up >= 1 && down >= 1, `Zettel vom Chef: grün wo der Chef mehr hat (${up}), rot wo weniger (${down})`);
   ok(await card(page).locator(".boss-box .vpos").count() >= 2, "Zettel vom Chef: Salden im Plus sind grün");
+  const bbox = await card(page).locator(".boss-box").innerText();
+  ok(/\+40:07 Std\./.test(bbox) && !/40,12/.test(bbox) && /Chef \+40:07/.test(await card(page).locator(".bpick").innerText()), "Zettel vom Chef: Zahlen in Std:Min wie auf dem Lohnzettel (+40:07)");
   // 📝 Notizen nur als Symbol
   const mt = await txt();
   ok(!/Musterstadt – Terrasse/.test(mt) && await card(page).locator(".dayrow .notebtn").count() >= 5, "Monat: Notizen nur als 📝-Symbol, kein Text");
@@ -138,10 +153,14 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '.dayrow .notebtn');
   ok(await card(page).locator(".dayrow .notetext").count() === 0, "📝 nochmal antippen: Notiz wieder zu");
   await shot(page, "2b-zettel-vom-chef");
-  await click(page, '[data-a="bossalt"]');
+  await click(page, '[data-a="bossue"]');
   await page.waitForTimeout(150);
-  const bOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
-  ok(bOps.some((o) => o.type === "month_set" && o.month === "2026-10" && o.alt === 30.5), "„Saldo Vormonat als Ü.-Alt übernehmen“ schickt month_set");
+  const uOps = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(uOps.some((o) => o.type === "month_set" && o.month === "2026-11" && o.alt === 40.12), "„Chef“ wählen: November startet mit dem Übertrag vom Chef – month_set für den nächsten Monat");
+  await click(page, '[data-a="bossmine"]');
+  await page.waitForTimeout(150);
+  const mOps2 = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(mOps2.some((o) => o.type === "month_set" && o.month === "2026-11" && o.alt === null), "„Mir“ wählen: November rechnet wieder mit der eigenen Zahl");
   await click(page, '[data-a="mon"][data-v="1"]');
   // ⓘ in den Einstellungen
   await click(page, '[data-a="tab"][data-v="set"]');
@@ -196,24 +215,62 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(!errors.length, "PIN: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
-{ // 🔒 Ändern nur mit PIN
+{ // 🔒 Ändern nur mit PIN – nur im Monat und für ältere Tage, Heute (heute + gestern) frei
   const { page, errors } = await open("#pin-lockedit");
   const t0 = await card(page).locator("ha-card").innerText();
   ok(/Überstunden-Konto/.test(t0) && !/PIN eingeben/.test(t0), "Ändern nur mit PIN: Ansehen geht ohne PIN");
   await click(page, '.dayrow[data-a="open"]');
-  ok(/Zum Ändern brauchst du die PIN/.test(await card(page).locator("ha-card").innerText()), "Ändern nur mit PIN: Tag antippen fragt nach der PIN");
-  await shot(page, "9b-aendern-pin");
+  ok(await card(page).locator('form[data-form="day"]').count() === 1 && await card(page).locator(".pinpad").count() === 0, "Heute: heutigen Tag ändern geht ohne PIN");
+  await click(page, '[data-a="close"]');
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  ok(/Gestern/.test(await card(page).locator(".hero").innerText()), "‹ springt auf gestern");
+  await click(page, '.dayrow[data-a="open"]');
+  ok(await card(page).locator(".pinpad").count() === 0, "Heute: gestern ändern geht ohne PIN");
+  await click(page, '[data-a="close"]');
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  await click(page, '.dayrow[data-a="open"]');
+  ok(/Zum Ändern brauchst du die PIN/.test(await card(page).locator("ha-card").innerText()), "Heute: ältere Tage nur ansehen – Ändern fragt nach der PIN");
   await click(page, '[data-a="back"]');
-  ok(await card(page).locator(".pinpad").count() === 0 && /Überstunden-Konto/.test(await card(page).locator("ha-card").innerText()), "Abbrechen: zurück, nichts geändert");
-  await click(page, '[data-a="kgnow"][data-v="end"]');
-  ok(await card(page).locator(".pinpad").count() === 1, "Ändern nur mit PIN: ⏱️ Gehen fragt auch nach der PIN");
+  ok(await card(page).locator(".pinpad").count() === 0 && await card(page).locator(".hero").count() === 1, "Abbrechen: zurück in Heute, nichts geändert");
+  await click(page, '.hero .hday');
+  ok(/Heute,/.test(await card(page).locator(".hero").innerText()), "Datum antippen: zurück zu heute");
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  ok(/Zum Ändern brauchst du die PIN/.test(await card(page).locator("ha-card").innerText()), "Monat: Tag antippen fragt nach der PIN");
+  await shot(page, "9b-aendern-pin");
   const n0 = await page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").length);
   for (const k of ["1", "2", "3", "4", "✔"]) await click(page, `[data-a="pkey"][data-v="${k}"]`);
   await page.waitForTimeout(150);
   ok(await card(page).locator(".pinpad").count() === 0 && n0 === 0, "Richtige PIN: Tastenfeld weg, vorher wurde nichts geschickt");
   await click(page, '.dayrow[data-a="open"]');
-  ok(await card(page).locator('form[data-form="day"]').count() === 1, "Nach der PIN: Tag lässt sich ändern");
+  ok(await card(page).locator('form[data-form="day"]').count() === 1, "Nach der PIN: Tag im Monat lässt sich ändern");
   ok(!errors.length, "Ändern nur mit PIN: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{ // 📅 Heute: Tage blättern + 📝 Notiz-Schnellwähler + 🧪 Was ist neu sortiert
+  const { page, errors } = await open("");
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  await click(page, '[data-a="tday"][data-v="-1"]');
+  const h = await card(page).locator(".hero").innerText();
+  ok(!/Heute|Gestern/.test(h.split("\n")[0]) && /\d\d\.\d\d\./.test(h) && await card(page).locator('[data-a="kgnow"]').count() === 0, `Heute: zwei Tage zurück zeigt den Tag, ohne ⏱️ jetzt („${h.split("\n")[0]}“)`);
+  await click(page, '[data-a="tday"][data-v="1"]');
+  await click(page, '[data-a="tday"][data-v="1"]');
+  ok(/Heute,/.test(await card(page).locator(".hero").innerText()), "› zurück bis heute");
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  const chips = await card(page).locator('[data-a="nplace"]').count();
+  ok(chips >= 2 && await card(page).locator('[data-a="nact"]').count() >= 2, `Notiz: Schnellwähler mit Orten (${chips}) und Tätigkeiten`);
+  const ta = card(page).locator('textarea[name="note"]');
+  await ta.fill("");
+  const p1 = await card(page).locator('[data-a="nplace"]').first().getAttribute("data-v");
+  await click(page, '[data-a="nplace"]');
+  await click(page, '[data-a="nact"]');
+  await card(page).locator('[data-a="nplace"]').nth(1).click(); await page.waitForTimeout(120);
+  const v = await ta.inputValue();
+  ok(await card(page).evaluate((el) => el.shadowRoot.activeElement?.name !== "note"), "Notiz: Schnellknöpfe holen keine Tastatur (Feld bekommt keinen Fokus)");
+  ok(v.split("\n").length === 2 && v.startsWith(p1 + " - ") && /^.+ - .+$/.test(v.split("\n")[0]), `Notiz: jeder Ort in eigener Zeile, Tätigkeit dahinter („${v.replace(/\n/g, " ⏎ ")}“)`);
+  await shot(page, "3b-notiz-schnellwahl");
+  ok(!errors.length, "Blättern & Schnellwähler: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
 { // 🔒 ganze Karte gesperrt
@@ -244,6 +301,21 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(/Los geht's/.test(await card(page).locator("ha-card").innerText()), "Leerer Start zeigt die Einrichtungs-Hilfe");
   await shot(page, "7-start-hell-handy");
   ok(!errors.length, "leer & hell: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{ // 👥 zweiter Stundenzettel: jede Nachricht sagt, welcher gemeint ist
+  const page = await browser.newPage({ viewport: { width: 520, height: 1000 } });
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(base + "#entry2");
+  await page.waitForFunction(() => window.ready); await page.waitForTimeout(300);
+  await click(page, '.dayrow[data-a="open"], [data-a="tab"][data-v="monat"]');
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  await card(page).locator('form[data-form="day"] button[type="submit"]').first().click(); await page.waitForTimeout(200);
+  const msgs = await page.evaluate(() => fake.msgs);
+  ok(msgs.length >= 2 && msgs.every((m) => m.entry_id === "e2"), `Zweiter Stundenzettel: alle ${msgs.length} Nachrichten mit entry_id`);
+  ok(msgs.some((m) => m.type === "stundenzettel/apply"), "Zweiter Stundenzettel: Speichern geht an den richtigen");
+  ok(!errors.length, "Zweiter Stundenzettel: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
 await browser.close();

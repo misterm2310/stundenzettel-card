@@ -36,8 +36,20 @@ SENSORS = [
 
 
 def device_info(entry: ConfigEntry) -> DeviceInfo:
-    return DeviceInfo(identifiers={(DOMAIN, entry.entry_id)}, name="Stundenzettel", manufacturer="Mister-M",
+    return DeviceInfo(identifiers={(DOMAIN, entry.entry_id)}, name=entry.title or "Stundenzettel", manufacturer="Mister-M",
                       sw_version=VERSION, entry_type=DeviceEntryType.SERVICE)
+
+
+def entity_prefix(entry: ConfigEntry) -> str:
+    """🏷️ Der erste heißt wie bisher „stundenzettel_…“, jeder weitere nach seinem Namen (z. B. „stundenzettel_anna_…“)."""
+    if entry.unique_id in (None, DOMAIN):
+        return "stundenzettel"
+    slug = _slug(entry.title or "") or str(entry.unique_id)
+    return slug if slug.startswith("stundenzettel") else f"stundenzettel_{slug}"
+
+
+def manager_of(hass: HomeAssistant, entry: ConfigEntry):
+    return hass.data[DOMAIN]["managers"][entry.entry_id]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -60,10 +72,11 @@ class SzSensor(SensorEntity):
         self.entity_description = desc
         self._attr_unique_id = f"{entry.entry_id}_{desc.key}"
         self._attr_device_info = device_info(entry)
-        self.entity_id = f"sensor.stundenzettel_{_slug(desc.name)}"
+        self._entry = entry
+        self.entity_id = f"sensor.{entity_prefix(entry)}_{_slug(desc.name)}"
 
     async def async_added_to_hass(self) -> None:
-        self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_UPDATE, self._update))
+        self.async_on_remove(async_dispatcher_connect(self.hass, f"{SIGNAL_UPDATE}_{self._entry.entry_id}", self._update))
 
     @callback
     def _update(self) -> None:
@@ -71,7 +84,7 @@ class SzSensor(SensorEntity):
 
     @property
     def _sum(self) -> dict[str, Any]:
-        return self.hass.data[DOMAIN]["manager"].summary()
+        return manager_of(self.hass, self._entry).summary()
 
     @property
     def native_value(self) -> Any:

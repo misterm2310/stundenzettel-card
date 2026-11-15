@@ -3,19 +3,24 @@
     "step": {
       "user": {
         "title": "Stundenzettel einrichten",
-        "description": "Danach findest du alles in der Karte unter ⚙️ (Kalender, bezahlte Stunden, Pausen, Stempeln).",
+        "description": "Danach findest du alles in der Karte unter ⚙️ (Kalender, bezahlte Stunden, Pausen, Stempeln). 👥 Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen und ihr einen eigenen Namen geben.",
         "data": {
           "sidebar": "In der Seitenleiste anzeigen",
-          "reset_pin": "PIN zurücksetzen"
+          "reset_pin": "PIN zurücksetzen",
+          "name": "Name"
         },
         "data_description": {
-          "reset_pin": "Die PIN der Karte wird entfernt. Danach in der Karte unter ⚙️ → Schutz eine neue festlegen."
+          "reset_pin": "Die PIN der Karte wird entfernt. Danach in der Karte unter ⚙️ → Schutz eine neue festlegen.",
+          "name": "So heißt der Stundenzettel (Gerät, Seitenleiste). Für eine zweite Person einfach die Integration nochmal hinzufügen."
         }
       }
     },
     "abort": {
-      "already_configured": "Der Stundenzettel ist schon eingerichtet.",
+      "already_configured": "Einen Stundenzettel mit diesem Namen gibt es schon.",
       "single_instance_allowed": "Der Stundenzettel ist schon eingerichtet."
+    },
+    "error": {
+      "name_needed": "Bitte gib einen eigenen Namen ein (z. B. „Stundenzettel Anna“)."
     }
   },
   "options": {
@@ -43,16 +48,32 @@
   "services": {
     "kommen": {
       "name": "Kommen (einstempeln)",
-      "description": "Stempelt jetzt ein."
+      "description": "Stempelt jetzt ein.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Stundenzettel",
+          "description": "Welcher Stundenzettel? Leer = der erste."
+        }
+      }
     },
     "gehen": {
       "name": "Gehen (ausstempeln)",
-      "description": "Stempelt aus und trägt den Tag ein."
+      "description": "Stempelt aus und trägt den Tag ein.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Stundenzettel",
+          "description": "Welcher Stundenzettel? Leer = der erste."
+        }
+      }
     },
     "tag_eintragen": {
       "name": "Tag eintragen",
       "description": "Trägt einen Tag ein oder ändert ihn.",
       "fields": {
+        "stundenzettel": {
+          "name": "Stundenzettel",
+          "description": "Welcher Stundenzettel? Leer = der erste."
+        },
         "datum": {
           "name": "Datum",
           "description": "Welcher Tag?"
@@ -89,11 +110,23 @@
     },
     "abgleichen": {
       "name": "Mit dem Kalender abgleichen",
-      "description": "Holt die Termine jetzt sofort."
+      "description": "Holt die Termine jetzt sofort.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Stundenzettel",
+          "description": "Welcher Stundenzettel? Leer = der erste."
+        }
+      }
     },
     "daten_abrufen": {
       "name": "Daten abrufen",
-      "description": "Gibt Konto und die letzten Monate zurück."
+      "description": "Gibt Konto und die letzten Monate zurück.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Stundenzettel",
+          "description": "Welcher Stundenzettel? Leer = der erste."
+        }
+      }
     }
   }
 }

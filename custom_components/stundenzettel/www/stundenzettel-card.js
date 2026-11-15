@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.0";
+const SZ_VERSION = "1.0.1";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,11 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.1", "🎉 <b>Version 1.0.1</b>: Alles aus 4 Betas ist jetzt fest drin – danke fürs Testen!"],
+  ["1.0.1-beta.4", "🆕 <b>Was ist neu</b> wie bei der Einkaufsliste: oben der orange Beta-Kasten mit allem, was in dieser Beta neu ist (höchste Beta oben), darunter „Die letzten Neuerungen bis Version …“ (höchstens 15, das Neueste oben) · ✍️ <b>Unterschrift im PDF</b>: Monat und Jahr haben unten je eine Linie für dich (Arbeitnehmer) und den Chef – auch beim Drucken"],
+  ["1.0.1-beta.3", "👥 <b>Zweiter Stundenzettel</b>: Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen – eigene Zettel, eigene PIN, eigene Sensoren · In der Karte (Dashboard → Karte bearbeiten) wählst du, welchen Stundenzettel sie zeigt, in der Offline-App unten · 🕐 Zettel vom Chef: Zahlen jetzt in <b>Std:Min</b> wie auf dem Lohnzettel (z. B. +24:29) · ⌨️ Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur"],
+  ["1.0.1-beta.2", "🧾 Die <b>Rechnung im Monat</b> ist jetzt einfach wie ein Kassenzettel: Gearbeitet − Soll = Dieser Monat, + Vom Vormonat = Dein Konto · Urlaub, Krank und 8 Std.+ als kleine Knöpfe darunter · 📄 Zettel vom Chef: <b>Laut Chef</b>, <b>Laut mir</b> und <b>Unterschied</b> – darunter wählst du, ob der nächste Monat mit der Zahl vom Chef oder mit deiner startet"],
+  ["1.0.1-beta.1", "📅 Heute: mit <b>‹ ›</b> oben in der Stunden-Kachel oder per <b>Wischen</b> durch die Tage blättern (Datum antippen = zurück zu heute) · 🔒 „Ändern nur mit PIN“ gilt jetzt nur noch im <b>Monat</b> und für ältere Tage – heute und gestern gehen in Heute ohne PIN · 📝 <b>Schnellwähler</b> bei der Notiz: deine Orte und Tätigkeiten als Knöpfe, jeder Ort in einer neuen Zeile · 🧪 „Was ist neu“ steht immer nach Version sortiert, das Neueste oben"],
   ["1.0.0", "🎉 <b>Erste offizielle Version!</b> Alles aus 8 Betas ist jetzt fest drin – danke fürs Testen! · ⏱️ Heute mit Kommen/Gehen, Stempeln per Knopf oder Handy-Zone · 📅 Kalender-Abgleich · 💰 Überstunden-Konto mit Ü.-Alt laut Lohnabrechnung und Resturlaub · 📊 Statistik · 📄 Zettel vom Chef einlesen (grün/rot) · 📤 Drucken &amp; Teilen als PDF · 🔒 PIN, auch nur fürs Ändern · 📱 Offline-App · 📝 Notizen als Symbol"],
   ["0.2.0-beta.8", "📝 Notizen stehen in Heute und Monat nur noch als kleines Symbol – antippen zeigt sie · 🔒 Neu in ⚙️ Schutz: <b>Ändern nur mit PIN</b> (ansehen geht frei, danach 10 Minuten frei) · 📄 Zettel vom Chef: <b>grün</b>, wo der Chef mehr Stunden hat, <b>rot</b>, wo weniger – seine Salden grün im Plus, rot im Minus"],
   ["0.2.0-beta.7", "📱 <b>Zettel vom Chef</b> jetzt auch in der Offline-App (Knopf im Monat, nur wenn die App Netz hat)"],
@@ -31,6 +36,8 @@ const SZ_NEWS = [
   ["0.2.0", "Heute zeigt oben groß die <b>Stunden von heute</b> (beim Stempeln läuft die Zeit mit), darunter Monat und Überstunden-Konto · 🔒 PIN-Sperre für ⚙️ oder die ganze Karte (geht auch ohne Netz) · 📱 Offline-App fürs Handy: stempeln ohne Netz, wird später nachgeschickt · Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol · 🌍 Englisch · ⏰ Maskottchen: ein kleiner Wecker mit Laune und Jahreszeiten-Kostüm · 🙈 Überstunden verschleiern · ↩️ Rückgängig nach dem Löschen · 🧘 Ruhiger Modus · Reiter ausblenden · Neues Symbol"],
   ["0.1.0", "Erste Version 🎉 · Termin „Arbeiten“ aus dem Kalender lesen und (wenn du willst) zurückschreiben · Kommen/Gehen per Knopf oder automatisch per Handy-Zone · Überstunden-Konto wie auf dem Papier-Zettel (Summe, Bezahlt, Ü.-Alt, Ü.-Gesamt) · Urlaub, Krank, Feiertag, Frei, Pauschal · Pausen-Regeln · Alte Tabelle als Text importieren · Drucken und CSV"],
 ];
+const SZ_SIGN = ["Datum, Unterschrift Arbeitnehmer", "Datum, Unterschrift Chef"]; // ✍️ Unterschrift-Linien unten im PDF und beim Drucken
+const SZ_NEWS_MAX = 15; // 🆕 so viele Neuerungen zeigt „Was ist neu“ höchstens
 const SZ_CARDS = new Set();
 
 const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -43,6 +50,7 @@ const wdOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return ((n
 const dm = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
 const h2 = (v) => (Number(v) || 0).toLocaleString(SZ_LANG === "en" ? "en-GB" : "de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // ⏱️ 9,25
 const hs = (v) => { const n = Number(v) || 0; return (n > 0.004 ? "+" : n < -0.004 ? "−" : "±") + h2(Math.abs(n)); }; // ➕ mit Vorzeichen
+const hm = (v) => { const n = Number(v) || 0, t = Math.round(Math.abs(n) * 60); return (n > 0.004 ? "+" : n < -0.004 ? "−" : "±") + `${Math.floor(t / 60)}:${pad2(t % 60)}`; }; // 🕐 +24:29 wie auf dem Lohnzettel
 const eur = (v) => (Number(v) || 0).toLocaleString(SZ_LANG === "en" ? "en-GB" : "de-DE", { style: "currency", currency: "EUR" });
 const toNum = (v) => { if (v == null || String(v).trim() === "") return null; const n = Number(String(v).trim().replace(/\s/g, "").replace(",", ".")); return Number.isFinite(n) ? n : NaN; };
 const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } }, put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) { /* egal */ } } };
@@ -151,12 +159,15 @@ function szCollectUser(d) {
 }
 const szLoc = () => (SZ_LANG === "en" ? "en-GB" : "de-DE");
 
-// 🔒 Entsperrt gilt für alle Stundenzettel-Karten dieser Seite, bis 🔒 angetippt wird oder 10 Minuten nichts passiert
-const PIN_LOCK = { until: 0 };
-const pinOpen = () => PIN_LOCK.until > Date.now();
+// 🔒 Entsperrt gilt für alle Karten DESSELBEN Stundenzettels auf dieser Seite, bis 🔒 angetippt wird oder 10 Minuten nichts passiert
+// 👥 Jeder Stundenzettel (z. B. zweite Person) hat seine eigene PIN und sein eigenes „entsperrt“
+const PIN_LOCKS = {};
+const pinLock = (k = "") => (PIN_LOCKS[k] ||= { until: 0 });
+const pinOpen = (k = "") => pinLock(k).until > Date.now();
 // 🔒 Diese Knöpfe ändern etwas – mit „Ändern nur mit PIN“ fragen sie erst nach der PIN
-const SZ_EDIT_ACTS = new Set(["in", "out", "cancelstamp", "open", "quick", "monthform", "payslip", "unsheet", "kg", "kgnow", "bosspick", "bossalt", "bossdel", "undo"]);
-const pinTouch = () => { if (pinOpen()) PIN_LOCK.until = Date.now() + 10 * 60 * 1000; };
+const szAddDays = (iso, n) => { const t = new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)) + n); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
+const SZ_EDIT_ACTS = new Set(["in", "out", "cancelstamp", "open", "quick", "monthform", "payslip", "unsheet", "kg", "kgnow", "bosspick", "bossue", "bossmine", "bossalt", "bossdel", "undo"]);
+const pinTouch = (k = "") => { if (pinOpen(k)) pinLock(k).until = Date.now() + 10 * 60 * 1000; };
 // 📴 PIN ohne Netz prüfen: HA schickt einen Offline-Schlüssel (PBKDF2-SHA256), die Karte rechnet genauso nach.
 // Ohne https (z. B. http://192.168…) gibt es kein crypto.subtle – dann rechnet ein kleines SHA-256 hier im Code.
 const PINOFF_FAIL = "stundenzettel_pinfehler";
@@ -809,6 +820,15 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .kgh { margin:-4px 4px 10px; }
 .boss { color:var(--kc-red); font-weight:600; font-size:.85em; margin-right:6px; font-variant-numeric:tabular-nums; }
 .boss.up { color:var(--kc-green); }
+.hnav { display:flex; align-items:center; gap:4px; margin:-4px -6px 0; }
+.hnav .hday { flex:1; border:0; background:none; padding:4px 0; text-align:center; cursor:pointer; font:inherit; font-size:.85em; color:var(--secondary-text-color); }
+.hnav .harrow { flex:0 0 auto; }
+.nquick { grid-column:1 / -1; display:flex; flex-direction:column; gap:6px; margin-top:-2px; }
+.nchips { display:flex; flex-direction:column; gap:4px; }
+.nlab { display:flex; align-items:center; gap:4px; font-size:.8em; color:var(--secondary-text-color); }
+.nscroll { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.nscroll .chip { margin:0; height:auto; }
+.chip.small { padding:4px 10px; font-size:.85em; }
 .notebtn { display:inline-flex; align-items:center; border:0; cursor:pointer; font:inherit; color:inherit; }
 .notebtn ha-icon, .notebtn svg { width:15px; height:15px; --mdc-icon-size:15px; }
 .notetext { margin-top:4px; padding:6px 8px; border-radius:8px; white-space:pre-wrap; font-size:.9em; background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); }
@@ -878,6 +898,17 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .zettel .zr > span:first-child { color:var(--secondary-text-color); display:flex; align-items:center; gap:6px; }
 .zettel .zr.tot { font-weight:700; background:color-mix(in srgb, var(--hc, var(--kc-green)) 10%, transparent); }
 .zettel .zr.tot > span:last-child { color:var(--hc, var(--kc-green)); }
+.zettel.simple .zr.res { border-top:2px solid var(--divider-color); font-weight:600; }
+.zettel.simple .zr > span:last-child { white-space:nowrap; }
+.zettel.simple .zr.tot { font-size:1.15em; border-top:2px solid var(--divider-color); }
+.bpick { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin:10px 2px 4px; }
+.bpick > span { display:flex; align-items:center; gap:6px; font-weight:600; }
+.bpick .seg { display:flex; border:1.5px solid var(--divider-color); border-radius:999px; overflow:hidden; }
+.bpick .seg button { display:flex; align-items:center; gap:4px; border:0; background:transparent; color:var(--secondary-text-color); padding:6px 12px; font:inherit; font-size:.9em; cursor:pointer; }
+.bpick .seg button.on { background:var(--primary-color, #03a9f4); color:#fff; }
+.zchips { display:flex; flex-wrap:wrap; gap:6px; margin:8px 2px 4px; }
+.zchip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:999px; font-size:.85em; background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); color:var(--secondary-text-color); }
+.zchip b { color:var(--primary-text-color); }
 .vpos { color:var(--kc-green); } .vneg { color:var(--kc-red); }
 .dayrow.future { opacity:.6; }
 .ytab { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:.92em; }
@@ -977,6 +1008,12 @@ function szTablePdf(m) {
   y -= 10;
   if (y - 15 * m.sums.length < BOTTOM) { newPage(); y = PH - M - 10; }
   for (const [label, val, strong] of m.sums) { text(PW - M - 260, y, szPdfChars(label), 10.5, !!strong); right(PW - M, y, szPdfChars(val), 10.5, true, strong ? accent : [0.13, 0.13, 0.13]); y -= 15; }
+  if (m.sign) { // ✍️ Unterschrift: links Arbeitnehmer, rechts Chef – passt es nicht mehr, kommt eine neue Seite
+    if (y - 70 < BOTTOM) { newPage(); y = PH - M - 10; }
+    y -= 50;
+    const w = (PW - 2 * M - 40) / 2;
+    m.sign.forEach((lab, k) => { const x = M + k * (w + 40); line(x, y, x + w, y, [0.25, 0.25, 0.25], 0.8); text(x, y - 12, szPdfChars(lab), 9, false, gray); });
+  }
   pages.forEach((pg, k) => {
     ops = pg;
     const ft = szPdfChars(`Erstellt mit Stundenzettel${pages.length > 1 ? ` · ${k + 1}/${pages.length}` : ""}`);
@@ -1021,6 +1058,7 @@ class StundenzettelCard extends HTMLElement {
     this._setOpen = null;
     this._pad = null;       // 🔢 PIN-Tastenfeld
     this._server = null;    // 🏠 Stand von Home Assistant
+    this._sfx = "";       // 👥 welcher Stundenzettel („“ = der erste)
     this._queue = store.get(QKEY, []); // 📮 Postausgang
     this._qv = 0;
     // 👆 Lange auf ein Symbol drücken = kurz sagen, was es macht (wie bei der Einkaufsliste)
@@ -1037,6 +1075,20 @@ class StundenzettelCard extends HTMLElement {
     for (const ev of ["pointerup", "pointercancel", "pointerleave"]) root.addEventListener(ev, () => clearTimeout(lpTimer), true);
     root.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
     root.addEventListener("contextmenu", (e) => { if (lpBtn(e.target)) e.preventDefault(); }, true);
+    // 👉 In Heute wischen = Tag vor/zurück (wie bei der Einkaufsliste)
+    let sw = null;
+    root.addEventListener("touchstart", (e) => {
+      sw = null;
+      if (this._view !== "heute" || this._pad || this._open || this._share || e.touches.length !== 1) return;
+      if (e.target.closest?.("input,textarea,select,.quick,.tabs,.nscroll")) return;
+      sw = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }, { passive: true });
+    root.addEventListener("touchend", (e) => {
+      if (!sw) return;
+      const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y; sw = null;
+      if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+      this._act({ dataset: { a: "tday", v: dx < 0 ? "1" : "-1" } });
+    }, { passive: true });
     // ⌨️ PIN auch mit der Tastatur
     this._onKey = (e) => {
       if (!this._padShown || !this.isConnected || !this._pad) return;
@@ -1053,6 +1105,11 @@ class StundenzettelCard extends HTMLElement {
   getCardSize() { return 8; }
   setConfig(config) {
     this._config = { title: "Stundenzettel", ...config };
+    const sfx = this._config.entry ? `_${this._config.entry}` : ""; // 👥 eigener Postausgang + Offline-Stand je Stundenzettel
+    if (sfx !== this._sfx) {
+      this._sfx = sfx; this._queue = store.get(QKEY + sfx, []); this._server = this._app ? store.get(DKEY + sfx, null) : null;
+      if (this._unsub) { this._unsub.then((u) => u?.()).catch(() => {}); this._unsub = null; this._subscribe(); }
+    }
     if (this._hass) { this._useLang(); this._force = true; this._render(); }
   }
   _useLang() {
@@ -1061,13 +1118,16 @@ class StundenzettelCard extends HTMLElement {
     if (SZ_LANG !== "de") szLoadDict();
   }
   get _app() { return !!window.__szOfflineApp; }
+  // 👥 Jede Nachricht an Home Assistant sagt, welcher Stundenzettel gemeint ist (ohne = der erste)
+  _wsMsg(m) { return this._config?.entry ? { ...m, entry_id: this._config.entry } : m; }
+  _ws(m) { return this._hass.callWS(this._wsMsg(m)); }
   set hass(hass) {
     const first = !this._hass;
     const was = this._hass?.connected;
     this._hass = hass;
     this._useLang();
     if (first) {
-      if (this._app) this._server = store.get(DKEY, null);
+      if (this._app) this._server = store.get(DKEY + this._sfx, null);
       this._subscribe(); this._render();
     } else if (was !== hass.connected) this._render();
     if (hass.connected !== false) this._flush();
@@ -1078,9 +1138,9 @@ class StundenzettelCard extends HTMLElement {
     if (this._unsub || !this._hass?.connection) return;
     this._unsub = this._hass.connection.subscribeMessage((data) => {
       this._server = data; this._err = null;
-      if (this._app) store.put(DKEY, data);
+      if (this._app) store.put(DKEY + this._sfx, data);
       this._render();
-    }, { type: "stundenzettel/subscribe" })
+    }, this._wsMsg({ type: "stundenzettel/subscribe" }))
       .catch((err) => { this._err = err?.message || String(err); this._unsub = null; this._render(); });
   }
   // 👀 Was man sieht = Stand von Home Assistant + alles, was noch im Postausgang liegt
@@ -1099,7 +1159,7 @@ class StundenzettelCard extends HTMLElement {
   async _send(...ops) {
     for (const o of ops) this._queue.push({ op_id: uid(), ts: Date.now(), ...o });
     this._qv++;
-    store.put(QKEY, this._queue);
+    store.put(QKEY + this._sfx, this._queue);
     this._render();
     this._flush();
     return true;
@@ -1109,11 +1169,11 @@ class StundenzettelCard extends HTMLElement {
     this._flushing = true;
     try {
       const batch = this._queue.slice(0, 100);
-      const res = await this._hass.callWS({ type: "stundenzettel/apply", ops: batch });
+      const res = await this._ws({ type: "stundenzettel/apply", ops: batch });
       const done = new Set(batch.map((o) => o.op_id));
       const bad = (res?.results || []).filter((r) => !r.ok);
       this._queue = this._queue.filter((o) => !done.has(o.op_id)); this._qv++;
-      store.put(QKEY, this._queue);
+      store.put(QKEY + this._sfx, this._queue);
       if (bad.length) this._toast("⚠️ " + bad.map((b) => b.error).join(", "));
       this._render();
       if (this._queue.length) setTimeout(() => this._flush(), 50);
@@ -1168,11 +1228,11 @@ class StundenzettelCard extends HTMLElement {
     // 🔒 PIN: sperrt ⚙️ – oder (Schalter „Ganze Karte sperren“) alles
     const appLock = this._app && !!window.__szAppLock?.on?.();
     const lockAll = !!(d && d.pin && this._st.lock_all && !appLock);
-    const locked = !!(d && d.pin && !pinOpen() && (lockAll || this._view === "set"));
+    const locked = !!(d && d.pin && !pinOpen(this._sfx) && (lockAll || this._view === "set"));
     this._lockAll = lockAll && locked;
-    if (lockAll && !locked) { clearTimeout(this._relockT); this._relockT = setTimeout(() => { this._force = true; this._render(); }, Math.max(1000, PIN_LOCK.until - Date.now() + 500)); }
+    if (lockAll && !locked) { clearTimeout(this._relockT); this._relockT = setTimeout(() => { this._force = true; this._render(); }, Math.max(1000, pinLock(this._sfx).until - Date.now() + 500)); }
     if (locked && this._pad?.step !== "unlock") this._pad = { purpose: "unlock", step: "unlock", buf: "", back: "heute" };
-    if (!locked && this._pad?.step === "unlock" && (this._pad.back !== "edit" || pinOpen())) this._pad = null;
+    if (!locked && this._pad?.step === "unlock" && (this._pad.back !== "edit" || pinOpen(this._sfx))) this._pad = null;
     const vw = this._st.view || {};
     if ((this._view === "monat" && vw.monat === false) || (this._view === "jahr" && vw.jahr === false) || (this._view === "stat" && vw.stat === false)) this._view = "heute";
     let body;
@@ -1187,7 +1247,7 @@ class StundenzettelCard extends HTMLElement {
       const stamp = d.stamp;
       const badge = stamp ? `<span class="badge" data-a="tab" data-v="heute" title="Eingestempelt" style="display:inline-flex;align-items:center;gap:4px">${ic("timer-outline")}seit ${esc(stamp.in)}</span>` : "";
       const title = this._config?.title && this._config.title !== "Stundenzettel" ? esc(this._config.title) : "";
-      const isLocked = d.pin && !pinOpen();
+      const isLocked = d.pin && !pinOpen(this._sfx);
       const tools = this._lockAll ? "" : `<button class="iconbtn" data-a="lock" title="${appLock ? "App jetzt sperren" : isLocked ? "Gesperrt – PIN nötig für ⚙️" : d.pin ? "Jetzt sperren" : "Sperren (erst PIN festlegen)"}">${ic(isLocked && !appLock ? "lock-outline" : "lock-open-variant-outline")}${this._lb(isLocked && !appLock ? "Gesperrt" : "Sperren")}</button>
         ${showBack ? `<button class="iconbtn" data-a="back" title="${deeper ? "Zurück" : "Schließen"}">${ic(deeper ? "arrow-left" : "close")}${this._lb(deeper ? "Zurück" : "Schließen")}</button>` : ""}`;
       const logo = this._st.mascot ? `<span class="logo mascotbox" data-a="tab" data-v="heute" title="Zurück zu Heute">${szMascotSvg(szMascotMood(d), szMascotDeco())}</span>` : `<span class="logo" data-a="tab" data-v="heute" title="Zurück zu Heute">${ic("clipboard-text-clock-outline")}</span>`;
@@ -1197,7 +1257,7 @@ class StundenzettelCard extends HTMLElement {
         const tabs = [["heute", "calendar-today", "Heute"], ...(vw.monat === false ? [] : [["monat", "calendar-month-outline", "Monat"]]), ...(vw.jahr === false ? [] : [["jahr", "chart-bar", "Jahr"]]), ...(vw.stat === false ? [] : [["stat", "chart-line", "Statistik"]])];
         if (tabs.length > 1) body += `<div class="tabs">${tabs.map(([k, i, l]) => `<button class="tab ${this._view === k ? "active" : ""}" data-a="tab" data-v="${k}">${ic(i)}${l}</button>`).join("")}</div>`;
       }
-      if (!locked) pinTouch();
+      if (!locked) pinTouch(this._sfx);
       body += page ? `<div class="sec pagehost"><div class="sechead"><span class="ic" style="--ic:${page.color}">${ic(page.icon)}</span><h3>${page.title}</h3></div><div class="pagebody">${page.html}</div></div>`
         : this._view === "set" ? this._setView() : this._view === "monat" ? this._monthView() : this._view === "jahr" ? this._yearView() : this._view === "stat" ? this._statView() : this._todayView();
     }
@@ -1228,29 +1288,29 @@ class StundenzettelCard extends HTMLElement {
   // ---------------------------------------------------------------- 📅 Heute
   _todayView() {
     const d = this._d, s = d.summary || {}, st = this._st;
-    const iso = d.today;
-    const cur = this._rowOf(iso.slice(0, 7));
+    const iso = this._selDay(), isToday = iso === d.today;
+    const cur = this._rowOf(d.today.slice(0, 7));
     const bal = Number(s.balance || 0);
     let h = "";
-    if (!st.calendar && !Object.keys(d.days || {}).length) {
+    if (isToday && !st.calendar && !Object.keys(d.days || {}).length) {
       h += `<div class="wizbox"><b>🚀 Los geht's – in 2 Minuten eingerichtet</b><ol class="small" style="margin-left:0">
         <li><b>Kalender wählen</b>, in dem dein Termin „Arbeiten“ steht → <button class="btn small" data-a="sheet" data-v="cal">📅 Kalender</button></li>
         <li><b>Bezahlte Stunden</b> pro Monat eintragen (Standard 175) → <button class="btn small" data-a="sheet" data-v="work">💶 Arbeitszeit</button></li>
         <li>Alten Zettel? <b>Einfach als Text einfügen</b> → <button class="btn small" data-a="sheet" data-v="imp">📥 Import</button></li></ol>
         <p class="small">Du kannst auch sofort loslegen: unten auf <b>Kommen</b> drücken oder den heutigen Tag eintragen. 💪</p></div>`;
     }
-    h += this._payslipHint(cur);
+    if (isToday) h += this._payslipHint(cur);
     h += this._todayHero(d, iso);
     h += this._kgHtml(d, iso);
-    h += `<div class="ghead"><span class="gdot" style="--gc:#1e88e5">${ic("calendar-today")}</span><span>Eintrag für heute</span></div>`;
+    h += `<div class="ghead"><span class="gdot" style="--gc:#1e88e5">${ic("calendar-today")}</span><span>Eintrag für ${isToday ? "heute" : `${WD_LONG[wdOf(iso)]} ${dm(iso)}`}</span></div>`;
     h += this._dayRows([iso], true);
     if (!d.days[iso] && this._open !== iso) {
       const p = this._plan(iso);
       h += `<div class="quick">${p ? `<button class="chip" data-a="quick" data-v="plan" data-d="${iso}">📋 Normaler Tag ${esc(p[0])}–${esc(p[1])}</button>` : ""}${["urlaub", "krank", "feiertag", "frei"].map((k) => `<button class="chip" data-a="quick" data-v="${k}" data-d="${iso}">${ic(KIND[k][0])} ${KIND[k][1]}</button>`).join("")}<button class="chip" data-a="open" data-d="${iso}">✍️ Andere Zeit</button></div>`;
     }
-    const y = Number(iso.slice(0, 4));
-    const yesterday = (() => { const t = new Date(y, Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)) - 1); return isoOf(t.getFullYear(), t.getMonth() + 1, t.getDate()); })();
-    if (!d.days[yesterday] && this._plan(yesterday)) {
+    const y = Number(d.today.slice(0, 4));
+    const yesterday = szAddDays(d.today, -1);
+    if (isToday && !d.days[yesterday] && this._plan(yesterday)) {
       h += `<div class="ghead"><span class="gdot" style="--gc:#fb8c00">${ic("calendar-alert")}</span><span>Gestern fehlt noch</span></div>` + this._dayRows([yesterday], true);
     }
     const vw = st.view || {};
@@ -1272,7 +1332,8 @@ class StundenzettelCard extends HTMLElement {
     const ghost = !e && !stamp;
     const a = stamp ? stamp.in : e?.start || p[0] || "";
     const b = stamp ? "" : e?.end || p[1] || "";
-    const f = (k, icon, label, val, title, ro) => `<div class="kgf ${k === "start" ? "in" : "out"}"><span class="kgl">${ic(icon)}${label}</span><input type="time" step="300" data-a="kg" data-v="${k}" value="${esc(val)}" aria-label="${label}" ${ro ? "readonly" : ""}><button class="iconbtn" data-a="kgnow" data-v="${k}" title="${title}">${ic("timer-outline")}<span class="lbl">jetzt</span></button></div>`;
+    const now = iso === d.today;
+    const f = (k, icon, label, val, title, ro) => `<div class="kgf ${k === "start" ? "in" : "out"}"><span class="kgl">${ic(icon)}${label}</span><input type="time" step="300" data-a="kg" data-v="${k}" value="${esc(val)}" aria-label="${label}" ${ro ? "readonly" : ""}>${now ? `<button class="iconbtn" data-a="kgnow" data-v="${k}" title="${title}">${ic("timer-outline")}<span class="lbl">jetzt</span></button>` : ""}</div>`;
     return `<div class="kg ${ghost ? "ghost" : ""} ${stamp ? "running" : ""}">${f("start", "login-variant", "Kommen", a, stamp ? "Läuft schon" : "Kommen jetzt – einstempeln", !!stamp)}${f("end", "logout-variant", "Gehen", b, stamp ? "Gehen jetzt – ausstempeln" : "Gehen jetzt", false)}</div>
       ${stamp ? `<div class="stamp"><span class="since">⏱️ Eingestempelt seit ${esc(stamp.in)} – ⏱️ bei „Gehen“ stempelt aus.</span><button class="btn small" data-a="cancelstamp" title="Stempeln abbrechen (nichts eintragen)">${ic("close")}Abbrechen</button></div>`
         : ghost ? `<p class="small kgh">Vorschlag aus deinem normalen Tag – ändere eine Uhrzeit oder tippe ⏱️, dann ist der Tag eingetragen.</p>` : ""}`;
@@ -1281,13 +1342,17 @@ class StundenzettelCard extends HTMLElement {
   _payslipHint(cur) {
     const d = this._d, st = this._st;
     if (st.payslip_hint === false || !cur || cur.alt || Number(d.today.slice(8, 10)) > 20) return "";
-    if (store.get("sz_payslip_no", "") === cur.month) return "";
+    if (store.get("sz_payslip_no" + this._sfx, "") === cur.month) return "";
     const [y, m] = cur.month.split("-").map(Number);
     const prev = monthName(`${m === 1 ? y - 1 : y}-${pad2(m === 1 ? 12 : m - 1)}`);
     return `<div class="wizbox payslip"><b>💶 Lohnabrechnung für ${esc(prev)} da?</b><p class="small" style="margin:4px 0 8px">Trag den Überstunden-Stand vom Chef als <b>Ü.-Alt</b> für ${esc(monthName(cur.month))} ein – dann rechnet die Karte genau mit seiner Zahl weiter.</p>
       <div class="btnrow"><button class="btn small main" data-a="payslip" data-v="${cur.month}">${ic("cash-check")}Jetzt eintragen</button><button class="btn small" data-a="payslipno" data-v="${cur.month}">${ic("close")}Später</button></div></div>`;
   }
   // ⏱️ Ganz oben: die Stunden von heute (beim Stempeln läuft die Uhr mit)
+  _dayLabel(iso) {
+    const t = this._d.today;
+    return iso === t ? "Heute" : iso === szAddDays(t, -1) ? "Gestern" : iso === szAddDays(t, 1) ? "Morgen" : "";
+  }
   _todayHero(d, iso) {
     const st = this._st, e = d.days[iso];
     let big = 0, sub = "", run = false;
@@ -1305,10 +1370,10 @@ class StundenzettelCard extends HTMLElement {
       if (e.provisional) sub += " · ⏳ läuft noch";
     } else {
       const p = this._plan(iso);
-      sub = p ? `Noch nichts eingetragen · normal wären ${esc(p[0])}–${esc(p[1])}` : "Heute ist frei 🛋️";
+      sub = p ? `Noch nichts eingetragen · normal wären ${esc(p[0])}–${esc(p[1])}` : iso === d.today ? "Heute ist frei 🛋️" : "Frei 🛋️";
     }
     const color = run ? "#43a047" : e ? (KIND[e.kind]?.[2] || "#1e88e5") : "#1e88e5";
-    return `<div class="hero ${run ? "running" : ""}" style="--hc:${color}"><div class="lbl">⏱️ Heute, ${WD_LONG[wdOf(iso)]} ${dm(iso)}</div><div class="big">${h2(big)} Std.</div><div class="lbl">${sub}</div></div>`;
+    return `<div class="hero ${run ? "running" : ""}" style="--hc:${color}"><div class="hnav"><button class="iconbtn harrow" data-a="tday" data-v="-1" title="Tag davor" aria-label="Tag davor">${ic("chevron-left")}</button><button class="hday lbl" data-a="tday" data-v="0" title="Zurück zu heute">⏱️ ${this._dayLabel(iso) ? `${this._dayLabel(iso)}, ` : ""}${WD_LONG[wdOf(iso)]} ${dm(iso)}</button><button class="iconbtn harrow" data-a="tday" data-v="1" title="Nächster Tag" aria-label="Nächster Tag">${ic("chevron-right")}</button></div><div class="big">${h2(big)} Std.</div><div class="lbl">${sub}</div></div>`;
   }
   // 🙈 Verschleiern (⚙️ → Ansicht): Überstunden erst nach Antippen zeigen
   _mv(html, key) {
@@ -1362,15 +1427,39 @@ class StundenzettelCard extends HTMLElement {
     const n = Object.keys(b.days || {}).filter((iso) => this._bossMark(iso, this._d.days[iso])).length;
     const mine = row ? (row.now ?? row.total) : null;
     const dEnd = b.saldo_ue != null && mine != null ? mine - b.saldo_ue : null;
-    const altDiff = row && b.saldo_vm != null && Math.abs(row.old - b.saldo_vm) > 0.004;
+    const col = (v) => (v < 0 ? "vneg" : "vpos");
+    const [y, m] = this._month.split("-").map(Number), next = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}`;
+    const nextAlt = ((this._d.months_meta || {})[next] || {}).alt;
+    const chefOn = b.saldo_ue != null && nextAlt != null && Math.abs(nextAlt - b.saldo_ue) < 0.005;
     return `<div class="ghead"><span class="gdot" style="--gc:#e53935">${ic("file-document-outline")}</span><span>Zettel vom Chef</span></div>
-      <div class="zettel boss-box">
-      ${b.gesamt != null ? r("sigma", "Gesamt (Chef)", `${h2(b.gesamt)} Std.`) : ""}${b.soll != null ? r("cash", "Sollzeit (Chef)", `−${h2(b.soll)} Std.`) : ""}
-      ${b.saldo_vm != null ? r("history", "Saldo Vormonat (Chef)", this._mv(`<span class="${b.saldo_vm < 0 ? "vneg" : "vpos"}">${hs(b.saldo_vm)}</span>`, "bvm" + this._month)) : ""}
-      ${b.saldo_ue != null ? r("scale-balance", "Saldo Übertrag (Chef)", this._mv(`<span class="${b.saldo_ue < 0 ? "vneg" : "vpos"}">${hs(b.saldo_ue)}</span> Std.`, "bue" + this._month), "tot") : ""}
-      ${dEnd != null ? `<div class="zr sub"><span><span>Karte</span>&nbsp;${this._mv(hs(mine), "bk" + this._month)}</span><span class="${Math.abs(dEnd) < 0.005 ? "" : dEnd < 0 ? "vneg" : "vpos"}">${Math.abs(dEnd) < 0.005 ? "gleich ✅" : this._mv(hs(dEnd), "bd" + this._month)}</span></div>` : ""}
-      ${r("calendar-alert", "Tage mit Abweichung", n ? `<span class="boss">${n}</span>` : "keine 🎉")}</div>
-      <div class="btnrow">${altDiff ? `<button class="btn small" data-a="bossalt">${ic("history")}Saldo Vormonat als Ü.-Alt übernehmen</button>` : ""}<button class="btn small" data-a="bossdel">${ic("delete-outline")}Zettel entfernen</button></div>`;
+      <div class="zettel simple boss-box">
+      ${b.saldo_ue != null ? r("account-tie-outline", "Laut Chef <small>(Übertrag)</small>", this._mv(`<span class="${col(b.saldo_ue)}">${hm(b.saldo_ue)} Std.</span>`, "bue" + this._month)) : ""}
+      ${mine != null ? r("account-outline", "Laut mir", this._mv(`<span class="${col(mine)}">${hm(mine)} Std.</span>`, "bk" + this._month)) : ""}
+      ${dEnd != null ? r("scale-unbalanced", "Unterschied", Math.abs(dEnd) < 0.005 ? "gleich ✅" : this._mv(`<span class="${col(dEnd)}">${hm(dEnd)} Std.</span>`, "bd" + this._month), "res") : ""}
+      <div class="zr sub"><span>Tage, an denen der Chef anders rechnet</span><span>${n ? `<span class="boss">${n}</span>` : "keine 🎉"}</span></div></div>
+      ${b.saldo_ue != null && mine != null ? `<div class="bpick"><span>${ic("arrow-right-bold-outline")}<span>${MONTHS[Number(next.slice(5)) - 1]} startet mit:</span></span><div class="seg"><button class="${chefOn ? "on" : ""}" data-a="bossue" data-v="${next}">${ic("account-tie-outline")}<span>Chef ${hm(b.saldo_ue)}</span></button><button class="${chefOn ? "" : "on"}" data-a="bossmine" data-v="${next}">${ic("account-outline")}<span>Mir ${hm(mine)}</span></button></div></div>` : ""}
+      <div class="btnrow"><button class="btn small" data-a="bossdel">${ic("delete-outline")}Zettel entfernen</button></div>`;
+  }
+
+  // 📝 Schnellwähler: lernt Orte und Tätigkeiten aus den alten Notizen („Ort - Tätigkeit“, eine Zeile pro Ort)
+  _noteChips() {
+    const pl = new Map(), ac = new Map();
+    const bump = (m, k, w) => { k = k.trim(); if (k && k.length <= 40) m.set(k, (m.get(k) || 0) + w); };
+    const days = Object.entries(this._d.days || {}).sort((x, y) => (x[0] < y[0] ? 1 : -1)).slice(0, 400);
+    days.forEach(([, e], i) => {
+      const w = 1 + (400 - i) / 400; // neuere zählen etwas mehr
+      for (const line of String(e.note || "").split("\n")) {
+        const m = line.match(/^(.+?)\s+[-–]\s+(.*)$/);
+        if (!m) continue;
+        bump(pl, m[1], w);
+        for (const t of m[2].split(/\s*[,;+]\s*|\s+und\s+/)) bump(ac, t, w);
+      }
+    });
+    const top = (m, n) => [...m.entries()].sort((x, y) => y[1] - x[1]).slice(0, n).map((x) => x[0]);
+    const places = top(pl, 8), acts = top(ac, 10);
+    if (!places.length && !acts.length) return "";
+    const row = (list, a, icon, label) => list.length ? `<div class="nchips"><span class="nlab">${ic(icon)}${label}</span><div class="nscroll" translate="no">${list.map((x) => `<button type="button" class="chip small" data-a="${a}" data-v="${esc(x)}">${esc(x)}</button>`).join("")}</div></div>` : "";
+    return `<div class="wide nquick">${row(places, "nplace", "map-marker-outline", "Ort (neue Zeile)")}${row(acts, "nact", "hammer-wrench", "Tätigkeit")}</div>`;
   }
   _dayForm(iso) {
     const d = this._d, st = this._st;
@@ -1386,7 +1475,8 @@ class StundenzettelCard extends HTMLElement {
     if (kind === "work") fields += `<label>Pause (Std.)<input name="pause" inputmode="decimal" value="${e.kind === "work" && e.pause_set && e.source !== "calendar" ? esc(String(e.pause).replace(".", ",")) : ""}" placeholder="automatisch"></label><label>&nbsp;<span class="small" style="margin:8px 0 0">leer = nach Pausen-Regel</span></label>`;
     if (["urlaub", "krank", "feiertag"].includes(kind)) fields += `<label>Zählt Stunden<input name="hours" inputmode="decimal" value="${e.kind === kind && e.hours != null && e.source === "card" ? esc(String(e.hours).replace(".", ",")) : ""}" placeholder="${h2(st.absence_hours)}"></label><label>&nbsp;</label>`;
     if (kind === "pauschal") fields += `<label class="wide">Betrag (€) – zählt nicht zu den Stunden<input name="amount" inputmode="decimal" value="${e.amount != null ? esc(String(e.amount).replace(".", ",")) : ""}" placeholder="z. B. 40,00"></label>`;
-    fields += `<label class="wide">Notiz (z. B. Baustelle)<textarea name="note" rows="2">${esc(e.note || "")}</textarea></label>`;
+    const nl = String(e.note || "").split("\n").length;
+    fields += `<label class="wide">Notiz (z. B. Baustelle)<textarea name="note" rows="${Math.max(2, nl)}">${esc(e.note || "")}</textarea></label>${this._noteChips()}`;
     const src = e.source ? `<p class="small">${SOURCE[e.source] || ""}${e.source === "calendar" ? " – wenn du hier speicherst, gilt ab jetzt deine Version (der Kalender ändert den Tag nicht mehr)." : ""}</p>` : "";
     return `<form class="edit" data-form="day" data-d="${iso}"><b>${WD_LONG[wdOf(iso)]}, ${dm(iso)}${iso.slice(0, 4)}</b><div class="kinds">${kinds}</div><div class="f">${fields}</div>${src}
       <div class="btnrow end">${d.days[iso] ? `<button type="button" class="btn" data-a="delday" data-d="${iso}">${ic("delete-outline")}Löschen</button>` : ""}<button type="button" class="btn" data-a="close">Abbrechen</button><button class="btn main" type="submit">${ic("check")}Speichern</button></div></form>`;
@@ -1416,11 +1506,7 @@ class StundenzettelCard extends HTMLElement {
     }
     return h;
   }
-  _altRow(row, r) {
-    const off = row.old - (row.calc_old ?? row.old);
-    const line = r("history", row.alt ? "Ü.-Alt (Lohnabrechnung)" : "Ü.-Alt (Vormonat)", this._mv(hs(row.old), "old" + row.month));
-    return row.alt && Math.abs(off) > 0.004 ? line + `<div class="zr sub"><span>Karte hätte ${this._mv(hs(row.calc_old), "co" + row.month)}</span><span class="${off < 0 ? "vneg" : "vpos"}">${this._mv(hs(off), "cd" + row.month)}</span></div>` : line;
-  }
+
   _sheetNote(row) {
     if (!row?.sheet) return "";
     const dh = Math.abs((row.calc_hours ?? row.hours) - row.hours) > 0.004;
@@ -1429,35 +1515,20 @@ class StundenzettelCard extends HTMLElement {
   _zettel(row) {
     if (!row) return `<div class="empty">In diesem Monat steht noch nichts. ✍️</div>`;
     const r = (icon, label, val, cls = "") => `<div class="zr ${cls}"><span>${ic(icon)}${label}</span><span>${val}</span></div>`;
-    if (row.now != null) { // 📍 laufender Monat: fair rechnen – Soll nur bis heute
-      const diff = row.hours - row.paid_today;
-      return `<div class="zettel" style="--hc:${row.now < 0 ? "var(--kc-red)" : "var(--kc-green)"}">
-      ${r("sigma", "Summe bisher", `${h2(row.hours)} Std.`)}
-      ${r("cash", `Soll bis heute <small>(ganzer Monat ${h2(row.paid)})</small>`, `−${h2(row.paid_today)} Std.`)}
-      ${r("plus-minus-variant", "Plus/Minus bisher", `<span class="${diff < 0 ? "vneg" : "vpos"}">${hs(diff)}</span>`)}
-      ${this._altRow(row, r)}
-      ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, hs(row.adjust)) : ""}
-      ${r("scale-balance", "Stand heute", this._mv(`${hs(row.now)} Std.`, "now"), "tot")}
-      ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}
-      ${r("food-variant", `${h2(this._st.long_day).replace(",00", "")} Stunden und →`, row.long)}${row.euro ? r("cash", "Pauschal", eur(row.euro)) : ""}</div>
-      <p class="small">Der Monat läuft noch – darum zählt das Soll nur bis heute. Den fertigen Zettel (mit vollem Soll) gibt es ab dem 1. des nächsten Monats.</p>`;
+    const chips = `<div class="zchips">${[["beach", "Urlaub", row.urlaub], ["emoticon-sick-outline", "Krank", row.krank], ...(row.feiertag ? [["party-popper", "Feiertag", row.feiertag]] : []), ["food-variant", `${h2(this._st.long_day).replace(",00", "")} Std.+`, row.long], ...(row.euro ? [["cash", "Pauschal", eur(row.euro)]] : [])].map(([i, l, v]) => `<span class="zchip">${ic(i)}<b>${v}</b>${l}</span>`).join("")}</div>`;
+    if (row.future) {
+      return `<div class="zettel">${r("sigma", "Schon eingetragen", `${h2(row.hours)} Std.`)}</div>${chips}<p class="small">🔮 Dieser Monat kommt erst noch – zählt fürs Konto erst, wenn er dran ist.</p>`;
     }
-    if (row.future) { // 🔮 Monat kommt erst noch – Eingetragenes (z. B. Urlaub) zeigen, Konto bleibt unberührt
-      return `<div class="zettel">
-      ${r("sigma", "Schon eingetragen", `${h2(row.hours)} Std.`)}
-      ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}</div>
-      <p class="small">🔮 Dieser Monat kommt erst noch. Was hier schon steht, zählt fürs Überstunden-Konto erst, wenn der Monat dran ist.</p>`;
-    }
-    const totCol = row.total < 0 ? "var(--kc-red)" : "var(--kc-green)";
-    return `<div class="zettel" style="--hc:${totCol}">
-      ${r("sigma", "Summe", `${h2(row.hours)} Std.`)}
-      ${r("cash", "Bezahlt (Soll)", `−${h2(row.paid)} Std.`)}
-      ${r("plus-minus-variant", "Plus/Minus", `<span class="${row.diff < 0 ? "vneg" : "vpos"}">${hs(row.diff)}</span>`)}
-      ${this._altRow(row, r)}
-      ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, hs(row.adjust)) : ""}
-      ${r("scale-balance", "Ü.-Gesamt", this._mv(`${hs(row.total)} Std.`, "tot" + row.month), "tot")}
-            ${r("beach", "Urlaubstage", row.urlaub)}${r("emoticon-sick-outline", "Kranktage", row.krank)}${row.feiertag ? r("party-popper", "Feiertage", row.feiertag) : ""}
-      ${r("food-variant", `${h2(this._st.long_day).replace(",00", "")} Stunden und →`, row.long)}${row.euro ? r("cash", "Pauschal", eur(row.euro)) : ""}</div>${this._sheetNote(row)}`;
+    const run = row.now != null;
+    const soll = run ? row.paid_today : row.paid, diff = row.hours - soll, end = run ? row.now : row.total;
+    const col = end < 0 ? "var(--kc-red)" : "var(--kc-green)";
+    return `<div class="zettel simple" style="--hc:${col}">
+      ${r("arm-flex-outline", run ? "Gearbeitet bis heute" : "Gearbeitet", `${h2(row.hours)} Std.`)}
+      ${r("clipboard-check-outline", run ? "Soll bis heute" : "Soll", `− ${h2(soll)} Std.`)}
+      ${r("equal", "Dieser Monat", `<span class="${diff < 0 ? "vneg" : "vpos"}">${hs(diff)} Std.</span>`, "res")}
+      ${r("history", row.alt ? "Vom Chef (Lohnabrechnung)" : "Vom Vormonat", `${hs(row.old)} Std.`)}${row.alt && Math.abs(row.old - (row.calc_old ?? row.old)) > 0.004 ? `<div class="zr sub"><span>Laut mir wären es ${this._mv(hs(row.calc_old), "co" + row.month)}</span><span class="${row.old - row.calc_old < 0 ? "vneg" : "vpos"}">${this._mv(hs(row.old - row.calc_old), "cd" + row.month)}</span></div>` : ""}
+      ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, `${hs(row.adjust)} Std.`) : ""}
+      ${r("scale-balance", run ? "Dein Konto heute" : `Konto Ende ${MONTHS[Number(row.month.slice(5)) - 1]}`, this._mv(`${hs(end)} Std.`, "tot" + row.month), "tot")}</div>${chips}${this._sheetNote(row)}`;
   }
 
   // ---------------------------------------------------------------- 📊 Jahr
@@ -1577,7 +1648,7 @@ class StundenzettelCard extends HTMLElement {
     const restart = () => { if (this._pad === p) { p.step = p.purpose === "unlock" ? "unlock" : this._d?.pin ? "old" : "new"; p.buf = ""; } this._redraw(); };
     const setPin = (pin) => this._pin("stundenzettel/pin/set", { pin, old: p.old || null }).then((r) => {
       if (!r) { restart(); return; }
-      PIN_LOCK.until = pin ? Date.now() + 10 * 60 * 1000 : 0;
+      pinLock(this._sfx).until = pin ? Date.now() + 10 * 60 * 1000 : 0;
       this._toast(pin ? "🔒 PIN gespeichert" : "🔓 PIN ist aus");
       this._pad = null; this._redraw();
     });
@@ -1585,7 +1656,7 @@ class StundenzettelCard extends HTMLElement {
       if (this._hass?.connected === false) { // 📴 ohne Netz prüft die Karte selbst (Offline-Schlüssel aus dem letzten Stand)
         this._toast("🔎 PIN wird auf diesem Gerät geprüft …");
         pinCheckOffline(this._d?.pin_off, v).then((r) => {
-          if (r.ok) { PIN_LOCK.until = Date.now() + 10 * 60 * 1000; this._pad = null; this._toast("🔓 Entsperrt (offline)"); }
+          if (r.ok) { pinLock(this._sfx).until = Date.now() + 10 * 60 * 1000; this._pad = null; this._toast("🔓 Entsperrt (offline)"); }
           else if (r.wait) this._toast(`⏳ Zu oft falsch – bitte ${r.wait} Sekunden warten`);
           else if (r.unknown) this._toast("📴 Diese PIN kennt das Gerät noch nicht – einmal mit Netz eingeben, danach geht's auch offline");
           else this._toast("❌ Falsche PIN");
@@ -1594,7 +1665,7 @@ class StundenzettelCard extends HTMLElement {
         return;
       }
       this._pin("stundenzettel/pin/check", { pin: v }).then((r) => {
-        if (r?.ok) { PIN_LOCK.until = Date.now() + 10 * 60 * 1000; this._pad = null; this._toast("🔓 Entsperrt"); }
+        if (r?.ok) { pinLock(this._sfx).until = Date.now() + 10 * 60 * 1000; this._pad = null; this._toast("🔓 Entsperrt"); }
         else if (r) this._toast("❌ Falsche PIN");
         this._redraw();
       });
@@ -1613,7 +1684,7 @@ class StundenzettelCard extends HTMLElement {
   }
   async _pin(type, payload) {
     if (this._hass?.connected === false) { this._toast("📴 PIN ändern oder ausschalten geht nur mit Netz – entsperren klappt auch offline"); return null; }
-    try { return await this._hass.callWS({ type, ...payload }); }
+    try { return await this._ws({ type, ...payload }); }
     catch (err) { this._toast("⚠️ " + (err?.message || "Ging nicht")); return null; }
   }
 
@@ -1742,8 +1813,17 @@ class StundenzettelCard extends HTMLElement {
       <div class="btnrow"><button class="btn" data-a="backup">${ic("download")}Sicherung speichern</button>${admin ? `<button class="btn" data-a="restore">${ic("upload")}Sicherung einspielen</button><input type="file" id="restorefile" accept=".json,application/json" hidden>` : ""}<button class="btn" data-a="csvall">${ic("file-delimited-outline")}Alles als CSV</button></div>`;
   }
   _newsHtml() {
-    const li = (t) => `<ul>${t.split(" · ").map((x) => `<li>${x}</li>`).join("")}</ul>`;
-    return `${/-beta/.test(SZ_VERSION) ? `<div class="betabox"><b>🧪 Du bist in der Beta ${SZ_VERSION}</b></div>` : ""}<p class="small">Das Neueste steht oben.</p>${SZ_NEWS.map((n) => `<p style="margin:10px 0 0"><b>v${n[0]}</b></p>${li(n[1])}`).join("")}`;
+    // 🆕 wie bei der Einkaufsliste: oben der Beta-Kasten (nur in einer Beta), darunter höchstens 15 Neuerungen der offiziellen Versionen – das Neueste oben
+    const sorted = [...SZ_NEWS].sort((a, b) => szVerCmp(b[0], a[0]));
+    const base = (v) => String(v).replace(/-beta.*$/, "");
+    const isBeta = /-beta/.test(SZ_VERSION);
+    const betas = isBeta ? sorted.filter((n) => /-beta/.test(n[0]) && base(n[0]) === base(SZ_VERSION) && szVerCmp(n[0], SZ_VERSION) <= 0) : [];
+    const official = sorted.filter((n) => !betas.includes(n) && szVerCmp(n[0], SZ_VERSION) <= 0);
+    const newsVer = official.find((n) => !/-beta/.test(n[0]))?.[0] || official[0]?.[0] || SZ_VERSION;
+    const items = official.flatMap((n) => n[1].split(" · ")).slice(0, SZ_NEWS_MAX);
+    const box = isBeta && betas.length
+      ? `<div class="betabox"><b>🧪 Du bist in der Beta ${esc(SZ_VERSION)}</b><p class="small" style="margin:4px 0 2px">Neu in dieser Beta:</p><ul style="margin:0">${betas.flatMap((n) => n[1].split(" · ").map((x) => `<li><b>Beta ${esc(n[0].replace(/^.*-beta\./, ""))}</b> · ${x}</li>`)).join("")}</ul></div>` : "";
+    return `${box}<p class="small">Die letzten Neuerungen bis Version <b>${esc(newsVer)}</b> – das Neueste steht oben</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul>`;
   }
   _creditsHtml() {
     return `<div class="elcredits" translate="no">
@@ -1802,6 +1882,7 @@ class StundenzettelCard extends HTMLElement {
         cols: [{ t: "Monat", x: 0, w: 110 }, { t: "Stunden", x: 110, w: 70, right: true }, { t: "Soll", x: 185, w: 70, right: true }, { t: "+/-", x: 260, w: 70, right: true }, { t: "Konto", x: 335, w: 80, right: true }, { t: "Urlaub", x: 420, w: 50, right: true }, { t: "Krank", x: 473, w: 50, right: true }],
         rows: rows.map((r) => ({ gray: !r.tracked, cells: [MONTHS[Number(r.month.slice(5)) - 1], h2(r.hours), r.future ? "" : h2(r.paid), r.future ? "" : hs(r.diff + r.adjust), r.future ? "kommt noch" : hs(r.total), String(r.urlaub || ""), String(r.krank || "")] })),
         sums: [["Stunden gesamt", h2(sum("hours"))], ["Urlaub genommen", `${sum("urlaub")} / ${vac}`], ["Kranktage", String(sum("krank"))], [`Tage ab ${h2(st.long_day).replace(",00", "")} Std.`, String(sum("long"))], ...(last ? [["Überstunden-Konto", `${hs(last.total)} Std.`, true]] : [])],
+        sign: SZ_SIGN,
       };
     }
     const key = sh.key, [y, mo] = key.split("-").map(Number), last = new Date(y, mo, 0).getDate();
@@ -1818,6 +1899,7 @@ class StundenzettelCard extends HTMLElement {
       cols: [{ t: "Datum", x: 0, w: 75 }, { t: "Uhrzeit / Art", x: 78, w: 105 }, { t: "Pause", x: 186, w: 45, right: true }, { t: "Stunden", x: 236, w: 55, right: true }, { t: "Notiz", x: 302, w: 221 }],
       rows,
       sums: [["Summe", `${h2(row.hours)} Std.`], [now ? "Soll bis heute" : "Bezahlt (Soll)", `-${h2(now ? row.paid_today : row.paid)} Std.`], ["Plus/Minus", hs(row.hours - (now ? row.paid_today : row.paid))], ["Ü.-Alt (Vormonat)", hs(row.old)], ...(row.adjust ? [["Korrektur", hs(row.adjust)]] : []), [now ? "Stand heute" : "Ü.-Gesamt", `${hs(now ? row.now : row.total)} Std.`, true], ["Urlaubstage", String(row.urlaub)], ["Kranktage", String(row.krank)], [`${h2(st.long_day).replace(",00", "")} Stunden und mehr`, String(row.long)], ...(row.euro ? [["Pauschal", eur(row.euro)]] : [])],
+      sign: SZ_SIGN,
     };
   }
   _sharePdfBytes(m = this._shareModel()) { return szTablePdf(m); }
@@ -1839,9 +1921,9 @@ class StundenzettelCard extends HTMLElement {
   _shareHtmlDoc(m) {
     return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(m.title)}</title><style>@page{size:A4;margin:14mm}
       body{font-family:Roboto,Arial,sans-serif;font-size:11.5px;margin:0;color:#000} h1{font-size:18px;margin:0 0 2px} .sub{color:#666;margin:0 0 8px} table{border-collapse:collapse;width:100%} td,th{border-bottom:1px solid #ccc;padding:3px 5px;text-align:left;vertical-align:top} th{font-size:10px;color:#666;border-bottom:1.5px solid #999}
-      tr.gap td{color:#999} .sum{margin:10px 0 0 auto;width:auto} .sum td{border:0;padding:2px 6px} .sum td:last-child{text-align:right;font-weight:bold} .sum tr.tot td{color:#1e88e5;font-size:13px}</style></head><body>
+      tr.gap td{color:#999} .sum{margin:10px 0 0 auto;width:auto} .sum td{border:0;padding:2px 6px} .sum td:last-child{text-align:right;font-weight:bold} .sum tr.tot td{color:#1e88e5;font-size:13px} .sign{display:flex;gap:40px;margin-top:48px;break-inside:avoid} .sign div{flex:1;color:#666;font-size:10px} .sign span{display:block;border-top:1px solid #333;margin-bottom:3px}</style></head><body>
       <h1>${esc(m.title)}</h1>${m.sub ? `<p class="sub">${esc(m.sub)}</p>` : ""}<table><thead><tr>${m.cols.map((c) => `<th${c.right ? ' style="text-align:right"' : ""}>${esc(c.t)}</th>`).join("")}</tr></thead><tbody>${m.rows.map((r) => `<tr class="${r.gray ? "gap" : ""}">${r.cells.map((v, k) => `<td${m.cols[k].right ? ' style="text-align:right"' : ""}>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table>
-      <table class="sum">${m.sums.map(([l, v, s]) => `<tr class="${s ? "tot" : ""}"><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join("")}</table></body></html>`;
+      <table class="sum">${m.sums.map(([l, v, s]) => `<tr class="${s ? "tot" : ""}"><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join("")}</table>${m.sign ? `<div class="sign">${m.sign.map((l) => `<div><span></span>${esc(l)}</div>`).join("")}</div>` : ""}</body></html>`;
   }
   _sharePrint() {
     const f = document.createElement("iframe");
@@ -1859,7 +1941,7 @@ class StundenzettelCard extends HTMLElement {
       try {
         let bin = "";
         for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode(...bytes.subarray(k, k + 0x8000));
-        const r = await this._hass.callWS({ type: "stundenzettel/pdf/store", data: btoa(bin), name });
+        const r = await this._ws({ type: "stundenzettel/pdf/store", data: btoa(bin), name });
         window.open(this._hass?.hassUrl ? this._hass.hassUrl(r.url) : new URL(r.url, location.origin).href, "_blank");
         this._toast("📄 PDF geöffnet – dort über Teilen drucken oder sichern");
       } catch (err) { this._toast("⚠️ " + (err?.message || "PDF ging nicht")); }
@@ -1950,6 +2032,14 @@ class StundenzettelCard extends HTMLElement {
     });
   }
   _redraw() { this._force = true; this._render(); }
+  // 🔒 In Heute sind heute und gestern frei – Monat und ältere Tage brauchen bei „Ändern nur mit PIN“ die PIN
+  _editFree(a, iso) {
+    if (this._view !== "heute" || a === "payslip") return false;
+    if (["in", "out", "cancelstamp", "undo"].includes(a)) return true;
+    const day = ["kg", "kgnow"].includes(a) ? this._selDay() : iso;
+    return !!day && (day === this._d.today || day === szAddDays(this._d.today, -1));
+  }
+  _selDay() { return this._tday || this._d?.today; }
   _undoFor(label, op) {
     clearTimeout(this._undoT);
     this._undo = { label, op };
@@ -1959,12 +2049,12 @@ class StundenzettelCard extends HTMLElement {
     const a = el.dataset.a, v = el.dataset.v, iso = el.dataset.d;
     const d = this._d, st = this._st;
     // 🔒 „Ändern nur mit PIN“: erst PIN, dann 10 Minuten frei
-    if (SZ_EDIT_ACTS.has(a) && d?.pin && st.lock_edit && !pinOpen()) {
+    if (SZ_EDIT_ACTS.has(a) && d?.pin && st.lock_edit && !pinOpen(this._sfx) && !this._editFree(a, iso)) {
       this._pad = { purpose: "unlock", step: "unlock", buf: "", back: "edit" };
       return this._redraw();
     }
     switch (a) {
-      case "tab": this._view = v; this._sheet = null; this._share = null; this._open = null; this._fkind = null; this._monthForm = false; if (this._pad?.step !== "unlock") this._pad = null; return this._redraw();
+      case "tab": if (v === "heute") this._tday = null; this._view = v; this._sheet = null; this._share = null; this._open = null; this._fkind = null; this._monthForm = false; if (this._pad?.step !== "unlock") this._pad = null; return this._redraw();
       case "back":
         if (this._share && !this._pad) { this._share = null; return this._redraw(); }
         if (this._pad) { const back = this._pad.back; this._pad = null; if (back !== "sheet" && back !== "edit") { this._view = "heute"; this._sheet = null; } }
@@ -1972,9 +2062,9 @@ class StundenzettelCard extends HTMLElement {
         this._addRule = this._addPeriod = false; return this._redraw();
       case "lock": {
         const appLock = this._app && window.__szAppLock?.on?.();
-        if (appLock) { PIN_LOCK.until = 0; this._pad = null; this._sheet = null; this._view = "heute"; this._open = null; this._redraw(); window.__szAppLock.now(); return; }
+        if (appLock) { pinLock(this._sfx).until = 0; this._pad = null; this._sheet = null; this._view = "heute"; this._open = null; this._redraw(); window.__szAppLock.now(); return; }
         if (!d?.pin) { this._toast("🔒 Erst eine PIN festlegen – dann sperrt das Schloss ⚙️"); this._view = "set"; this._sheet = "pin"; this._pad = null; }
-        else if (pinOpen()) { PIN_LOCK.until = 0; this._pad = null; this._toast("🔒 Gesperrt"); if (this._view === "set") { this._view = "heute"; this._sheet = null; } }
+        else if (pinOpen(this._sfx)) { pinLock(this._sfx).until = 0; this._pad = null; this._toast("🔒 Gesperrt"); if (this._view === "set") { this._view = "heute"; this._sheet = null; } }
         else this._view = "set";
         this._open = null; return this._redraw();
       }
@@ -2000,6 +2090,14 @@ class StundenzettelCard extends HTMLElement {
       case "in": return this._send({ type: "stamp_in", ts: Date.now() });
       case "out": return this._send({ type: "stamp_out", ts: Date.now() });
       case "cancelstamp": if (szConfirm("Stempeln abbrechen? Es wird nichts eingetragen.")) this._send({ type: "stamp_cancel" }); return;
+      case "tday": this._tday = v === "0" ? null : szAddDays(this._selDay(), Number(v)); if (this._tday === d.today) this._tday = null; this._open = null; return this._redraw();
+      case "nplace": case "nact": { // 📝 Schnellwähler: Ort = neue Zeile „Ort - “, Tätigkeit hinten dran
+        const ta = el.closest("form")?.querySelector('textarea[name="note"]'); if (!ta) return;
+        const lines = ta.value.replace(/\s+$/, "").split("\n"); let last = lines[lines.length - 1] || "";
+        if (a === "nplace") { if (last.trim()) lines.push(`${v} - `); else lines[lines.length - 1] = `${v} - `; }
+        else { lines[lines.length - 1] = !last.trim() ? v : /-\s*$/.test(last) ? last.replace(/\s*$/, " ") + v : `${last}, ${v}`; }
+        ta.value = lines.join("\n"); ta.rows = Math.max(2, lines.length); ta.blur(); return; // ⌨️ kein Fokus → Tastatur bleibt unten
+      }
       case "shownote": this._noteOpen = this._noteOpen === iso ? null : iso; return this._redraw();
       case "open": this._open = this._open === iso ? null : iso; this._fkind = null; return this._redraw();
       case "close": this._open = null; this._fkind = null; return this._redraw();
@@ -2027,17 +2125,17 @@ class StundenzettelCard extends HTMLElement {
       case "gomonth": this._month = v; this._view = "monat"; return this._redraw();
       case "monthform": this._monthForm = !this._monthForm; return this._redraw();
       case "payslip": this._month = v; this._view = "monat"; this._monthForm = true; this._open = null; return this._redraw();
-      case "payslipno": store.put("sz_payslip_no", v); return this._redraw();
+      case "payslipno": store.put("sz_payslip_no" + this._sfx, v); return this._redraw();
       case "unsheet": if (szConfirm("Diesen Monat mit den Tagen in der Karte neu rechnen statt mit den Zahlen vom alten Zettel?")) this._send({ type: "month_set", month: this._month, sheet: null }); return;
       case "statyear": this._statYear = el.value; return this._redraw();
       case "kg": {
-        const root = this.shadowRoot, iso = d.today, e = d.days[iso];
+        const root = this.shadowRoot, iso = this._selDay(), e = d.days[iso];
         const a = root.querySelector('input[data-a="kg"][data-v="start"]')?.value, b = root.querySelector('input[data-a="kg"][data-v="end"]')?.value;
         if (!a || !b) return this._toast("⚠️ Bitte Kommen und Gehen eintragen");
         const op = { type: "day_set", date: iso, kind: "work", start: a, end: b, note: e?.note || "" };
         if (e?.kind === "work" && e.pause_set && e.source !== "calendar") op.pause = e.pause;
-        const ops = d.stamp ? [{ type: "stamp_cancel" }, op] : [op];
-        if (await this._send(...ops)) this._toast(`✅ Heute ${a}–${b} eingetragen`);
+        const ops = d.stamp && d.stamp.date === iso ? [{ type: "stamp_cancel" }, op] : [op];
+        if (await this._send(...ops)) this._toast(`✅ ${iso === d.today ? "Heute" : `${dm(iso)}${iso.slice(0, 4)}`} ${a}–${b} eingetragen`);
         return;
       }
       case "kgnow": {
@@ -2056,7 +2154,7 @@ class StundenzettelCard extends HTMLElement {
       case "csv": return this._download(`stundenzettel-${this._month}.csv`, this._csv((x) => x.startsWith(this._month)));
       case "csvall": return this._download("stundenzettel-alles.csv", this._csv());
       case "sync": {
-        try { const r = await this._hass.callWS({ type: "stundenzettel/sync" }); this._toast(r?.cal?.ok === false ? `⚠️ ${r.cal.error}` : `🔁 Abgeglichen – ${r.read || 0} Tage neu aus dem Kalender`); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
+        try { const r = await this._ws({ type: "stundenzettel/sync" }); this._toast(r?.cal?.ok === false ? `⚠️ ${r.cal.error}` : `🔁 Abgeglichen – ${r.read || 0} Tage neu aus dem Kalender`); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
         return;
       }
       case "setb": if (v === "_overwrite") { this._overwrite = el.checked; return; } return this._set(v, el.checked);
@@ -2081,19 +2179,21 @@ class StundenzettelCard extends HTMLElement {
         const text = this.shadowRoot.getElementById("imptext")?.value || this._impText || "";
         if (!text.trim()) { this._toast("Erst Text einfügen 🙂"); return; }
         this._impText = text;
-        try { this._impPrev = await this._hass.callWS({ type: "stundenzettel/import", text, apply: a === "impgo", overwrite: !!this._overwrite }); if (a === "impgo") this._toast(`✅ ${this._impPrev.applied} Tage übernommen`); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
+        try { this._impPrev = await this._ws({ type: "stundenzettel/import", text, apply: a === "impgo", overwrite: !!this._overwrite }); if (a === "impgo") this._toast(`✅ ${this._impPrev.applied} Tage übernommen`); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
         return this._redraw();
       }
       case "backup": {
-        try { const b = await this._hass.callWS({ type: "stundenzettel/backup" }); this._download(`stundenzettel-sicherung-${d.today}.json`, JSON.stringify(b, null, 1), "application/json"); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
+        try { const b = await this._ws({ type: "stundenzettel/backup" }); this._download(`stundenzettel-sicherung-${d.today}.json`, JSON.stringify(b, null, 1), "application/json"); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
         return;
       }
       case "restore": this.shadowRoot.getElementById("restorefile")?.click(); return;
       case "bosspick": if (this._hass?.connected === false) { this._toast("📴 Zettel vom Chef geht nur mit Netz"); return; } this.shadowRoot.getElementById("bossfile")?.click(); return;
+      case "bossue": { const b = ((d.months_meta || {})[this._month] || {}).boss; if (b?.saldo_ue != null) { this._send({ type: "month_set", month: v, alt: b.saldo_ue }); this._toast(`💶 ${MONTHS[Number(v.slice(5)) - 1]} startet mit ${hs(b.saldo_ue)} (laut Chef)`); } return; }
+      case "bossmine": { this._send({ type: "month_set", month: v, alt: null }); this._toast(`💶 ${MONTHS[Number(v.slice(5)) - 1]} startet mit deiner Zahl`); return; }
       case "bossalt": { const b = ((d.months_meta || {})[this._month] || {}).boss; if (b?.saldo_vm != null) { this._send({ type: "month_set", month: this._month, alt: b.saldo_vm }); this._toast(`💶 Ü.-Alt = ${hs(b.saldo_vm)} (laut Chef)`); } return; }
       case "bossdel": if (szConfirm("Zettel vom Chef für diesen Monat entfernen? Deine Tage bleiben, wie sie sind.")) this._send({ type: "month_set", month: this._month, boss: null }); return;
-      case "errclear": await this._hass.callWS({ type: "stundenzettel/errors_clear" }); return;
-      case "factory": if (!szConfirm("Wirklich ALLES löschen? Das geht nicht rückgängig.")) return; await this._hass.callWS({ type: "stundenzettel/factory_reset" }); this._toast("💣 Alles gelöscht"); this._view = "heute"; this._sheet = null; return this._redraw();
+      case "errclear": await this._ws({ type: "stundenzettel/errors_clear" }); return;
+      case "factory": if (!szConfirm("Wirklich ALLES löschen? Das geht nicht rückgängig.")) return; await this._ws({ type: "stundenzettel/factory_reset" }); this._toast("💣 Alles gelöscht"); this._view = "heute"; this._sheet = null; return this._redraw();
       default: return undefined;
     }
   }
@@ -2104,7 +2204,7 @@ class StundenzettelCard extends HTMLElement {
       const buf = new Uint8Array(await file.arrayBuffer());
       let bin = "";
       for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-      const r = await this._hass.callWS({ type: "stundenzettel/boss_import", data: btoa(bin) });
+      const r = await this._ws({ type: "stundenzettel/boss_import", data: btoa(bin) });
       if (r.month && r.month !== this._month) this._month = r.month;
       this._toast(`📄 Zettel für ${monthName(r.month)} eingelesen (${r.days} Tage)`);
       this._redraw();
@@ -2115,7 +2215,7 @@ class StundenzettelCard extends HTMLElement {
     try {
       const data = JSON.parse(await file.text());
       if (!szConfirm(`Sicherung mit ${Object.keys(data.days || {}).length} Tagen einspielen? Alles Jetzige wird ersetzt.`)) return;
-      await this._hass.callWS({ type: "stundenzettel/restore", data });
+      await this._ws({ type: "stundenzettel/restore", data });
       this._toast("💾 Sicherung eingespielt");
     } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
   }
@@ -2149,7 +2249,7 @@ class StundenzettelCard extends HTMLElement {
       if (await this._set("plan", plan)) this._toast("✅ Gespeichert");
     } else if (kind === "calrange") {
       if (!fd.from || !fd.to) return this._toast("⚠️ Von und Bis eintragen");
-      try { const r = await this._hass.callWS({ type: "stundenzettel/cal_write_range", from: fd.from, to: fd.to }); this._toast(`📤 ${r.queued} Tage werden in den Kalender geschrieben – das dauert einen Moment`); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
+      try { const r = await this._ws({ type: "stundenzettel/cal_write_range", from: fd.from, to: fd.to }); this._toast(`📤 ${r.queued} Tage werden in den Kalender geschrieben – das dauert einen Moment`); } catch (err) { this._toast("⚠️ " + (err?.message || err)); }
     } else if (kind === "fix") {
       const value = toNum(fd.value);
       if (!fd.month || value == null || Number.isNaN(value)) return this._toast("⚠️ Monat und Stand eintragen");
@@ -2159,10 +2259,15 @@ class StundenzettelCard extends HTMLElement {
   }
 }
 
-// ✏️ Karten-Editor (Dashboard → Karte bearbeiten): Titel und Sprache
+// ✏️ Karten-Editor (Dashboard → Karte bearbeiten): Stundenzettel, Titel und Sprache
 class StundenzettelCardEditor extends HTMLElement {
   setConfig(config) { this._config = { ...config }; this._draw(); }
-  set hass(hass) { this._hass = hass; }
+  set hass(hass) {
+    this._hass = hass;
+    if (this._entries || this._asked || !hass?.callWS) return;
+    this._asked = true; // 👥 einmal fragen: welche Stundenzettel gibt es?
+    hass.callWS({ type: "stundenzettel/entries" }).then((r) => { this._entries = r?.entries || []; this._draw(); }).catch(() => { this._entries = []; });
+  }
   _set(key, value) {
     const c = { ...this._config };
     if (value === "" || value === false || value == null) delete c[key]; else c[key] = value;
@@ -2173,12 +2278,20 @@ class StundenzettelCardEditor extends HTMLElement {
     if (!this._config) return;
     const c = this._config;
     const box = "padding:8px;border-radius:8px;border:1px solid var(--divider-color,#ccc);background:var(--card-background-color,#fff);color:inherit;font:inherit";
-    this.innerHTML = `<div style="display:grid;gap:12px;padding:4px 0">
+    const ents = this._entries || [];
+    const pick = ents.length > 1 ? `<label style="display:grid;gap:4px">👥 Welcher Stundenzettel?<select data-k="entry" style="${box}">${ents.map((e) => `<option value="${e.first ? "" : esc(e.entry_id)}" ${(c.entry || "") === (e.first ? "" : e.entry_id) ? "selected" : ""}>${esc(e.title)}${e.first ? " (erster)" : ""}</option>`).join("")}</select></label>` : "";
+    this.innerHTML = `<div style="display:grid;gap:12px;padding:4px 0">${pick}
       <label style="display:grid;gap:4px">Titel<input data-k="title" value="${esc(c.title || "")}" style="${box}"></label>
       <label style="display:grid;gap:4px">🌍 Sprache / Language<select data-k="language" style="${box}">${[["", "Automatisch (wie Home Assistant)"], ["de", "Deutsch"], ["en", "English"]].map(([v, t]) => `<option value="${v}" ${(c.language || "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
       <small style="opacity:.7">Alles andere stellst du direkt in der Karte unter ⚙️ ein.</small></div>`;
     this.querySelector('[data-k="title"]').addEventListener("change", (e) => this._set("title", e.target.value));
     this.querySelector('[data-k="language"]').addEventListener("change", (e) => this._set("language", e.target.value));
+    this.querySelector('[data-k="entry"]')?.addEventListener("change", (e) => {
+      const ent = ents.find((x) => (x.first ? "" : x.entry_id) === e.target.value);
+      this._set("entry", e.target.value);
+      if (ent && (!c.title || c.title === "Stundenzettel" || ents.some((x) => x.title === c.title))) this._set("title", ent.title); // 🏷️ Titel gleich mitnehmen
+      this._draw();
+    });
   }
 }
 if (!customElements.get("stundenzettel-card-editor")) customElements.define("stundenzettel-card-editor", StundenzettelCardEditor);

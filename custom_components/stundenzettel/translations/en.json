@@ -3,19 +3,24 @@
     "step": {
       "user": {
         "title": "Set up Stundenzettel",
-        "description": "Afterwards everything is in the card under ⚙️ (calendar, paid hours, breaks, clocking).",
+        "description": "Afterwards everything is in the card under ⚙️ (calendar, paid hours, breaks, clocking). 👥 For a second person with their own employer simply add the integration again and give it a name of its own.",
         "data": {
           "sidebar": "Show in sidebar",
-          "reset_pin": "Reset PIN"
+          "reset_pin": "Reset PIN",
+          "name": "Name"
         },
         "data_description": {
-          "reset_pin": "Removes the card PIN. Set a new one in the card under ⚙️ → Protection."
+          "reset_pin": "Removes the card PIN. Set a new one in the card under ⚙️ → Protection.",
+          "name": "Name of this timesheet (device, sidebar). For a second person simply add the integration again."
         }
       }
     },
     "abort": {
-      "already_configured": "Stundenzettel is already set up.",
+      "already_configured": "A timesheet with this name already exists.",
       "single_instance_allowed": "Stundenzettel is already set up."
+    },
+    "error": {
+      "name_needed": "Please enter a name of its own (e.g. “Timesheet Anna”)."
     }
   },
   "options": {
@@ -43,16 +48,32 @@
   "services": {
     "kommen": {
       "name": "Clock in",
-      "description": "Clocks in now."
+      "description": "Clocks in now.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Timesheet",
+          "description": "Which timesheet? Empty = the first one."
+        }
+      }
     },
     "gehen": {
       "name": "Clock out",
-      "description": "Clocks out and records the day."
+      "description": "Clocks out and records the day.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Timesheet",
+          "description": "Which timesheet? Empty = the first one."
+        }
+      }
     },
     "tag_eintragen": {
       "name": "Record day",
       "description": "Records or changes a day.",
       "fields": {
+        "stundenzettel": {
+          "name": "Timesheet",
+          "description": "Which timesheet? Empty = the first one."
+        },
         "datum": {
           "name": "Date",
           "description": "Which day?"
@@ -89,11 +110,23 @@
     },
     "abgleichen": {
       "name": "Sync with calendar",
-      "description": "Fetches the events right now."
+      "description": "Fetches the events right now.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Timesheet",
+          "description": "Which timesheet? Empty = the first one."
+        }
+      }
     },
     "daten_abrufen": {
       "name": "Get data",
-      "description": "Returns balance and the last months."
+      "description": "Returns balance and the last months.",
+      "fields": {
+        "stundenzettel": {
+          "name": "Timesheet",
+          "description": "Which timesheet? Empty = the first one."
+        }
+      }
     }
   }
 }

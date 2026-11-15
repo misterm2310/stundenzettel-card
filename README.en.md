@@ -27,9 +27,12 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 - 📄 Compare your employer's timesheet: pick the „Zeitsaldenliste“ PDF in a month – where their hours differ they appear left of yours (green = employer has more, red = fewer), plus their balance; „Saldo Vormonat“ can be taken over as carried-over hours with one tap. Works only with this timesheet type (PDF from a computer, no photos).
 - ⓘ Tap-help: small ⓘ next to the fields in ⚙️ instead of long texts.
 - 📥 Import an old sheet by pasting text. From Google Sheets/Excel the monthly values come along too (total, carried over, balance, 8 hours and more), otherwise „set the balance“ to the value of the paper sheet.
-- 📤 Print & share month or year as PDF (WhatsApp, mail, iPhone printing), print or as text, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
+- 📤 Print & share month or year as PDF (WhatsApp, mail, iPhone printing), print or as text – with ✍️ signature lines for you and your employer at the bottom, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
 - 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
-- 🔒 PIN lock for ⚙️, for changes (viewing stays free) or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
+- 📅 Flip through days in Today: ‹ › at the top of the hours tile or swipe.
+- 👥 Several timesheets: for a second person with their own employer simply add the integration again (with its own name) – own entries, own PIN, own sensors. In the card editor you pick which timesheet the card shows.
+- 📝 Quick picker for notes: your places and activities as buttons (learned from your notes), each place on a new line.
+- 🔒 PIN lock for ⚙️, for changes in the month and to older days (today and yesterday stay free) or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
 - ⏰ Mascot: a little alarm clock with moods and seasonal costumes (off by default). 🙈 Veil overtime, ↩️ undo, 🧘 calm mode, hide tabs.
 
 ## 📦 Installation
@@ -44,7 +47,7 @@ Install via HACS (from Home Assistant 2026.11: Settings > Marketplace).
 ## 🤖 Automations
 
 Sensors: `sensor.stundenzettel_ueberstunden`, `sensor.stundenzettel_stunden_diesen_monat`, `sensor.stundenzettel_resturlaub`, `sensor.stundenzettel_kranktage_dieses_jahr`, `binary_sensor.stundenzettel_eingestempelt`.
-Actions: `stundenzettel.kommen` (clock in), `stundenzettel.gehen` (clock out), `stundenzettel.tag_eintragen` (record a day), `stundenzettel.abgleichen` (sync), `stundenzettel.daten_abrufen` (get data).
+Actions: `stundenzettel.kommen` (clock in), `stundenzettel.gehen` (clock out), `stundenzettel.tag_eintragen` (record a day), `stundenzettel.abgleichen` (sync), `stundenzettel.daten_abrufen` (get data). With several timesheets pick the one you mean in the **Timesheet** field (empty = the first); the sensors of a second timesheet are named after it, e.g. `sensor.stundenzettel_erika_ueberstunden`.
 
 **⏳ When will the next beta come?** To be honest: I build these integrations with the help of Claude (AI). How fast new betas come depends on how much Claude quota (tokens) is available. Once it is used up, I have to wait until it is refilled – no tokens, no betas. 😅 Thank you for your patience and understanding! 🙏
 

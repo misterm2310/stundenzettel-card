@@ -32,9 +32,12 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - 📄 **Zettel vom Chef vergleichen**: im Monat die „Zeitsaldenliste“ als PDF wählen – wo seine Stunden anders sind, stehen sie links neben deinen (grün = Chef hat mehr, rot = weniger), dazu sein Saldo. „Saldo Vormonat“ geht mit einem Tipp als Ü.-Alt rein. Geht nur mit diesem Zettel-Typ (PDF vom Computer, keine Fotos).
 - ⓘ **Hilfe zum Antippen**: In ⚙️ steht neben den Feldern ein kleines ⓘ statt langer Texte.
 - 📥 **Alten Zettel übernehmen**: einfach aus Google Tabellen/Excel/PDF kopieren und einfügen. Aus Tabellen kommen auch die **Monatswerte** mit (Summe, Ü.-Alt, Ü.-Gesamt, 8 Stunden und →) – jeder alte Monat sieht aus wie auf dem Zettel. Sonst **„Konto stellen“** auf den Stand vom Zettel.
-- 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
+- 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text – unten mit ✍️ **Unterschrift-Linien** für dich und den Chef, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
 - 📱 **Offline-App** fürs Handy: stempeln und Tage eintragen auch **ohne Netz** (z. B. im Keller der Baustelle) – wird nachgeschickt, die Uhrzeit vom Knopfdruck bleibt. Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol, Fingerabdruck-Sperre.
-- 🔒 **PIN-Sperre** für ⚙️, fürs Ändern (ansehen geht frei) oder die ganze Karte – prüft auch ohne Netz, sperrt nach 10 Minuten wieder.
+- 📅 **Tage blättern** in Heute: ‹ › oben in der Stunden-Kachel oder wischen.
+- 📝 **Schnellwähler für Notizen**: deine Orte und Tätigkeiten als Knöpfe (lernt aus deinen Notizen), jeder Ort in einer neuen Zeile.
+- 👥 **Mehrere Stundenzettel**: Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen (eigener Name) – eigene Zettel, eigene PIN, eigene Sensoren. Im Karten-Editor wählst du, welchen Stundenzettel die Karte zeigt.
+- 🔒 **PIN-Sperre** für ⚙️, fürs Ändern im Monat und älterer Tage (Heute und gestern gehen frei) oder die ganze Karte – prüft auch ohne Netz, sperrt nach 10 Minuten wieder.
 - 🌍 **Deutsch und Englisch** (automatisch wie dein Home Assistant).
 - ⏰ **Maskottchen**: ein kleiner Wecker mit Laune und Jahreszeiten-Kostüm (Standard aus).
 - 🙈 **Überstunden verschleiern**, ↩️ **Rückgängig** nach dem Löschen, 🧘 **Ruhiger Modus**, Reiter ausblenden.
@@ -124,6 +127,8 @@ Alles Weitere steht in der Karte unter **📖 Anleitung** (mit Suche).
 | `binary_sensor.stundenzettel_eingestempelt` | an, solange du eingestempelt bist |
 
 Aktionen: `stundenzettel.kommen`, `stundenzettel.gehen`, `stundenzettel.tag_eintragen` (Datum, Art, von, bis, Pause, Notiz …), `stundenzettel.abgleichen`, `stundenzettel.daten_abrufen` (gibt Konto und Monate als Antwort zurück).
+
+👥 **Zweiter Stundenzettel?** Seine Sensoren heißen nach seinem Namen, z. B. `sensor.stundenzettel_erika_ueberstunden`. In jeder Aktion wählst du im Feld **Stundenzettel**, welcher gemeint ist (leer = der erste).
 
 Beispiel: Erinnerung, wenn du um 18 Uhr noch eingestempelt bist.
 

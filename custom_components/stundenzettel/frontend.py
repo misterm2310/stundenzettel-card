@@ -57,19 +57,21 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
         add_extra_js_url(hass, versioned)
 
 
-async def async_set_sidebar(hass: HomeAssistant, enabled: bool) -> None:
-    """📌 Stundenzettel als eigener Eintrag in der Seitenleiste (Option)."""
+async def async_set_sidebar(hass: HomeAssistant, enabled: bool, path: str = PANEL_URL_PATH, title: str = "Stundenzettel", entry_id: str | None = None) -> None:
+    """📌 Stundenzettel als eigener Eintrag in der Seitenleiste (Option) – jeder Stundenzettel bekommt seinen eigenen."""
     from homeassistant.components import frontend, panel_custom  # noqa: PLC0415
 
     if not enabled:
-        if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
-            frontend.async_remove_panel(hass, PANEL_URL_PATH)
+        if path in hass.data.get(frontend.DATA_PANELS, {}):
+            frontend.async_remove_panel(hass, path)
         return
+    if path in hass.data.get(frontend.DATA_PANELS, {}):
+        frontend.async_remove_panel(hass, path)  # 🔁 neu anlegen (Name kann sich geändert haben)
     try:
         await panel_custom.async_register_panel(
-            hass, webcomponent_name="stundenzettel-panel", frontend_url_path=PANEL_URL_PATH,
-            module_url=f"{STATIC_URL}/{PANEL_FILENAME}?v={VERSION}", sidebar_title="Stundenzettel",
-            sidebar_icon="mdi:clipboard-text-clock-outline", require_admin=False, config={"card_url": f"{CARD_URL}?v={VERSION}"},
+            hass, webcomponent_name="stundenzettel-panel", frontend_url_path=path,
+            module_url=f"{STATIC_URL}/{PANEL_FILENAME}?v={VERSION}", sidebar_title=title or "Stundenzettel",
+            sidebar_icon="mdi:clipboard-text-clock-outline", require_admin=False, config={"card_url": f"{CARD_URL}?v={VERSION}", "entry": entry_id, "title": title or "Stundenzettel"},
         )
     except Exception:  # noqa: BLE001
         _LOGGER.warning("Seitenleisten-Eintrag konnte nicht angelegt werden", exc_info=True)
