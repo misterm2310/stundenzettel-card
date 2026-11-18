@@ -75,7 +75,7 @@ Alles andere stellst du direkt in der Karte unter ⚙️ ein.
 2. Auf dem Handy im **Browser** öffnen (nicht in der HA-App), einmal mit deinem Home-Assistant-Benutzer anmelden.
 3. Browser-Menü → **„Zum Startbildschirm hinzufügen“**. Fertig – eigenes Symbol.
 
-Ohne Netz zeigt die App den letzten Stand. Stempeln und Tage eintragen landen im **Postausgang** („⏳ 1 wartet“) und gehen raus, sobald wieder Netz da ist. **Abmelden** löscht nur die Kopie im Handy, in Home Assistant bleibt alles.
+Ohne Netz zeigt die App den letzten Stand. Stempeln und Tage eintragen landen im **Postausgang** („⏳ 1 wartet“) und gehen raus, sobald wieder Netz da ist – auf **Android (Chrome)** sogar, wenn die App schon zu ist: Das Handy schickt im Hintergrund nach, beim nächsten Öffnen steht „✅ … im Hintergrund nachgeschickt“ (iPhone: beim nächsten Öffnen). **Abmelden** löscht nur die Kopie im Handy, in Home Assistant bleibt alles.
 </details>
 
 <details><summary>🔒 PIN vergessen? – <i>aufklappen</i></summary>

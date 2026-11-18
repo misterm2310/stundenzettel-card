@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.1";
+const SZ_VERSION = "1.0.2-beta.1";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.2-beta.1", "🔄 <b>Im Hintergrund nachschicken</b> wie bei der Einkaufsliste: Hast du in der Offline-App ohne Netz gestempelt und die App zugemacht, schickt das Handy (Android/Chrome) den Postausgang von selbst los, sobald wieder Netz da ist – beim nächsten Öffnen steht „✅ … im Hintergrund nachgeschickt“ (iPhone: wie bisher beim Öffnen) · ✅ Nach einem Funkloch sagt die Karte kurz „Wieder online – N Änderungen nachgeschickt“"],
   ["1.0.1", "🎉 <b>Version 1.0.1</b>: Alles aus 4 Betas ist jetzt fest drin – danke fürs Testen!"],
   ["1.0.1-beta.4", "🆕 <b>Was ist neu</b> wie bei der Einkaufsliste: oben der orange Beta-Kasten mit allem, was in dieser Beta neu ist (höchste Beta oben), darunter „Die letzten Neuerungen bis Version …“ (höchstens 15, das Neueste oben) · ✍️ <b>Unterschrift im PDF</b>: Monat und Jahr haben unten je eine Linie für dich (Arbeitnehmer) und den Chef – auch beim Drucken"],
   ["1.0.1-beta.3", "👥 <b>Zweiter Stundenzettel</b>: Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen – eigene Zettel, eigene PIN, eigene Sensoren · In der Karte (Dashboard → Karte bearbeiten) wählst du, welchen Stundenzettel sie zeigt, in der Offline-App unten · 🕐 Zettel vom Chef: Zahlen jetzt in <b>Std:Min</b> wie auf dem Lohnzettel (z. B. +24:29) · ⌨️ Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur"],
@@ -1130,6 +1131,7 @@ class StundenzettelCard extends HTMLElement {
       if (this._app) this._server = store.get(DKEY + this._sfx, null);
       this._subscribe(); this._render();
     } else if (was !== hass.connected) this._render();
+    if (hass.connected === false) this._offSeen = true; // 📴 merken: war offline – beim Nachschicken gibt es dann ein „✅ Wieder online“
     if (hass.connected !== false) this._flush();
   }
   connectedCallback() { if (this._hass && !this._unsub) this._subscribe(); SZ_CARDS.add(this); document.addEventListener("keydown", this._onKey, true); }
@@ -1175,12 +1177,25 @@ class StundenzettelCard extends HTMLElement {
       this._queue = this._queue.filter((o) => !done.has(o.op_id)); this._qv++;
       store.put(QKEY + this._sfx, this._queue);
       if (bad.length) this._toast("⚠️ " + bad.map((b) => b.error).join(", "));
+      if (this._offSeen) this._offSent = (this._offSent || 0) + batch.length - bad.length;
       this._render();
       if (this._queue.length) setTimeout(() => this._flush(), 50);
+      else if (this._offSeen) { // ✅ wie bei der Einkaufsliste: nach dem Funkloch kurz Bescheid sagen
+        const n = this._offSent || 0;
+        this._offSeen = false; this._offSent = 0;
+        if (n) this._toast(`✅ Wieder online – ${n} ${n === 1 ? "Änderung" : "Änderungen"} nachgeschickt`);
+      }
     } catch (_) {
+      this._offSeen = true; // klappt gerade nicht = wie offline
       clearTimeout(this._retry);
       this._retry = setTimeout(() => this._flush(), 15000);
     } finally { this._flushing = false; }
+  }
+  // 🔄 Offline-App: Der Hintergrund-Helfer (sw.js) hat bei geschlossener App schon nachgeschickt → Postausgang neu lesen
+  stundenzettelQueueReload() {
+    this._queue = store.get(QKEY + this._sfx, []); this._qv++;
+    this._force = true; this._render();
+    this._flush();
   }
   _toast(message) { this.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: szT(message) }, bubbles: true, composed: true })); }
   _set(key, value) { return this._send({ type: "set", key, value }); }

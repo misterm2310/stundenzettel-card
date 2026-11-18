@@ -814,5 +814,8 @@
  "Std:Min": "h:mm",
  "wie auf dem Lohnzettel (z. B. +24:29)": "like on the payslip (e.g. +24:29)",
  "⌨️ Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur": "⌨️ Note quick buttons no longer open the keyboard",
- "Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur": "Note quick buttons no longer open the keyboard"
+ "Notiz-Schnellknöpfe öffnen nicht mehr die Tastatur": "Note quick buttons no longer open the keyboard",
+ "✅ Wieder online – {} Änderung nachgeschickt": "✅ Back online – {0} change sent",
+ "✅ Wieder online – {} Änderungen nachgeschickt": "✅ Back online – {0} changes sent",
+ "🔄 <b>Im Hintergrund nachschicken</b> wie bei der Einkaufsliste: Hast du in der Offline-App ohne Netz gestempelt und die App zugemacht, schickt das Handy (Android/Chrome) den Postausgang von selbst los, sobald wieder Netz da ist – beim nächsten Öffnen steht „✅ … im Hintergrund nachgeschickt“ (iPhone: wie bisher beim Öffnen) · ✅ Nach einem Funkloch sagt die Karte kurz „Wieder online – N Änderungen nachgeschickt“": "🔄 <b>Sending in the background</b> like the shopping list: if you clocked in the offline app without signal and closed the app, the phone (Android/Chrome) sends the outbox by itself as soon as there is signal again – next time you open it you see “✅ … sent in the background” (iPhone: as before when opening) · ✅ After a dead spot the card briefly says “Back online – N changes sent”"
 }

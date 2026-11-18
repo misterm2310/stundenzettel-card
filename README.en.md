@@ -28,7 +28,7 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 - ⓘ Tap-help: small ⓘ next to the fields in ⚙️ instead of long texts.
 - 📥 Import an old sheet by pasting text. From Google Sheets/Excel the monthly values come along too (total, carried over, balance, 8 hours and more), otherwise „set the balance“ to the value of the paper sheet.
 - 📤 Print & share month or year as PDF (WhatsApp, mail, iPhone printing), print or as text – with ✍️ signature lines for you and your employer at the bottom, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
-- 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
+- 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time – on Android (Chrome) even in the background when the app is closed. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
 - 📅 Flip through days in Today: ‹ › at the top of the hours tile or swipe.
 - 👥 Several timesheets: for a second person with their own employer simply add the integration again (with its own name) – own entries, own PIN, own sensors. In the card editor you pick which timesheet the card shows.
 - 📝 Quick picker for notes: your places and activities as buttons (learned from your notes), each place on a new line.

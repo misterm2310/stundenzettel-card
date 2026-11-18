@@ -92,6 +92,57 @@ class FkIcon extends HTMLElement {
 }
 if (!customElements.get("ha-icon")) customElements.define("ha-icon", FkIcon);
 
+// ---------------------------------------------------------------- 🔄 Kleiner Speicher, den auch der Hintergrund-Helfer (sw.js) lesen kann
+// Darin: Anmeldung + Postausgang. So kann Android auch bei geschlossener App nachschicken (wie bei der Einkaufsliste).
+let dbp = null;
+function db() {
+  if (!("indexedDB" in window)) return Promise.reject(new Error("idb"));
+  return dbp || (dbp = new Promise((ok, fail) => {
+    const r = indexedDB.open("stundenzettel-app", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => { r.result.onversionchange = () => { r.result.close(); dbp = null; }; ok(r.result); }; // Abmelden will löschen → sofort loslassen
+    r.onerror = () => { dbp = null; fail(r.error); };
+  }));
+}
+async function kv(mode, fn) {
+  const d = await db();
+  return new Promise((ok, fail) => {
+    const tx = d.transaction("kv", mode);
+    let out;
+    fn(tx.objectStore("kv"), (v) => { out = v; });
+    tx.oncomplete = () => ok(out);
+    tx.onerror = () => fail(tx.error);
+  });
+}
+const kvGet = (k) => kv("readonly", (st, set) => { const r = st.get(k); r.onsuccess = () => set(r.result); }).catch(() => undefined);
+const kvSet = (k, v) => kv("readwrite", (st) => { st.put(v, k); }).catch(() => {});
+const kvDel = (k) => kv("readwrite", (st) => { st.delete(k); }).catch(() => {});
+function putAuth() { put(K.auth, auth); if (auth) kvSet("auth", { ...auth, client_id: CLIENT_ID }); }
+// 📮 App geht in den Hintergrund oder zu: Postausgang für den Helfer bereitlegen und Chrome bitten, ihn bei Netz zu wecken
+function askBackgroundSync() {
+  if (!auth) return;
+  const queues = {};
+  for (const k of szKeys("stundenzettel_queue")) { const q = get(k, []); if (Array.isArray(q) && q.length) queues[k] = q; }
+  kvSet("queues", queues);
+  if (!Object.keys(queues).length || !("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.ready.then((reg) => reg.sync?.register("sz-queue")).catch(() => {});
+}
+// 👀 App wieder da: Hat der Helfer schon nachgeschickt? Dann das aus dem Postausgang nehmen und kurz Bescheid sagen.
+async function takeFlushed() {
+  const f = await kvGet("flushed");
+  await kvSet("queues", {}); // ab jetzt schickt wieder die Karte selbst
+  if (!f) return;
+  await kvDel("flushed");
+  const ids = new Set(f.ids || []);
+  if (ids.size) for (const k of szKeys("stundenzettel_queue")) { const q = get(k, []); if (Array.isArray(q)) put(k, q.filter((o) => !ids.has(o.op_id))); }
+  card?.stundenzettelQueueReload?.();
+  if (f.n) setTimeout(() => toast(BLANG === "de" ? `✅ ${f.n} ${f.n === 1 ? "Änderung wurde" : "Änderungen wurden"} im Hintergrund nachgeschickt`
+    : `✅ ${f.n} ${f.n === 1 ? "change was" : "changes were"} sent in the background`), 300);
+  if (f.bad?.length) setTimeout(() => toast("⚠️ " + f.bad.join(", ")), 4000);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) askBackgroundSync(); else takeFlushed(); });
+window.addEventListener("pagehide", askBackgroundSync);
+
 // ---------------------------------------------------------------- 🔑 Anmeldung (dieselbe offizielle Anmeldung wie die HA-Seite, inkl. 2-Faktor)
 let auth = get(K.auth, null);
 async function tokenRequest(body) {
@@ -113,7 +164,7 @@ async function finishLogin() {
   localStorage.removeItem("szapp_state");
   if (!saved || q.get("state") !== saved) return;
   auth = await tokenRequest({ grant_type: "authorization_code", code: q.get("code") });
-  put(K.auth, auth);
+  putAuth();
 }
 let flow = null, flowBusy = false, flowN = 0, flowLast = {};
 const LABEL = { username: "Benutzername", password: "Passwort", code: "Code aus der Authentifizierungs-App" };
@@ -141,7 +192,7 @@ async function flowStep(res) {
   if (res.type === "create_entry") {
     flow = null;
     auth = await tokenRequest({ grant_type: "authorization_code", code: res.result });
-    put(K.auth, auth); update(); connect(); return;
+    putAuth(); update(); connect(); return;
   }
   if (res.type === "abort") { flow = null; toast("Anmeldung abgebrochen"); update(); return; }
   flow = { n: ++flowN, id: res.flow_id, step: res.step_id, schema: res.data_schema || [], errors: res.errors || {} };
@@ -174,7 +225,7 @@ function flowHtml() {
 async function accessToken() {
   if (auth && auth.expires > Date.now()) return auth.access;
   auth = { ...(await tokenRequest({ grant_type: "refresh_token", refresh_token: auth.refresh })), refresh: auth.refresh };
-  put(K.auth, auth);
+  putAuth();
   return auth.access;
 }
 
@@ -194,7 +245,7 @@ function connect() {
       try { ws.send(JSON.stringify({ type: "auth", access_token: await accessToken() })); }
       catch (err) { if ([400, 401].includes(err.status)) logout(true); else ws.close(); }
     } else if (m.type === "auth_invalid") {
-      auth.expires = 0; put(K.auth, auth); ws.close();
+      auth.expires = 0; putAuth(); ws.close();
     } else if (m.type === "auth_ok") {
       ready = true;
       for (const s of subs.values()) sendSub(s);
@@ -381,6 +432,7 @@ function logout(silent) {
   const refresh = auth?.refresh;
   auth = null;
   localStorage.removeItem(K.auth);
+  try { indexedDB.deleteDatabase("stundenzettel-app"); } catch (_) { /* egal */ } // 🔒 Anmeldung + Postausgang-Kopie für den Hintergrund-Helfer weg
   if (!silent) {
     // 🔒 Alles Persönliche aus dem Handy löschen
     for (const k of [K.user, ...szKeys("stundenzettel_data", "stundenzettel_queue"), "stundenzettel_hidden", "stundenzettel_calm", "szapp_entry", LOCK_KEY]) localStorage.removeItem(k);
@@ -395,6 +447,7 @@ function logout(silent) {
 (async () => {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register(BASE + "sw.js", { scope: BASE }).catch(() => {});
   try { await finishLogin(); } catch (_) { toast("Anmeldung hat nicht geklappt 🙈"); }
+  if (auth) { putAuth(); await takeFlushed(); } // Hintergrund-Helfer kennt die Anmeldung auch nach einem Update · hat er schon etwas nachgeschickt?
   const s = document.createElement("script");
   s.type = "module";
   s.src = "/stundenzettel/files/stundenzettel-card.js?v=" + VERSION;
