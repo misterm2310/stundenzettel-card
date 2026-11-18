@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.2-beta.3";
+const SZ_VERSION = "1.0.2-beta.4";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.2-beta.4", "📱 <b>Ort vom Handy</b> jetzt auch in der <b>Offline-App</b>: Home Assistant schickt den Ort mit – ohne Netz steht der zuletzt bekannte Ort da"],
   ["1.0.2-beta.3", "📍 <b>Ort vom Handy</b>: In ⚙️ → Stempeln per Handy einmal den Ort-Sensor deiner HA-App wählen (z. B. „… Geocoded location“) – öffnest du einen Tag, steht der Ort, an dem du gerade bist (z. B. 📍 Lünen), ganz vorne im Notiz-Schnellwähler und ist schon vorgewählt, auch in Orten, wo du noch nie warst · „📍 Hier merken“ aus Beta 2 ist dafür wieder raus"],
   ["1.0.2-beta.2", "📍 <b>Ort per GPS</b> im Notiz-Schnellwähler: Einmal vor Ort auf „📍 Hier merken“ und dann auf den Ort tippen – ab jetzt ist der Ort, an dem du gerade bist, schon farbig vorgewählt und steht vorne (bis 300 m Umkreis). Der Standort geht nur an dein Home Assistant, kein Internet-Dienst"],
   ["1.0.2-beta.1", "🔄 <b>Im Hintergrund nachschicken</b> wie bei der Einkaufsliste: Hast du in der Offline-App ohne Netz gestempelt und die App zugemacht, schickt das Handy (Android/Chrome) den Postausgang von selbst los, sobald wieder Netz da ist – beim nächsten Öffnen steht „✅ … im Hintergrund nachgeschickt“ (iPhone: wie bisher beim Öffnen) · ✅ Nach einem Funkloch sagt die Karte kurz „Wieder online – N Änderungen nachgeschickt“"],
@@ -1486,7 +1487,7 @@ class StundenzettelCard extends HTMLElement {
   // 📍 Ort vom Handy: die HA-App meldet den Ortsnamen im Sensor „… Geocoded location“ (Attribut locality)
   _placeNow() {
     const s = this._hass?.states?.[this._st.place_sensor];
-    const loc = String(s?.attributes?.locality || "").trim();
+    const loc = String(s?.attributes?.locality || (this._st.place_sensor && this._d?.place_now) || "").trim(); // Offline-App kennt keine Sensoren → Ort kommt von Home Assistant mit den Daten
     return loc && loc !== "null" && loc.length <= 40 ? loc : null;
   }
   _dayForm(iso) {

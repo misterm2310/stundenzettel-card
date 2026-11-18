@@ -500,6 +500,7 @@ class StundenzettelManager:
         self._notify()  # 🕒 „Konto heute“ ändert sich auch ohne neue Einträge (neuer Tag)
 
     def _watch_person(self) -> None:
+        self._watch_place()
         if getattr(self, "_person_unsub", None):
             self._person_unsub()
             self._person_unsub = None
@@ -508,6 +509,32 @@ class StundenzettelManager:
             return
         self._person_unsub = async_track_state_change_event(self.hass, [person], self._person_changed)
         self._unsubs.append(lambda: self._person_unsub() if self._person_unsub else None)
+
+    def _watch_place(self) -> None:
+        """📍 Ort vom Handy: Sensor der HA-App beobachten – ändert sich der Ort, bekommen Karte UND Offline-App ihn sofort."""
+        if getattr(self, "_place_unsub", None):
+            self._place_unsub()
+            self._place_unsub = None
+        sensor = self.settings.get("place_sensor")
+        self._place_last = self.place_now()
+        if not sensor:
+            return
+        self._place_unsub = async_track_state_change_event(self.hass, [sensor], self._place_changed)
+        self._unsubs.append(lambda: self._place_unsub() if self._place_unsub else None)
+
+    def place_now(self) -> str | None:
+        """📍 Ortsname aus dem Sensor (Attribut „locality“, z. B. „Lünen“) – oder None."""
+        sensor = self.settings.get("place_sensor")
+        st = self.hass.states.get(sensor) if sensor else None
+        loc = str((st.attributes.get("locality") if st else None) or "").strip()
+        return loc if loc and loc.lower() not in ("null", "none", "unknown") and len(loc) <= 40 else None
+
+    @callback
+    def _place_changed(self, _event: Event) -> None:
+        now = self.place_now()
+        if now != getattr(self, "_place_last", None):  # nur melden, wenn sich der ORT ändert (nicht bei jeder Straße)
+            self._place_last = now
+            self._notify()
 
     def _zone_state(self) -> str | None:
         """📍 Welchen Zustand hat die Person, wenn sie in der Zone ist? (zone.home → „home“, sonst der Zonen-Name)"""
@@ -589,6 +616,7 @@ class StundenzettelManager:
             "pin": bool(self.data.get("pin")),
             "pin_off": self.data.get("pin_off") if self.data.get("pin") else None,  # 📴 nie die echte PIN, nur der Offline-Schlüssel
             "app_url": self._app_url(),
+            "place_now": self.place_now(),  # 📍 Ort vom Handy – auch für die Offline-App (die sieht keine Sensoren)
         })
         return snap
 
@@ -743,7 +771,7 @@ class StundenzettelManager:
             if key not in DEFAULT_SETTINGS:
                 raise HomeAssistantError(f"Unbekannte Einstellung „{key}“")
             st[key] = self._clean_setting(key, op.get("value"))
-            if key in ("stamp_person", "stamp_zone"):
+            if key in ("stamp_person", "stamp_zone", "place_sensor"):
                 self._watch_person()
             if key in ("calendar", "event_title", "cal_read", "holiday_calendar"):
                 self.hass.async_create_task(self.async_sync())

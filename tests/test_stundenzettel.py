@@ -193,6 +193,22 @@ async def test_zone_stempeln(hass: HomeAssistant):
     assert m.data["stamp"] is None and m.data["days"]
 
 
+
+async def test_ort_vom_handy(hass: HomeAssistant):
+    """📍 Ort vom Handy kommt mit den Daten mit (auch für die Offline-App) und meldet sich nur bei neuem Ort."""
+    m = await _setup(hass)
+    hass.states.async_set("sensor.handy_geocoded_location", "Linnenkamp 2, Lünen", {"locality": "Lünen"})
+    m.apply([{"type": "set", "key": "place_sensor", "value": "sensor.handy_geocoded_location"}])
+    assert m.snapshot()["place_now"] == "Lünen"
+    hass.states.async_set("sensor.handy_geocoded_location", "Markt 1, Steinfurt", {"locality": "Steinfurt"})
+    await hass.async_block_till_done()
+    assert m.snapshot()["place_now"] == "Steinfurt"
+    hass.states.async_set("sensor.handy_geocoded_location", "Markt 1, Steinfurt", {"locality": "null"})
+    await hass.async_block_till_done()
+    assert m.snapshot()["place_now"] is None
+    m.apply([{"type": "set", "key": "place_sensor", "value": ""}])
+    assert m.snapshot()["place_now"] is None
+
 async def test_import_und_konto_stellen(hass: HomeAssistant):
     m = await _setup(hass)
     prev = m.import_text("01.10.2026 7:00 - 17:00 9,5\n02.10.2026 Urlaub 8", apply=False, overwrite=False)

@@ -300,6 +300,11 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await ta.fill(""); await click(page, '[data-a="nplace"]');
   ok((await ta.inputValue()).startsWith("Neustadt - "), "📍 Antippen schreibt „Neustadt - “ in die Notiz");
   await shot(page, "3c-notiz-ort-vom-handy");
+  // 📱 Offline-App: kennt keine Sensoren – der Ort kommt von Home Assistant mit den Daten (place_now)
+  await click(page, '[data-a="close"]');
+  await page.evaluate(() => { const c = document.getElementById("c1"); c._hass = { ...c._hass, states: {} }; c._d.place_now = "Lünen"; });
+  await click(page, '.dayrow[data-a="open"]');
+  ok(await card(page).locator('[data-a="nplace"]').first().getAttribute("data-v") === "Lünen", "📱 Offline-App: Ort kommt mit den Daten (ohne Sensoren)");
   ok(!errors.length, "Ort vom Handy: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }

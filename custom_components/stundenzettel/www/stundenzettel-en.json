@@ -823,5 +823,6 @@
  "Ort vom Handy": "Place from phone",
  "📍 Ort vom Handy": "📍 Place from phone",
  "📍 Für die Notiz: Der Ort, an dem du gerade bist (z. B. Lünen), steht im Schnellwähler ganz vorne und ist schon vorgewählt.": "📍 For the note: the town you are in (e.g. Lünen) is first in the quick picker and already preselected.",
- "Wähle den Sensor <b>„… Geocoded location“</b> deines Handys – den legt die HA-App an (in der App: Einstellungen → Companion App → Sensoren verwalten → „Geocodierter Standort“ an). Der Ort ist so frisch, wie die App ihn schickt.": "Pick your phone's <b>“… Geocoded location”</b> sensor – the HA app creates it (in the app: Settings → Companion app → Manage sensors → turn on “Geocoded location”). The place is only as fresh as the app sends it."
+ "Wähle den Sensor <b>„… Geocoded location“</b> deines Handys – den legt die HA-App an (in der App: Einstellungen → Companion App → Sensoren verwalten → „Geocodierter Standort“ an). Der Ort ist so frisch, wie die App ihn schickt.": "Pick your phone's <b>“… Geocoded location”</b> sensor – the HA app creates it (in the app: Settings → Companion app → Manage sensors → turn on “Geocoded location”). The place is only as fresh as the app sends it.",
+ "📱 <b>Ort vom Handy</b> jetzt auch in der <b>Offline-App</b>: Home Assistant schickt den Ort mit – ohne Netz steht der zuletzt bekannte Ort da": "📱 <b>Place from phone</b> now also in the <b>offline app</b>: Home Assistant sends the place along – without signal the last known place is shown"
 }
