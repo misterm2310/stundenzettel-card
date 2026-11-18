@@ -63,6 +63,7 @@ DEFAULT_SETTINGS: dict = {
     # 📍 Stempeln per Handy
     "stamp_person": "",         # z. B. person.max
     "stamp_zone": "",           # z. B. zone.arbeit
+    "place_gps": {},            # 📍 gemerkte Orte für den Notiz-Schnellwähler: {"Steinfurt": [52.14, 7.33]}
     # 👁️ Ansicht
     "labels": False,
     "log_on": True,

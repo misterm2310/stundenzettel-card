@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.2-beta.1";
+const SZ_VERSION = "1.0.2-beta.2";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -20,6 +20,7 @@ const KIND = {
 };
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.2-beta.2", "📍 <b>Ort per GPS</b> im Notiz-Schnellwähler: Einmal vor Ort auf „📍 Hier merken“ und dann auf den Ort tippen – ab jetzt ist der Ort, an dem du gerade bist, schon farbig vorgewählt und steht vorne (bis 300 m Umkreis). Der Standort geht nur an dein Home Assistant, kein Internet-Dienst"],
   ["1.0.2-beta.1", "🔄 <b>Im Hintergrund nachschicken</b> wie bei der Einkaufsliste: Hast du in der Offline-App ohne Netz gestempelt und die App zugemacht, schickt das Handy (Android/Chrome) den Postausgang von selbst los, sobald wieder Netz da ist – beim nächsten Öffnen steht „✅ … im Hintergrund nachgeschickt“ (iPhone: wie bisher beim Öffnen) · ✅ Nach einem Funkloch sagt die Karte kurz „Wieder online – N Änderungen nachgeschickt“"],
   ["1.0.1", "🎉 <b>Version 1.0.1</b>: Alles aus 4 Betas ist jetzt fest drin – danke fürs Testen!"],
   ["1.0.1-beta.4", "🆕 <b>Was ist neu</b> wie bei der Einkaufsliste: oben der orange Beta-Kasten mit allem, was in dieser Beta neu ist (höchste Beta oben), darunter „Die letzten Neuerungen bis Version …“ (höchstens 15, das Neueste oben) · ✍️ <b>Unterschrift im PDF</b>: Monat und Jahr haben unten je eine Linie für dich (Arbeitnehmer) und den Chef – auch beim Drucken"],
@@ -38,9 +39,16 @@ const SZ_NEWS = [
   ["0.1.0", "Erste Version 🎉 · Termin „Arbeiten“ aus dem Kalender lesen und (wenn du willst) zurückschreiben · Kommen/Gehen per Knopf oder automatisch per Handy-Zone · Überstunden-Konto wie auf dem Papier-Zettel (Summe, Bezahlt, Ü.-Alt, Ü.-Gesamt) · Urlaub, Krank, Feiertag, Frei, Pauschal · Pausen-Regeln · Alte Tabelle als Text importieren · Drucken und CSV"],
 ];
 const SZ_SIGN = ["Datum, Unterschrift Arbeitnehmer", "Datum, Unterschrift Chef"]; // ✍️ Unterschrift-Linien unten im PDF und beim Drucken
+const SZ_GPS_NEAR = 300; // 📍 so nah (Meter) muss ein gemerkter Ort sein, damit er vorgewählt wird
 const SZ_NEWS_MAX = 15; // 🆕 so viele Neuerungen zeigt „Was ist neu“ höchstens
 const SZ_CARDS = new Set();
 
+// 📍 Abstand zwischen zwei Punkten [Breite, Länge] in Metern (Luftlinie)
+const szDist = (a, b) => {
+  const r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLon / 2) ** 2;
+  return 12742000 * Math.asin(Math.sqrt(h));
+};
 const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const ic = (name) => `<ha-icon icon="mdi:${name}"></ha-icon>`;
 const uid = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, "").slice(0, 16) : Math.random().toString(36).slice(2) + Date.now().toString(36));
@@ -830,6 +838,12 @@ img.phhero { position:absolute; right:14px; top:50%; transform:translateY(-50%);
 .nscroll { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .nscroll .chip { margin:0; height:auto; }
 .chip.small { padding:4px 10px; font-size:.85em; }
+.nquick .g1, .nquick.marking .g0 { display:none; }
+.nquick.marking .g1 { display:inline; }
+.gpsbtn { border-style:dashed; color:var(--secondary-text-color); }
+.nquick.marking .gpsbtn { border-style:solid; }
+.nquick.marking button[data-a="nplace"] { border-color:var(--pc); animation:szpulse 1.2s ease-in-out infinite; }
+@keyframes szpulse { 50% { box-shadow:0 0 0 3px color-mix(in srgb, var(--pc) 30%, transparent); } }
 .notebtn { display:inline-flex; align-items:center; border:0; cursor:pointer; font:inherit; color:inherit; }
 .notebtn ha-icon, .notebtn svg { width:15px; height:15px; --mdc-icon-size:15px; }
 .notetext { margin-top:4px; padding:6px 8px; border-radius:8px; white-space:pre-wrap; font-size:.9em; background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); }
@@ -1471,10 +1485,55 @@ class StundenzettelCard extends HTMLElement {
       }
     });
     const top = (m, n) => [...m.entries()].sort((x, y) => y[1] - x[1]).slice(0, n).map((x) => x[0]);
-    const places = top(pl, 8), acts = top(ac, 10);
+    const gps = this._st.place_gps || {};
+    let places = top(pl, 8);
+    for (const n of Object.keys(gps)) if (!places.includes(n)) places.push(n); // 📍 gemerkte Orte immer dabei
+    const acts = top(ac, 10);
     if (!places.length && !acts.length) return "";
-    const row = (list, a, icon, label) => list.length ? `<div class="nchips"><span class="nlab">${ic(icon)}${label}</span><div class="nscroll" translate="no">${list.map((x) => `<button type="button" class="chip small" data-a="${a}" data-v="${esc(x)}">${esc(x)}</button>`).join("")}</div></div>` : "";
-    return `<div class="wide nquick">${row(places, "nplace", "map-marker-outline", "Ort (neue Zeile)")}${row(acts, "nact", "hammer-wrench", "Tätigkeit")}</div>`;
+    const near = this._gpsNear && gps[this._gpsNear] ? this._gpsNear : null;
+    if (near) places = [near, ...places.filter((x) => x !== near)]; // 📍 der Ort, an dem du gerade bist, steht vorne
+    if (Object.keys(gps).length) this._gpsLocate(); // im Hintergrund nachsehen, wo du bist
+    const chip = (x, a) => `<button type="button" class="chip small${a === "nplace" && x === near ? " on" : ""}" data-a="${a}" data-v="${esc(x)}">${a === "nplace" && gps[x] ? "📍 " : ""}${esc(x)}</button>`;
+    const mark = `<button type="button" class="chip small gpsbtn" data-a="gpsmark"><span class="g0">📍 Hier merken</span><span class="g1">✕ Abbrechen</span></button>`;
+    const row = (list, a, icon, label, extra = "") => list.length ? `<div class="nchips"><span class="nlab">${ic(icon)}${label}</span><div class="nscroll" translate="no">${list.map((x) => chip(x, a)).join("")}${extra}</div></div>` : "";
+    return `<div class="wide nquick${this._gpsMark ? " marking" : ""}">${row(places, "nplace", "map-marker-outline", `<span class="g0">Ort (neue Zeile)</span><span class="g1">📍 Welcher Ort ist hier? Antippen</span>`, mark)}${row(acts, "nact", "hammer-wrench", "Tätigkeit")}</div>`;
+  }
+  // 📍 Wo bin ich? Fragt das Handy (höchstens alle 2 Minuten) und färbt den nächsten gemerkten Ort ein – ohne neu zu zeichnen, damit die Notiz nicht verloren geht
+  _gpsLocate() {
+    if (!navigator.geolocation || Date.now() - (this._gpsAt || 0) < 120000) return;
+    this._gpsAt = Date.now(); const ask = this._gpsAsk = (this._gpsAsk || 0) + 1;
+    navigator.geolocation.getCurrentPosition((p) => {
+      if (ask !== this._gpsAsk) return; // inzwischen „Hier merken“ gedrückt – das ist neuer
+      const here = [p.coords.latitude, p.coords.longitude], gps = this._st.place_gps || {};
+      let best = null, dist = Infinity;
+      for (const [n, pos] of Object.entries(gps)) { const m = szDist(here, pos); if (m < dist) { dist = m; best = n; } }
+      this._gpsNear = dist <= SZ_GPS_NEAR + Math.min(p.coords.accuracy || 0, 200) ? best : null;
+      this._gpsPaint();
+    }, () => {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 120000 });
+  }
+  _gpsPaint() {
+    const root = this.shadowRoot || this;
+    root.querySelectorAll?.('.nquick button[data-a="nplace"]').forEach((b) => {
+      const on = b.dataset.v === this._gpsNear;
+      b.classList.toggle("on", on);
+      if (on) b.parentElement.prepend(b);
+    });
+  }
+  // 📍 „Hier merken“: Standort holen und beim angetippten Ort speichern
+  _gpsSave(name, box) {
+    const fail = (e) => this._toast(!navigator.geolocation || !window.isSecureContext ? "📍 Standort geht hier nicht – nur in der Home-Assistant-App oder über https" : e?.code === 1 ? "📍 Standort ist nicht erlaubt – bitte im Handy für die App bzw. den Browser erlauben" : "📍 Kein GPS-Empfang – versuch es gleich nochmal");
+    if (!navigator.geolocation) return fail();
+    this._toast("📍 Suche Standort …");
+    navigator.geolocation.getCurrentPosition((p) => {
+      const gps = { ...(this._st.place_gps || {}), [name]: [p.coords.latitude, p.coords.longitude] };
+      this._gpsNear = name; this._gpsAt = Date.now(); this._gpsAsk = (this._gpsAsk || 0) + 1; // erst merken, dann schicken (sonst überholt eine alte Abfrage)
+      this._set("place_gps", gps);
+      box?.classList.remove("marking"); this._gpsMark = false;
+      const b = [...(box?.querySelectorAll('button[data-a="nplace"]') || [])].find((x) => x.dataset.v === name);
+      if (b && !b.textContent.startsWith("📍")) b.textContent = "📍 " + name;
+      this._gpsPaint();
+      this._toast(`📍 ${name} gemerkt – hier ist der Ort ab jetzt vorgewählt`);
+    }, fail, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
   }
   _dayForm(iso) {
     const d = this._d, st = this._st;
@@ -2106,7 +2165,9 @@ class StundenzettelCard extends HTMLElement {
       case "out": return this._send({ type: "stamp_out", ts: Date.now() });
       case "cancelstamp": if (szConfirm("Stempeln abbrechen? Es wird nichts eingetragen.")) this._send({ type: "stamp_cancel" }); return;
       case "tday": this._tday = v === "0" ? null : szAddDays(this._selDay(), Number(v)); if (this._tday === d.today) this._tday = null; this._open = null; return this._redraw();
+      case "gpsmark": { const box = el.closest(".nquick"); this._gpsMark = !this._gpsMark; box?.classList.toggle("marking", this._gpsMark); return; }
       case "nplace": case "nact": { // 📝 Schnellwähler: Ort = neue Zeile „Ort - “, Tätigkeit hinten dran
+        if (a === "nplace" && this._gpsMark) return this._gpsSave(v, el.closest(".nquick")); // 📍 im Merken-Modus: Ort speichern statt eintragen
         const ta = el.closest("form")?.querySelector('textarea[name="note"]'); if (!ta) return;
         const lines = ta.value.replace(/\s+$/, "").split("\n"); let last = lines[lines.length - 1] || "";
         if (a === "nplace") { if (last.trim()) lines.push(`${v} - `); else lines[lines.length - 1] = `${v} - `; }
@@ -2114,7 +2175,7 @@ class StundenzettelCard extends HTMLElement {
         ta.value = lines.join("\n"); ta.rows = Math.max(2, lines.length); ta.blur(); return; // ⌨️ kein Fokus → Tastatur bleibt unten
       }
       case "shownote": this._noteOpen = this._noteOpen === iso ? null : iso; return this._redraw();
-      case "open": this._open = this._open === iso ? null : iso; this._fkind = null; return this._redraw();
+      case "open": this._open = this._open === iso ? null : iso; this._fkind = null; this._gpsMark = false; return this._redraw();
       case "close": this._open = null; this._fkind = null; return this._redraw();
       case "fkind": this._fkind = v; return this._redraw();
       case "delday": {

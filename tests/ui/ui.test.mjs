@@ -273,6 +273,38 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(!errors.length, "Blättern & Schnellwähler: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
+
+// 📍 Ort per GPS: „Hier merken“ speichert den Standort beim Ort, danach ist der nächste Ort vorgewählt
+{
+  const ctx = await browser.newContext({ viewport: { width: 520, height: 1000 }, deviceScaleFactor: SHOTS ? 2 : 1, geolocation: { latitude: 52.1466, longitude: 7.3366, accuracy: 20 }, permissions: ["geolocation"] });
+  const page = await ctx.newPage();
+  const errors = [];
+  await page.clock.setFixedTime(new Date("2026-11-04T10:00:00"));
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(base);
+  await page.waitForFunction(() => window.ready && document.getElementById("c1").shadowRoot?.querySelector(".tabs"));
+  await page.waitForTimeout(300);
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  const second = await card(page).locator('[data-a="nplace"]').nth(1).getAttribute("data-v");
+  await click(page, '[data-a="gpsmark"]');
+  ok(await card(page).locator(".nquick.marking").count() === 1, "📍 Hier merken: Merken-Modus an");
+  await card(page).locator('[data-a="nplace"]').nth(1).click(); await page.waitForTimeout(600);
+  const gps = await page.evaluate(() => window.fake.data.settings.place_gps);
+  ok(gps && Array.isArray(gps[second]) && Math.abs(gps[second][0] - 52.1466) < 0.001, `📍 Standort bei „${second}“ gespeichert`);
+  ok(!(await card(page).locator('textarea[name="note"]').inputValue()).includes(second + " - "), "📍 Im Merken-Modus wird nichts in die Notiz geschrieben");
+  await click(page, '[data-a="close"]');
+  await click(page, '.dayrow[data-a="open"]');
+  await page.waitForTimeout(500);
+  const first = card(page).locator('[data-a="nplace"]').first();
+  ok(await first.getAttribute("data-v") === second && /\bon\b/.test(await first.getAttribute("class")), "📍 Gemerkter Ort steht vorne und ist vorgewählt");
+  await shot(page, "3c-notiz-gps");
+  await page.evaluate(() => { const c = document.getElementById("c1"); for (const k in c._st.place_gps) c._st.place_gps[k] = [52.25, 7.5]; c._gpsAt = 0; c._gpsLocate(); }); // 📍 gemerkter Ort jetzt weit weg
+  await page.waitForTimeout(500);
+  ok(await card(page).locator('[data-a="nplace"].on').count() === 0, "📍 Weit weg: kein Ort vorgewählt");
+  ok(!errors.length, "GPS-Ort: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await ctx.close();
+}
 { // 🔒 ganze Karte gesperrt
   const page = await browser.newPage({ viewport: { width: 520, height: 1000 } });
   await page.goto(base + "#pin-lockall");

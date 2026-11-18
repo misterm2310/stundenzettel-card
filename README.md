@@ -35,7 +35,7 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - 📤 **Drucken & Teilen** für Monat und Jahr: als **PDF** (WhatsApp, Mail, iPhone-Druck), drucken oder als Text – unten mit ✍️ **Unterschrift-Linien** für dich und den Chef, 📄 **CSV**, 💾 **Sicherung**, 📜 **Verlauf**, 📌 **Seitenleiste**.
 - 📱 **Offline-App** fürs Handy: stempeln und Tage eintragen auch **ohne Netz** (z. B. im Keller der Baustelle) – wird nachgeschickt, die Uhrzeit vom Knopfdruck bleibt. Kurzbefehle „Kommen“ und „Gehen“ am App-Symbol, Fingerabdruck-Sperre.
 - 📅 **Tage blättern** in Heute: ‹ › oben in der Stunden-Kachel oder wischen.
-- 📝 **Schnellwähler für Notizen**: deine Orte und Tätigkeiten als Knöpfe (lernt aus deinen Notizen), jeder Ort in einer neuen Zeile.
+- 📝 **Schnellwähler für Notizen**: deine Orte und Tätigkeiten als Knöpfe (lernt aus deinen Notizen), jeder Ort in einer neuen Zeile. 📍 Einmal vor Ort „Hier merken“ tippen, dann ist der Ort, an dem du gerade bist, beim nächsten Mal schon vorgewählt (GPS vom Handy, geht nur an dein Home Assistant; braucht die HA-App oder https).
 - 👥 **Mehrere Stundenzettel**: Für eine zweite Person mit eigener Firma die Integration einfach nochmal hinzufügen (eigener Name) – eigene Zettel, eigene PIN, eigene Sensoren. Im Karten-Editor wählst du, welchen Stundenzettel die Karte zeigt.
 - 🔒 **PIN-Sperre** für ⚙️, fürs Ändern im Monat und älterer Tage (Heute und gestern gehen frei) oder die ganze Karte – prüft auch ohne Netz, sperrt nach 10 Minuten wieder.
 - 🌍 **Deutsch und Englisch** (automatisch wie dein Home Assistant).
