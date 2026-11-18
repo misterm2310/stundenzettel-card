@@ -429,6 +429,7 @@ class StundenzettelManager:
         if isinstance(raw, dict):
             d.update({k: raw[k] for k in d if k in raw})
             d["settings"] = {**DEFAULT_SETTINGS, **(raw.get("settings") or {})}
+            d["settings"].pop("place_gps", None)  # 📍 „Hier merken“ aus 1.0.2-beta.2 gibt es nicht mehr
         self.data = d
 
     def _save(self) -> None:
@@ -831,19 +832,6 @@ class StundenzettelManager:
                 v = num(n, 0) or 0.0
                 if str(y).isdigit() and len(str(y)) == 4 and 0 < abs(v) <= 400:
                     out[str(y)] = r2(v)
-            return out
-        if key == "place_gps":  # 📍 {"Ort": [Breite, Länge]} – höchstens 50 Orte, auf ~10 m gerundet
-            out = {}
-            for name, pos in (value or {}).items():
-                name = str(name).strip()[:40]
-                if not name or not isinstance(pos, (list, tuple)) or len(pos) != 2:
-                    continue
-                lat, lon = num(pos[0]), num(pos[1])
-                if lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180):
-                    continue
-                out[name] = [round(lat, 4), round(lon, 4)]
-                if len(out) >= 50:
-                    break
             return out
         if key == "view":
             return {k: bool(v) for k, v in (value or {}).items() if k in ("monat", "jahr", "stat")}

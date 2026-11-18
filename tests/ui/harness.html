@@ -31,7 +31,7 @@ const LANG = location.hash.includes("en") ? "en" : "de";
 fake.pin = location.hash.includes("pin") ? "1234" : null;
 const hass = () => ({
   connected: fake.online, user: { name: "Max Muster", is_admin: true }, language: LANG, locale: { language: LANG },
-  states: { "calendar.beispiel": st("Beispiel-Kalender"), "calendar.feiertage_beispiel": st("Feiertage"), "person.max": st("Max"), "zone.arbeit": st("Arbeit"), "zone.home": st("Zuhause") },
+  states: { "calendar.beispiel": st("Beispiel-Kalender"), "calendar.feiertage_beispiel": st("Feiertage"), "person.max": st("Max"), "zone.arbeit": st("Arbeit"), "zone.home": st("Zuhause"), "sensor.handy_geocoded_location": { state: "Beispielstraße 1, 12345 Neustadt", attributes: { friendly_name: "Handy Geocoded location", locality: "Neustadt" } } },
   connection: { subscribeMessage: async (f, m) => { fake.msgs.push(m); push = f; setTimeout(send, 10); return () => {}; } },
   callWS: async (msg) => {
     fake.msgs.push(msg);

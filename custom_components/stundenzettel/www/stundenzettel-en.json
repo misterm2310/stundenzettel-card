@@ -819,14 +819,9 @@
  "✅ Wieder online – {} Änderungen nachgeschickt": "✅ Back online – {0} changes sent",
  "🔄 <b>Im Hintergrund nachschicken</b> wie bei der Einkaufsliste: Hast du in der Offline-App ohne Netz gestempelt und die App zugemacht, schickt das Handy (Android/Chrome) den Postausgang von selbst los, sobald wieder Netz da ist – beim nächsten Öffnen steht „✅ … im Hintergrund nachgeschickt“ (iPhone: wie bisher beim Öffnen) · ✅ Nach einem Funkloch sagt die Karte kurz „Wieder online – N Änderungen nachgeschickt“": "🔄 <b>Sending in the background</b> like the shopping list: if you clocked in the offline app without signal and closed the app, the phone (Android/Chrome) sends the outbox by itself as soon as there is signal again – next time you open it you see “✅ … sent in the background” (iPhone: as before when opening) · ✅ After a dead spot the card briefly says “Back online – N changes sent”",
  "📍 <b>Ort per GPS</b> im Notiz-Schnellwähler: Einmal vor Ort auf „📍 Hier merken“ und dann auf den Ort tippen – ab jetzt ist der Ort, an dem du gerade bist, schon farbig vorgewählt und steht vorne (bis 300 m Umkreis). Der Standort geht nur an dein Home Assistant, kein Internet-Dienst": "📍 <b>Place by GPS</b> in the note quick picker: once on site tap “📍 Remember here” and then the place – from now on the place you are at is already highlighted and shown first (within 300 m). Your location only goes to your Home Assistant, no internet service",
- "📍 Hier merken": "📍 Remember here",
- "Hier merken": "Remember here",
- "✕ Abbrechen": "✕ Cancel",
- "📍 Welcher Ort ist hier? Antippen": "📍 Which place is this? Tap it",
- "Welcher Ort ist hier? Antippen": "Which place is this? Tap it",
- "📍 Suche Standort …": "📍 Getting location …",
- "📍 {} gemerkt – hier ist der Ort ab jetzt vorgewählt": "📍 {0} remembered – it is now preselected here",
- "📍 Standort geht hier nicht – nur in der Home-Assistant-App oder über https": "📍 Location doesn't work here – only in the Home Assistant app or via https",
- "📍 Standort ist nicht erlaubt – bitte im Handy für die App bzw. den Browser erlauben": "📍 Location not allowed – please allow it for the app or browser on your phone",
- "📍 Kein GPS-Empfang – versuch es gleich nochmal": "📍 No GPS signal – try again in a moment"
+ "📍 <b>Ort vom Handy</b>: In ⚙️ → Stempeln per Handy einmal den Ort-Sensor deiner HA-App wählen (z. B. „… Geocoded location“) – öffnest du einen Tag, steht der Ort, an dem du gerade bist (z. B. 📍 Lünen), ganz vorne im Notiz-Schnellwähler und ist schon vorgewählt, auch in Orten, wo du noch nie warst · „📍 Hier merken“ aus Beta 2 ist dafür wieder raus": "📍 <b>Place from phone</b>: in ⚙️ → Clock in by phone pick your HA app's location sensor once (e.g. “… Geocoded location”) – when you open a day, the town you are in (e.g. 📍 Lünen) is first in the note quick picker and already preselected, even in places you have never been · “📍 Remember here” from beta 2 is gone again",
+ "Ort vom Handy": "Place from phone",
+ "📍 Ort vom Handy": "📍 Place from phone",
+ "📍 Für die Notiz: Der Ort, an dem du gerade bist (z. B. Lünen), steht im Schnellwähler ganz vorne und ist schon vorgewählt.": "📍 For the note: the town you are in (e.g. Lünen) is first in the quick picker and already preselected.",
+ "Wähle den Sensor <b>„… Geocoded location“</b> deines Handys – den legt die HA-App an (in der App: Einstellungen → Companion App → Sensoren verwalten → „Geocodierter Standort“ an). Der Ort ist so frisch, wie die App ihn schickt.": "Pick your phone's <b>“… Geocoded location”</b> sensor – the HA app creates it (in the app: Settings → Companion app → Manage sensors → turn on “Geocoded location”). The place is only as fresh as the app sends it."
 }

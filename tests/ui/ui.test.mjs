@@ -274,36 +274,34 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await page.close();
 }
 
-// 📍 Ort per GPS: „Hier merken“ speichert den Standort beim Ort, danach ist der nächste Ort vorgewählt
+// 📍 Ort vom Handy: Sensor der HA-App (locality) → Ort steht vorne und ist vorgewählt
 {
-  const ctx = await browser.newContext({ viewport: { width: 520, height: 1000 }, deviceScaleFactor: SHOTS ? 2 : 1, geolocation: { latitude: 52.1466, longitude: 7.3366, accuracy: 20 }, permissions: ["geolocation"] });
-  const page = await ctx.newPage();
-  const errors = [];
-  await page.clock.setFixedTime(new Date("2026-11-04T10:00:00"));
-  page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(base);
-  await page.waitForFunction(() => window.ready && document.getElementById("c1").shadowRoot?.querySelector(".tabs"));
-  await page.waitForTimeout(300);
+  const { page, errors } = await open();
+  await click(page, '[data-a="tab"][data-v="set"]');
+  await click(page, '[data-a="setgrp"][data-v="Kalender & Stempeln"]');
+  await click(page, '[data-a="sheet"][data-v="stamp"]');
+  const opt = await card(page).locator('select[data-v="place_sensor"] option').allTextContents();
+  ok(opt.length === 2 && /geocoded_location/.test(opt[1]), `⚙️ Ort vom Handy: nur passende Sensoren zur Auswahl (${opt.length - 1})`);
+  await card(page).locator('select[data-v="place_sensor"]').selectOption("sensor.handy_geocoded_location"); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => window.fake.data.settings.place_sensor) === "sensor.handy_geocoded_location", "⚙️ Ort vom Handy gespeichert");
+  await shot(page, "5e-ort-vom-handy");
+  ok(!errors.length, "⚙️ Ort vom Handy: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{
+  const { page, errors } = await open();
+  await page.evaluate(() => { document.getElementById("c1")._d.settings.place_sensor = "sensor.handy_geocoded_location"; });
   await click(page, '[data-a="tab"][data-v="monat"]');
   await click(page, '.dayrow[data-a="open"]');
-  const second = await card(page).locator('[data-a="nplace"]').nth(1).getAttribute("data-v");
-  await click(page, '[data-a="gpsmark"]');
-  ok(await card(page).locator(".nquick.marking").count() === 1, "📍 Hier merken: Merken-Modus an");
-  await card(page).locator('[data-a="nplace"]').nth(1).click(); await page.waitForTimeout(600);
-  const gps = await page.evaluate(() => window.fake.data.settings.place_gps);
-  ok(gps && Array.isArray(gps[second]) && Math.abs(gps[second][0] - 52.1466) < 0.001, `📍 Standort bei „${second}“ gespeichert`);
-  ok(!(await card(page).locator('textarea[name="note"]').inputValue()).includes(second + " - "), "📍 Im Merken-Modus wird nichts in die Notiz geschrieben");
-  await click(page, '[data-a="close"]');
-  await click(page, '.dayrow[data-a="open"]');
-  await page.waitForTimeout(500);
   const first = card(page).locator('[data-a="nplace"]').first();
-  ok(await first.getAttribute("data-v") === second && /\bon\b/.test(await first.getAttribute("class")), "📍 Gemerkter Ort steht vorne und ist vorgewählt");
-  await shot(page, "3c-notiz-gps");
-  await page.evaluate(() => { const c = document.getElementById("c1"); for (const k in c._st.place_gps) c._st.place_gps[k] = [52.25, 7.5]; c._gpsAt = 0; c._gpsLocate(); }); // 📍 gemerkter Ort jetzt weit weg
-  await page.waitForTimeout(500);
-  ok(await card(page).locator('[data-a="nplace"].on').count() === 0, "📍 Weit weg: kein Ort vorgewählt");
-  ok(!errors.length, "GPS-Ort: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
-  await ctx.close();
+  ok(await first.getAttribute("data-v") === "Neustadt" && /\bon\b/.test(await first.getAttribute("class")), "📍 Ort vom Handy steht vorne und ist vorgewählt (auch wenn er in keiner Notiz vorkommt)");
+  ok(await card(page).locator('[data-a="gpsmark"]').count() === 0, "📍 „Hier merken“ ist weg");
+  const ta = card(page).locator('textarea[name="note"]');
+  await ta.fill(""); await click(page, '[data-a="nplace"]');
+  ok((await ta.inputValue()).startsWith("Neustadt - "), "📍 Antippen schreibt „Neustadt - “ in die Notiz");
+  await shot(page, "3c-notiz-ort-vom-handy");
+  ok(!errors.length, "Ort vom Handy: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
 }
 { // 🔒 ganze Karte gesperrt
   const page = await browser.newPage({ viewport: { width: 520, height: 1000 } });

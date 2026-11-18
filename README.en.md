@@ -31,7 +31,7 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 - 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time – on Android (Chrome) even in the background when the app is closed. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
 - 📅 Flip through days in Today: ‹ › at the top of the hours tile or swipe.
 - 👥 Several timesheets: for a second person with their own employer simply add the integration again (with its own name) – own entries, own PIN, own sensors. In the card editor you pick which timesheet the card shows.
-- 📝 Quick picker for notes: your places and activities as buttons (learned from your notes), each place on a new line. 📍 Tap “Remember here” once on site, and next time the place you are at is preselected (phone GPS, only sent to your Home Assistant; needs the HA app or https).
+- 📝 Quick picker for notes: your places and activities as buttons (learned from your notes), each place on a new line. 📍 **Place from phone**: in ⚙️ → Clock in by phone pick your HA app's “… Geocoded location” sensor – the town you are in (e.g. Lünen) is shown first and preselected.
 - 🔒 PIN lock for ⚙️, for changes in the month and to older days (today and yesterday stay free) or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
 - ⏰ Mascot: a little alarm clock with moods and seasonal costumes (off by default). 🙈 Veil overtime, ↩️ undo, 🧘 calm mode, hide tabs.
 

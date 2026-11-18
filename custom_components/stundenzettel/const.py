@@ -63,7 +63,7 @@ DEFAULT_SETTINGS: dict = {
     # 📍 Stempeln per Handy
     "stamp_person": "",         # z. B. person.max
     "stamp_zone": "",           # z. B. zone.arbeit
-    "place_gps": {},            # 📍 gemerkte Orte für den Notiz-Schnellwähler: {"Steinfurt": [52.14, 7.33]}
+    "place_sensor": "",         # 📍 Ort vom Handy: Sensor der HA-App, z. B. sensor.handy_geocoded_location (Attribut locality = Ort)
     # 👁️ Ansicht
     "labels": False,
     "log_on": True,
