@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.2-beta.5";
+const SZ_VERSION = "1.0.2-beta.6";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -24,6 +24,7 @@ const SZ_ABS = ["urlaub", "urlaub_halb", "krank", "kind_krank", "feiertag"]; // 
 const SZ_RANGE = ["urlaub", "krank", "kind_krank", "frei"]; // 📆 diese Arten gehen auch als Zeitraum „von–bis“
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.2-beta.6", "✂️ <b>Schnellauswahl schlanker</b>: im Tag-Formular stehen jetzt nur noch deine 6 häufigsten Orte und 6 Tätigkeiten – kommt der 📍 Ort vom Handy dazu, rutscht der letzte Ort raus, damit es bei 6 bleibt"],
   ["1.0.2-beta.5", "🏖️ <b>Urlaub als Zeitraum</b>: „Urlaub 3.–14.“ in einem Rutsch eintragen (Heute → 📆 Mehrere Tage) – Wochenenden und Feiertage werden übersprungen · 🗓️ <b>Urlaubsplaner mit Brückentagen</b>: „Nimmst du 2.–5., bleiben 12 Tage“ und Tipps, wo 1 Urlaubstag 4 Tage frei bringt (Reiter Jahr) · ✂️ <b>Geteilter Tag</b>: zwei Zeitblöcke an einem Tag (z. B. 6–11 und 13–17, dazwischen Arzt) – die Lücke zählt schon als Pause · ½ <b>Halber Urlaubstag</b> als eigene Art (zählt die Hälfte + was du noch gearbeitet hast) · 🧒 <b>Kind krank</b> als eigene Art, getrennt gezählt (fürs Kinderkrankengeld, auch als Sensor) · 🔍 <b>Notizen-Suche</b> über alle Tage: „Wann war ich in Lünen?“ (Monat → Notizen suchen) · ⚠️ <b>Kalender-Konflikt</b>: Steht im Kalender Urlaub, aber du hast gestempelt (oder umgekehrt), sagt die Karte unter Heute Bescheid"],
   ["1.0.2-beta.4", "📱 <b>Ort vom Handy</b> jetzt auch in der <b>Offline-App</b>: Home Assistant schickt den Ort mit – ohne Netz steht der zuletzt bekannte Ort da"],
   ["1.0.2-beta.3", "📍 <b>Ort vom Handy</b>: In ⚙️ → Stempeln per Handy einmal den Ort-Sensor deiner HA-App wählen (z. B. „… Geocoded location“) – öffnest du einen Tag, steht der Ort, an dem du gerade bist (z. B. 📍 Lünen), ganz vorne im Notiz-Schnellwähler und ist schon vorgewählt, auch in Orten, wo du noch nie warst · „📍 Hier merken“ aus Beta 2 ist dafür wieder raus"],
@@ -1522,9 +1523,10 @@ class StundenzettelCard extends HTMLElement {
     });
     const top = (m, n) => [...m.entries()].sort((x, y) => y[1] - x[1]).slice(0, n).map((x) => x[0]);
     const here = this._placeNow(); // 📍 Ort vom Handy (z. B. „Lünen“)
-    let places = top(pl, 8);
-    if (here) places = [here, ...places.filter((x) => x !== here)]; // steht vorne und ist vorgewählt
-    const acts = top(ac, 10);
+    const NQ_MAX = 6; // ✂️ Schnellauswahl schlank: höchstens 6 Orte und 6 Tätigkeiten
+    let places = top(pl, NQ_MAX);
+    if (here) places = [here, ...places.filter((x) => x !== here)].slice(0, NQ_MAX); // Handy-Ort steht vorne und verdrängt den letzten Ort
+    const acts = top(ac, NQ_MAX);
     if (!places.length && !acts.length) return "";
     const chip = (x, a) => `<button type="button" class="chip small${a === "nplace" && x === here ? " on" : ""}" data-a="${a}" data-v="${esc(x)}">${a === "nplace" && x === here ? "📍 " : ""}${esc(x)}</button>`;
     const row = (list, a, icon, label) => list.length ? `<div class="nchips"><span class="nlab">${ic(icon)}${label}</span><div class="nscroll" translate="no">${list.map((x) => chip(x, a)).join("")}</div></div>` : "";

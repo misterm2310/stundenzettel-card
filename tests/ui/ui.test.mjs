@@ -341,6 +341,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '.dayrow[data-a="open"]');
   const chips = await card(page).locator('[data-a="nplace"]').count();
   ok(chips >= 2 && await card(page).locator('[data-a="nact"]').count() >= 2, `Notiz: Schnellwähler mit Orten (${chips}) und Tätigkeiten`);
+  { const acts = await card(page).locator('[data-a="nact"]').count(); ok(chips <= 6 && acts <= 6, `Schnellauswahl schlank: höchstens 6 Orte (${chips}) und 6 Tätigkeiten (${acts})`); }
   const ta = card(page).locator('textarea[name="note"]');
   await ta.fill("");
   const p1 = await card(page).locator('[data-a="nplace"]').first().getAttribute("data-v");

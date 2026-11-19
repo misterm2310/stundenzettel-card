@@ -910,5 +910,6 @@
  "½ <b>Halber Urlaubstag</b> als eigene Art (zählt die Hälfte + was du noch gearbeitet hast)": "½ <b>Half vacation day</b> as its own type (counts half + what you still worked)",
  "<b>Kind krank</b> als eigene Art, getrennt gezählt (fürs Kinderkrankengeld, auch als Sensor)": "<b>Child sick</b> as its own type, counted separately (for the child sickness benefit, also as a sensor)",
  "<b>Notizen-Suche</b> über alle Tage: „Wann war ich in Lünen?“ (Monat → Notizen suchen)": "<b>Note search</b> across all days: “When was I in Lünen?” (Month → Search notes)",
- "<b>Kalender-Konflikt</b>: Steht im Kalender Urlaub, aber du hast gestempelt (oder umgekehrt), sagt die Karte unter Heute Bescheid": "<b>Calendar conflict</b>: if the calendar says vacation but you clocked in (or the other way round), the card tells you under Today"
+ "<b>Kalender-Konflikt</b>: Steht im Kalender Urlaub, aber du hast gestempelt (oder umgekehrt), sagt die Karte unter Heute Bescheid": "<b>Calendar conflict</b>: if the calendar says vacation but you clocked in (or the other way round), the card tells you under Today",
+ "<b>Schnellauswahl schlanker</b>: im Tag-Formular stehen jetzt nur noch deine 6 häufigsten Orte und 6 Tätigkeiten – kommt der 📍 Ort vom Handy dazu, rutscht der letzte Ort raus, damit es bei 6 bleibt": "<b>Slimmer quick picker</b>: the day form now shows only your 6 most used places and 6 activities – when the 📍 place from your phone joins, the last place drops out so it stays at 6"
 }
