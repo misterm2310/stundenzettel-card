@@ -911,5 +911,8 @@
  "<b>Kind krank</b> als eigene Art, getrennt gezählt (fürs Kinderkrankengeld, auch als Sensor)": "<b>Child sick</b> as its own type, counted separately (for the child sickness benefit, also as a sensor)",
  "<b>Notizen-Suche</b> über alle Tage: „Wann war ich in Lünen?“ (Monat → Notizen suchen)": "<b>Note search</b> across all days: “When was I in Lünen?” (Month → Search notes)",
  "<b>Kalender-Konflikt</b>: Steht im Kalender Urlaub, aber du hast gestempelt (oder umgekehrt), sagt die Karte unter Heute Bescheid": "<b>Calendar conflict</b>: if the calendar says vacation but you clocked in (or the other way round), the card tells you under Today",
- "<b>Schnellauswahl schlanker</b>: im Tag-Formular stehen jetzt nur noch deine 6 häufigsten Orte und 6 Tätigkeiten – kommt der 📍 Ort vom Handy dazu, rutscht der letzte Ort raus, damit es bei 6 bleibt": "<b>Slimmer quick picker</b>: the day form now shows only your 6 most used places and 6 activities – when the 📍 place from your phone joins, the last place drops out so it stays at 6"
+ "<b>Schnellauswahl schlanker</b>: im Tag-Formular stehen jetzt nur noch deine 6 häufigsten Orte und 6 Tätigkeiten – kommt der 📍 Ort vom Handy dazu, rutscht der letzte Ort raus, damit es bei 6 bleibt": "<b>Slimmer quick picker</b>: the day form now shows only your 6 most used places and 6 activities – when the 📍 place from your phone joins, the last place drops out so it stays at 6",
+ "Stunden vom Vormonat (laut Chef)": "Hours from last month (per employer)",
+ "Stunden vom Vormonat": "Hours from last month",
+ "<b>Klarerer Name im Monat</b>: aus „Vom Chef (Lohnabrechnung)“ wird „Stunden vom Vormonat (laut Chef)“ und aus „Vom Vormonat“ wird „Stunden vom Vormonat“": "<b>Clearer name in the month</b>: “From employer (payslip)” is now “Hours from last month (per employer)” and “From last month” is now “Hours from last month”"
 }

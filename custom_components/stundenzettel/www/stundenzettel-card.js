@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.2-beta.6";
+const SZ_VERSION = "1.0.2-beta.7";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -24,6 +24,7 @@ const SZ_ABS = ["urlaub", "urlaub_halb", "krank", "kind_krank", "feiertag"]; // 
 const SZ_RANGE = ["urlaub", "krank", "kind_krank", "frei"]; // 📆 diese Arten gehen auch als Zeitraum „von–bis“
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.2-beta.7", "🏷️ <b>Klarerer Name im Monat</b>: aus „Vom Chef (Lohnabrechnung)“ wird „Stunden vom Vormonat (laut Chef)“ und aus „Vom Vormonat“ wird „Stunden vom Vormonat“"],
   ["1.0.2-beta.6", "✂️ <b>Schnellauswahl schlanker</b>: im Tag-Formular stehen jetzt nur noch deine 6 häufigsten Orte und 6 Tätigkeiten – kommt der 📍 Ort vom Handy dazu, rutscht der letzte Ort raus, damit es bei 6 bleibt"],
   ["1.0.2-beta.5", "🏖️ <b>Urlaub als Zeitraum</b>: „Urlaub 3.–14.“ in einem Rutsch eintragen (Heute → 📆 Mehrere Tage) – Wochenenden und Feiertage werden übersprungen · 🗓️ <b>Urlaubsplaner mit Brückentagen</b>: „Nimmst du 2.–5., bleiben 12 Tage“ und Tipps, wo 1 Urlaubstag 4 Tage frei bringt (Reiter Jahr) · ✂️ <b>Geteilter Tag</b>: zwei Zeitblöcke an einem Tag (z. B. 6–11 und 13–17, dazwischen Arzt) – die Lücke zählt schon als Pause · ½ <b>Halber Urlaubstag</b> als eigene Art (zählt die Hälfte + was du noch gearbeitet hast) · 🧒 <b>Kind krank</b> als eigene Art, getrennt gezählt (fürs Kinderkrankengeld, auch als Sensor) · 🔍 <b>Notizen-Suche</b> über alle Tage: „Wann war ich in Lünen?“ (Monat → Notizen suchen) · ⚠️ <b>Kalender-Konflikt</b>: Steht im Kalender Urlaub, aber du hast gestempelt (oder umgekehrt), sagt die Karte unter Heute Bescheid"],
   ["1.0.2-beta.4", "📱 <b>Ort vom Handy</b> jetzt auch in der <b>Offline-App</b>: Home Assistant schickt den Ort mit – ohne Netz steht der zuletzt bekannte Ort da"],
@@ -1737,7 +1738,7 @@ class StundenzettelCard extends HTMLElement {
       ${r("arm-flex-outline", run ? "Gearbeitet bis heute" : "Gearbeitet", `${h2(row.hours)} Std.`)}
       ${r("clipboard-check-outline", run ? "Soll bis heute" : "Soll", `− ${h2(soll)} Std.`)}
       ${r("equal", "Dieser Monat", `<span class="${diff < 0 ? "vneg" : "vpos"}">${hs(diff)} Std.</span>`, "res")}
-      ${r("history", row.alt ? "Vom Chef (Lohnabrechnung)" : "Vom Vormonat", `${hs(row.old)} Std.`)}${row.alt && Math.abs(row.old - (row.calc_old ?? row.old)) > 0.004 ? `<div class="zr sub"><span>Laut mir wären es ${this._mv(hs(row.calc_old), "co" + row.month)}</span><span class="${row.old - row.calc_old < 0 ? "vneg" : "vpos"}">${this._mv(hs(row.old - row.calc_old), "cd" + row.month)}</span></div>` : ""}
+      ${r("history", row.alt ? "Stunden vom Vormonat (laut Chef)" : "Stunden vom Vormonat", `${hs(row.old)} Std.`)}${row.alt && Math.abs(row.old - (row.calc_old ?? row.old)) > 0.004 ? `<div class="zr sub"><span>Laut mir wären es ${this._mv(hs(row.calc_old), "co" + row.month)}</span><span class="${row.old - row.calc_old < 0 ? "vneg" : "vpos"}">${this._mv(hs(row.old - row.calc_old), "cd" + row.month)}</span></div>` : ""}
       ${row.adjust ? r("pencil-outline", `Korrektur${row.note ? ` (${esc(row.note)})` : ""}`, `${hs(row.adjust)} Std.`) : ""}
       ${r("scale-balance", run ? "Dein Konto heute" : `Konto Ende ${MONTHS[Number(row.month.slice(5)) - 1]}`, this._mv(`${hs(end)} Std.`, "tot" + row.month), "tot")}</div>${chips}${this._sheetNote(row)}`;
   }
