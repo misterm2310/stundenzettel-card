@@ -198,6 +198,87 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(!errors.length, "keine Fehler in der Konsole" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
+{ // 🆕 1.0.2-beta.5: Kalender-Konflikt, geteilter Tag, ½ Urlaub, Kind krank, Notizen-Suche, Urlaubsplaner
+  const { page, errors } = await open();
+  const txt = async () => card(page).locator("ha-card").innerText();
+  const ops = () => page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  const cbox = await card(page).locator(".conflictbox").innerText();
+  ok(/Kalender und Stundenzettel passen nicht/.test(cbox) && /27\.10\./.test(cbox) && /Urlaub/.test(cbox) && /Arbeit/.test(cbox), "⚠️ Heute: Hinweis, wenn im Kalender Urlaub steht, aber gestempelt wurde");
+  await shot(page, "11-kalender-konflikt");
+  await click(page, '[data-a="cfgo"]');
+  ok(await card(page).locator('form[data-form="day"][data-d="2026-10-27"]').count() === 1 && /Oktober 2026/.test(await txt()), "⚠️ „Ansehen“ öffnet den Tag im Monat");
+  ok(await card(page).locator('.dayrow.conflict').count() === 0, "(Tag ist offen – Formular statt Zeile)");
+  await click(page, '[data-a="close"]');
+  ok(/Kalender: Urlaub/.test(await card(page).locator('.dayrow[data-d="2026-10-27"]').innerText()), "⚠️ Monat: Tag mit Konflikt hat das Schild „⚠️ Kalender: Urlaub“");
+  await click(page, '[data-a="tab"][data-v="heute"]');
+  await click(page, '[data-a="cfok"]');
+  await page.waitForTimeout(150);
+  ok((await ops()).some((o) => o.type === "set" && o.key === "conflict_ok" && o.value.includes("2026-10-27:urlaub:work")) && await card(page).locator(".conflictbox").count() === 0, "⚠️ „Passt so“ blendet den Hinweis aus (für alle Geräte gemerkt)");
+  // ✂️ geteilter Tag
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await page.evaluate(() => { const c = document.getElementById("c1"); c._month = "2026-10"; c._redraw(); });
+  const split = await card(page).locator('.dayrow[data-d="2026-10-28"]').innerText();
+  ok(/06:00–11:00 \+ 13:00–17:00/.test(split) && /9,00/.test(split), `✂️ Geteilter Tag: beide Blöcke, 9,00 Std. („${split.replace(/\s+/g, " ").trim()}“)`);
+  await click(page, '.dayrow[data-d="2026-10-29"]');
+  await click(page, '[data-a="fsplit"][data-v="1"]');
+  const f = card(page).locator('form[data-form="day"]');
+  ok(await f.locator('input[name="start2"]').count() === 1, "✂️ „Zweiter Zeitblock“ zeigt Von/Bis für Block 2");
+  await f.locator('input[name="start"]').fill("06:00"); await f.locator('input[name="end"]').fill("11:00");
+  await f.locator('input[name="start2"]').fill("13:00"); await f.locator('input[name="end2"]').fill("17:00");
+  await shot(page, "12-geteilter-tag");
+  await click(page, 'form[data-form="day"] button[type="submit"]');
+  await page.waitForTimeout(150);
+  ok((await ops()).some((o) => o.type === "day_set" && o.date === "2026-10-29" && o.start2 === "13:00" && o.end2 === "17:00"), "✂️ Speichern schickt beide Blöcke");
+  const half = await card(page).locator('.dayrow[data-d="2026-10-30"]').innerText();
+  ok(/½ Urlaub/.test(half) && /7,75/.test(half), `½ Urlaub mit gearbeiteter Hälfte: 4 + 3,75 = 7,75 („${half.replace(/\s+/g, " ").trim()}“)`);
+  const chips = await card(page).locator(".zchips").innerText();
+  ok(/Kind krank/.test(chips) && /0,5\s*Urlaub/.test(chips), `🧒 Kind krank getrennt, ½ Urlaub zählt halb („${chips.replace(/\s+/g, " ")}“)`);
+  // 🔍 Notizen-Suche
+  await click(page, '[data-a="search"]');
+  await card(page).locator(".nsearch").fill("zahnarzt");
+  await page.waitForTimeout(100);
+  const res = await card(page).locator(".nsres").innerText();
+  ok(/1 Tag/.test(res) && await card(page).locator(".nsres mark").count() >= 1 && await card(page).locator(".nsearch").evaluate((el) => el.getRootNode().activeElement === el), "🔍 Notizen-Suche: Treffer sofort beim Tippen, Tastatur bleibt");
+  await card(page).locator(".nsearch").fill("Musterstadt");
+  await page.waitForTimeout(100);
+  ok(await card(page).locator(".nsres .dayrow").count() >= 5, "🔍 Viele Treffer, das Neueste oben");
+  await shot(page, "13-notizen-suche");
+  await card(page).locator(".nsres .dayrow").first().click(); await page.waitForTimeout(150);
+  ok(/Monat|Oktober|November/.test(await txt()) && await card(page).locator(".dayrow .notetext").count() === 1, "🔍 Treffer antippen springt zum Tag und zeigt die Notiz");
+  // 🏖️ Urlaubsplaner
+  await click(page, '[data-a="tab"][data-v="heute"]');
+  await click(page, '.quick [data-a="vplan"], [data-a="vplan"]');
+  ok(/Urlaub planen/.test(await txt()), "🏖️ „Mehrere Tage“ öffnet den Urlaubsplaner");
+  const vp = card(page).locator('form[data-form="vplan"]');
+  await vp.locator('input[name="from"]').fill("2026-12-21"); await vp.locator('input[name="from"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await vp.locator('input[name="to"]').fill("2027-01-08"); await vp.locator('input[name="to"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  const pt = await card(page).locator(".pagehost").innerText();
+  ok(/13 Tage/.test(pt) && /1\. Weihnachtstag/.test(pt) && /Neujahr/.test(pt) && /Wochenende/.test(pt), "🏖️ 21.12.–08.01.: 13 Arbeitstage, Wochenenden und Feiertage übersprungen");
+  ok(/für 2026/.test(pt) && /für 2027/.test(pt), "🏖️ Über Silvester: Resturlaub für beide Jahre");
+  const br = await card(page).locator('[data-a="vpick"]').allInnerTexts();
+  ok(br.some((t) => /07\.05\./.test(t) && /4 Tage frei/.test(t)) && br.some((t) => /28\.05\./.test(t)), `🌉 Brückentage: Fr nach Himmelfahrt und Fronleichnam (${br.length} Tipps)`);
+  await shot(page, "14-urlaubsplaner");
+  await card(page).locator('[data-a="vpick"]').filter({ hasText: "07.05." }).first().click(); await page.waitForTimeout(150);
+  ok(/1 Tag/.test(await card(page).locator(".vplan .hero").innerText()), "🌉 Brückentag antippen trägt ihn oben ein");
+  await vp.locator('input[name="from"]').fill("2026-12-21"); await vp.locator('input[name="from"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await vp.locator('input[name="to"]').fill("2026-12-31"); await vp.locator('input[name="to"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await click(page, 'form[data-form="vplan"] button[type="submit"]');
+  await page.waitForTimeout(150);
+  const rs = (await ops()).find((o) => o.type === "range_set");
+  ok(rs && rs.kind === "urlaub" && rs.dates.length === 8 && !rs.dates.includes("2026-12-25") && !rs.dates.includes("2026-12-26"), `🏖️ Eintragen schickt einen Zeitraum ohne Wochenenden/Feiertage (${rs?.dates.length} Tage)`);
+  ok(await card(page).locator(".undobar").count() === 1, "🏖️ Danach 8 Sekunden „Rückgängig“");
+  // 📱 Offline: Zeitraum wirkt sofort (Postausgang)
+  await page.evaluate(() => window.setOnline(false));
+  await click(page, '[data-a="tab"][data-v="heute"]');
+  await click(page, '[data-a="vplan"]');
+  await vp.locator('input[name="from"]').fill("2027-02-01"); await vp.locator('input[name="from"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await vp.locator('input[name="to"]').fill("2027-02-05"); await vp.locator('input[name="to"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await click(page, 'form[data-form="vplan"] button[type="submit"]');
+  ok(await card(page).evaluate((el) => el._d.days["2027-02-03"]?.kind === "urlaub" && el._d.days["2027-02-03"]?.waiting), "📴 Ohne Netz: Zeitraum landet im Postausgang und wirkt sofort");
+  await page.evaluate(() => window.setOnline(true)); await page.waitForTimeout(300);
+  ok(!errors.length, "1.0.2-beta.5: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
 { // 🔒 PIN fürs Zahnrad
   const { page, errors } = await open("#pin");
   await click(page, '[data-a="tab"][data-v="set"]');

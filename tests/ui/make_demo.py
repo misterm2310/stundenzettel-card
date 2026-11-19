@@ -40,6 +40,10 @@ while d < TODAY:
     d += timedelta(days=1)
 days["2026-11-03"] = {"kind": "work", "start": "06:30", "end": "16:15", "source": "calendar", "note": "Musterstadt – Terrasse"}
 days.pop("2026-11-04", None)
+# 🆕 1.0.2-beta.5: geteilter Tag, ½ Urlaub, Kind krank
+days["2026-10-28"] = {"kind": "work", "start": "06:00", "end": "11:00", "start2": "13:00", "end2": "17:00", "source": "card", "note": "Musterstadt – Terrasse, nachmittags Zahnarzt"}
+days["2026-10-30"] = {"kind": "urlaub_halb", "start": "06:30", "end": "10:30", "source": "card"}
+days["2026-10-20"] = {"kind": "kind_krank", "source": "card"}
 months = compute_months(days, {"2026-07": {"adjust": -10, "note": "10 Std. ausgezahlt"}}, st, TODAY)
 snap = {
     "version": json.loads(Path("custom_components/stundenzettel/manifest.json").read_text())["version"],
@@ -47,6 +51,11 @@ snap = {
     "months_meta": {"2026-07": {"adjust": -10, "note": "10 Std. ausgezahlt"}}, "stamp": {"in": "06:30", "date": "2026-11-04", "ts": 0},
     "log": [{"ts": 1793770200000, "user": "Max", "text": "⏱️ Eingestempelt um 06:30"}], "errors": [], "today": TODAY.isoformat(),
     "cal": {"ok": True, "last": 1793780100000, "error": None, "can": ["create", "delete"]},
+    # 🎌 ausgedachter Feiertags-Kalender (NRW-artig) · ⚠️ ein Kalender-Konflikt
+    "holidays": {"2026-10-03": "Tag der Deutschen Einheit", "2026-11-01": "Allerheiligen", "2026-12-25": "1. Weihnachtstag", "2026-12-26": "2. Weihnachtstag",
+                 "2027-01-01": "Neujahr", "2027-03-26": "Karfreitag", "2027-03-29": "Ostermontag", "2027-05-01": "Tag der Arbeit",
+                 "2027-05-06": "Christi Himmelfahrt", "2027-05-17": "Pfingstmontag", "2027-05-27": "Fronleichnam", "2027-10-03": "Tag der Deutschen Einheit"},
+    "conflicts": [{"date": "2026-10-27", "cal": "urlaub", "mine": "work", "key": "2026-10-27:urlaub:work"}],
 }
 cur = months[-1]
 snap["summary"] = {"balance": cur["now"], "month_hours": cur["hours"], "month_paid": cur["paid"], "last_month_total": months[-2]["total"],

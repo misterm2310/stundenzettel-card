@@ -41,6 +41,8 @@ const hass = () => ({
       for (const o of msg.ops) {
         if (o.type === "day_set") { const e = { kind: o.kind, source: "card", ...(o.start ? { start: o.start, end: o.end } : {}), ...(o.note ? { note: o.note } : {}), ...(o.pause != null ? { pause: o.pause } : {}) }; const r = hours(e); d.days[o.date] = typeof r === "object" ? { ...e, hours: r.h, pause: r.p } : { ...e, hours: r }; }
         if (o.type === "day_delete") delete d.days[o.date];
+        if (o.type === "range_set") for (const iso of o.dates) if (d.days[iso]?.kind !== "feiertag") d.days[iso] = { kind: o.kind, source: "card", hours: o.kind === "frei" ? 0 : 8 };
+        if (o.type === "set" && o.key === "conflict_ok") d.conflicts = (d.conflicts || []).filter((c) => !o.value.includes(c.key));
         if (o.type === "set") d.settings[o.key] = o.value;
         if (o.type === "stamp_out" || o.type === "stamp_cancel") d.stamp = null;
         if (o.type === "stamp_in") d.stamp = { in: "06:30", date: d.today };

@@ -38,7 +38,9 @@
       "options": {
         "work": "Arbeit",
         "urlaub": "Urlaub",
+        "urlaub_halb": "½ Urlaub",
         "krank": "Krank",
+        "kind_krank": "Kind krank",
         "feiertag": "Feiertag",
         "frei": "Frei",
         "pauschal": "Pauschal"
@@ -80,7 +82,7 @@
         },
         "art": {
           "name": "Art",
-          "description": "Arbeit, Urlaub, Krank, Feiertag, Frei oder Pauschal"
+          "description": "Arbeit, Urlaub, ½ Urlaub, Krank, Kind krank, Feiertag, Frei oder Pauschal"
         },
         "von": {
           "name": "Von",

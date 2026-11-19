@@ -23,7 +23,12 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - 📤 **Oder andersrum**: Die Karte ist die Chefin und schreibt deine Zeiten in den Termin. Krank oder Urlaub → der Arbeits-Termin verschwindet. Fehlt ein Termin, legt die Karte ihn wieder an; „Alle Tage in den Kalender schreiben“ holt ganze Zeiträume nach. (Google kann über Home Assistant nicht ändern – die Karte löscht dann und legt neu an.)
 - ⏱️ **Kommen & Gehen** als zwei Felder oben unter Heute (antippen, Uhrzeit ändern, fertig), ⏱️ „jetzt“ zum Stempeln – oder **automatisch**, wenn dein Handy in die Zone „Arbeit“ kommt bzw. sie verlässt. Zeiten auf 5 oder 15 Minuten runden.
 - ⚖️ **Überstunden-Konto** wie auf Papier: Summe − Bezahlt = Plus/Minus, Ü.-Alt + Plus/Minus = Ü.-Gesamt. Im laufenden Monat fair: **Soll nur bis heute**. 💶 **Ü.-Alt laut Lohnabrechnung** pro Monat eintragen – die Karte rechnet mit der Zahl vom Chef weiter und zeigt die Abweichung.
-- 🏖️ **Urlaub, Krank, Feiertag, Frei, Pauschal** (z. B. Samstag für feste Euro – zählt nicht zu den Stunden). Resturlaub und Kranktage pro Jahr.
+- 🏖️ **Urlaub, ½ Urlaub, Krank, Kind krank, Feiertag, Frei, Pauschal** (z. B. Samstag für feste Euro – zählt nicht zu den Stunden). Resturlaub und Kranktage pro Jahr. **½ Urlaub** zählt die Hälfte (plus was du an dem Tag noch gearbeitet hast), **Kind krank** wird getrennt gezählt – fürs Kinderkrankengeld.
+- 📆 **Urlaub als Zeitraum**: „Urlaub 3.–14.“ in einem Rutsch eintragen – Wochenenden, freie Tage und Feiertage werden übersprungen. Geht auch für Krank, Kind krank und Frei.
+- 🗓️ **Urlaubsplaner mit Brückentagen**: „Nimmst du 2.–5., bleiben 12 Tage“ (über Silvester für beide Jahre) – dazu Tipps, wo 1 Urlaubstag 4 Tage frei bringt, aus deinem Feiertags-Kalender.
+- ✂️ **Geteilter Tag**: zwei Zeitblöcke an einem Tag (z. B. 6–11 und 13–17, dazwischen Arzt) – die Lücke zählt schon als Pause.
+- 🔍 **Notizen-Suche** über alle Tage: „Wann war ich in Lünen?“ – Treffer antippen springt zum Tag.
+- ⚠️ **Kalender-Konflikt**: Steht im Kalender Urlaub/Krank, aber du hast gestempelt (oder „Arbeiten“ im Kalender, bei dir Urlaub), sagt die Karte unter Heute Bescheid – „Ansehen“ oder „Passt so“.
 - ☕ **Pausen-Regeln** nach Dauer (Standard: mehr als 0 Std. → 0,25 · mehr als 6 Std. → 0,50) **oder nach Uhrzeit beim Gehen** (z. B. bis 12 Uhr 0,25 · danach 0,50) – einzelne Tage auch anders.
 - 💶 **Bezahlte Stunden** pro Monat, **früher anders** (z. B. bis Dezember 2019: 160) und **Korrekturen** (ausgezahlt, geschenkt).
 - 🎌 **Feiertage automatisch** aus einem Feiertags-Kalender (z. B. Integration „Feiertage“ für dein Bundesland).
@@ -105,7 +110,8 @@ Alles Weitere steht in der Karte unter **📖 Anleitung** (mit Suche).
 <details><summary>🧮 So wird gerechnet – <i>aufklappen</i></summary>
 
 - Arbeitstag: (Ende − Anfang) − Pause. Beispiel: 6:30–16:15 = 9,75 Std. da → mehr als 6 → 0,50 Pause → **9,25 Std.**
-- Urlaub, Krank, Feiertag: zählen je **8 Std.** (einstellbar). Frei = 0. Pauschal zählt gar nicht.
+- Geteilter Tag: beide Blöcke zusammen. Die Lücke dazwischen ist schon Pause – die Pausen-Regel zieht nur noch ab, was fehlt. Beispiel: 6–11 + 13–17 = **9,00 Std.**
+- Urlaub, Krank, Kind krank, Feiertag: zählen je **8 Std.** (einstellbar). ½ Urlaub = **4 Std.** + gearbeitete Zeit und ½ Urlaubstag. Frei = 0. Pauschal zählt gar nicht.
 - Monat: **Summe − Bezahlt = Plus/Minus**. **Ü.-Alt + Plus/Minus + Korrektur = Ü.-Gesamt**. Steht beim Monat ein **Ü.-Alt laut Lohnabrechnung**, nimmt die Karte diese Zahl statt des eigenen Vormonats-Stands.
 - Laufender Monat: Das Soll zählt nur für die Arbeitstage bis heute → **„Konto heute“**.
 - Monate ganz ohne Einträge zählen nicht mit (sonst gäbe es für Lücken riesige Minusstunden).
@@ -124,6 +130,7 @@ Alles Weitere steht in der Karte unter **📖 Anleitung** (mit Suche).
 | `sensor.stundenzettel_stunden_diesen_monat` | Stunden im laufenden Monat (Attribut: bezahlt) |
 | `sensor.stundenzettel_resturlaub` | Resturlaub dieses Jahr (Attribut: genommen) |
 | `sensor.stundenzettel_kranktage_dieses_jahr` | Kranktage dieses Jahr |
+| `sensor.stundenzettel_kind_krank_dieses_jahr` | Tage „Kind krank“ dieses Jahr (fürs Kinderkrankengeld) |
 | `binary_sensor.stundenzettel_eingestempelt` | an, solange du eingestempelt bist |
 
 Aktionen: `stundenzettel.kommen`, `stundenzettel.gehen`, `stundenzettel.tag_eintragen` (Datum, Art, von, bis, Pause, Notiz …), `stundenzettel.abgleichen`, `stundenzettel.daten_abrufen` (gibt Konto und Monate als Antwort zurück).

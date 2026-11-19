@@ -32,6 +32,8 @@ SENSORS = [
                         value=lambda s: s["vacation_left"], attrs=lambda s: {"genommen": s["vacation_taken"]}),
     SzSensorDescription(key="sick", name="Kranktage dieses Jahr", icon="mdi:emoticon-sick-outline", native_unit_of_measurement="Tage",
                         value=lambda s: s["sick_days"]),
+    SzSensorDescription(key="child_sick", name="Kind krank dieses Jahr", icon="mdi:account-child-outline", native_unit_of_measurement="Tage",
+                        value=lambda s: s.get("child_sick_days", 0)),  # 🧒 getrennt gezählt – wichtig fürs Kinderkrankengeld
 ]
 
 

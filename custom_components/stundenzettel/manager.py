@@ -3,7 +3,9 @@
 So wird gerechnet (für Doofe 😄):
 1. Arbeitstag: (Ende − Anfang) − Pause = Stunden. Die Pause kommt automatisch aus den Pausen-Regeln
    (z. B. mehr als 6 Std. da → 0,50 Std. Pause), außer du trägst selbst eine ein.
-2. Urlaub, Krank, Feiertag zählen „Stunden pro Abwesenheitstag“ (Standard 8).
+   Geteilter Tag (z. B. 6–11 und 13–17, dazwischen Arzt): beide Blöcke zählen, die Lücke ist schon Pause.
+2. Urlaub, Krank, Kind krank, Feiertag zählen „Stunden pro Abwesenheitstag“ (Standard 8).
+   ½ Urlaub zählt die Hälfte – plus das, was du an dem Tag noch gearbeitet hast.
 3. Frei zählt 0. „Pauschal“ (z. B. Samstag für feste Euro) zählt gar nicht zu den Stunden.
 4. Pro Monat: Summe − bezahlte Stunden (Soll, z. B. 175) = Plus/Minus des Monats.
 5. Überstunden-Konto = Stand vom Vormonat (Ü.-Alt) + Plus/Minus + Korrektur = Ü.-Gesamt.
@@ -44,7 +46,10 @@ from .const import (
     PIN_OFF_ITER,
     ABSENCE_KINDS,
     DEFAULT_SETTINGS,
+    HOLIDAY_AHEAD_DAYS,
     KINDS,
+    MAX_RANGE_DAYS,
+    RANGE_KINDS,
     MAX_IMPORT_CHARS,
     MAX_LOG,
     MAX_SEEN_OPS,
@@ -58,7 +63,10 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-KIND_NAMES = {"work": "Arbeit", "urlaub": "Urlaub", "krank": "Krank", "feiertag": "Feiertag", "frei": "Frei", "pauschal": "Pauschal"}
+KIND_NAMES = {"work": "Arbeit", "urlaub": "Urlaub", "urlaub_halb": "½ Urlaub", "krank": "Krank", "kind_krank": "Kind krank",
+              "feiertag": "Feiertag", "frei": "Frei", "pauschal": "Pauschal"}
+# ⚠️ Kalender-Konflikt: Termine, die nach Abwesenheit klingen (genauer Treffer zuerst)
+_CAL_ABS = (("kind krank", "kind_krank"), ("kinderkrank", "kind_krank"), ("urlaub", "urlaub"), ("krank", "krank"))
 _TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
@@ -122,22 +130,37 @@ def auto_pause(brutto: float, rules: list[dict[str, Any]]) -> float:
     return best
 
 
+def work_hours(entry: dict[str, Any], st: dict[str, Any]) -> dict[str, float]:
+    """⏱️ Gearbeitete Zeit eines Tages (auch mit zweitem Block) → {hours, brutto, pause}"""
+    a, b = minutes(entry.get("start")), minutes(entry.get("end"))
+    if a is None or b is None:
+        return {"hours": 0.0, "brutto": 0.0, "pause": 0.0}
+    if b < a:  # 🌙 über Mitternacht
+        b += 24 * 60
+    brutto, gap, last = (b - a) / 60, 0.0, b
+    a2, b2 = minutes(entry.get("start2")), minutes(entry.get("end2"))
+    if a2 is not None and b2 is not None and b2 > a2:  # ✂️ geteilter Tag: zweiter Block zählt dazu
+        brutto += (b2 - a2) / 60
+        gap = max(0, a2 - b) / 60  # die Lücke dazwischen (z. B. Arzt) ist schon eine Pause
+        last = b2
+    pause = entry.get("pause")
+    if pause is None:  # ☕ nach Regel: Dauer („mehr als 6 Std. da“) oder Uhrzeit beim Gehen („nach 12 Uhr“) – minus die Lücke
+        pause = max(0.0, auto_pause(last / 60 if st.get("pause_by") == "ende" else brutto, st.get("pause_rules")) - gap)
+    else:
+        pause = float(pause)
+    return {"hours": r2(max(0.0, brutto - pause)), "brutto": r2(brutto), "pause": r2(pause)}
+
+
 def day_hours(entry: dict[str, Any], st: dict[str, Any]) -> dict[str, float]:
     """⏱️ Was zählt ein Tag? → {hours, brutto, pause}"""
     kind = entry.get("kind", "work")
     if kind == "work":
-        a, b = minutes(entry.get("start")), minutes(entry.get("end"))
-        if a is None or b is None:
-            return {"hours": 0.0, "brutto": 0.0, "pause": 0.0}
-        if b < a:  # 🌙 über Mitternacht
-            b += 24 * 60
-        brutto = (b - a) / 60
-        pause = entry.get("pause")
-        if pause is None:  # ☕ nach Regel: Dauer („mehr als 6 Std. da“) oder Uhrzeit beim Gehen („nach 12 Uhr“)
-            pause = auto_pause(b / 60 if st.get("pause_by") == "ende" else brutto, st.get("pause_rules"))
-        else:
-            pause = float(pause)
-        return {"hours": r2(max(0.0, brutto - pause)), "brutto": r2(brutto), "pause": r2(pause)}
+        return work_hours(entry, st)
+    if kind == "urlaub_halb":  # 🏖️ ½ Urlaub: halber Abwesenheitstag + was du an dem Tag noch gearbeitet hast
+        h = entry.get("hours")
+        half = float(st.get("absence_hours", 8)) / 2 if h is None else float(h)
+        w = work_hours(entry, st)
+        return {"hours": r2(half + w["hours"]), "brutto": w["brutto"], "pause": w["pause"]}
     if kind in ABSENCE_KINDS:
         h = entry.get("hours")
         return {"hours": r2(float(st.get("absence_hours", 8)) if h is None else float(h)), "brutto": 0.0, "pause": 0.0}
@@ -218,7 +241,8 @@ def compute_months(days: dict[str, dict[str, Any]], months_meta: dict[str, dict[
         bal = calc_total if tracked else bal
         row = {
             "month": key, "hours": r2(tot), "paid": r2(soll), "diff": r2(diff), "adjust": r2(adjust),
-            "old": r2(old), "total": r2(bal), "urlaub": cnt["urlaub"], "krank": cnt["krank"], "feiertag": cnt["feiertag"],
+            "old": r2(old), "total": r2(bal), "urlaub": cnt["urlaub"] + cnt["urlaub_halb"] * 0.5, "krank": cnt["krank"], "feiertag": cnt["feiertag"],
+            "kind_krank": cnt["kind_krank"],
             "work": cnt["work"], "long": long_n, "euro": r2(euro), "days": len(items), "tracked": tracked, "note": meta.get("note", ""),
             "future": future, "alt": alt is not None, "calc_old": r2(calc_old), "sheet": bool(sheet),
             "calc_hours": r2(calc_hours), "calc_long": calc_long,
@@ -395,6 +419,13 @@ def _cal_entity(hass: HomeAssistant, entity_id: str):
     return comp.get_entity(entity_id)
 
 
+def _day_of(v: Any) -> date | None:
+    """📅 Tag eines Termins (ganztägig = date, sonst datetime in Ortszeit)."""
+    if isinstance(v, datetime):
+        return _local(v).date()
+    return v if isinstance(v, date) else None
+
+
 def _local(v: Any) -> datetime | None:
     if isinstance(v, datetime):
         return dt_util.as_local(v) if v.tzinfo else v.replace(tzinfo=dt_util.get_default_time_zone())
@@ -421,6 +452,10 @@ class StundenzettelManager:
         self._rev = 0
         self._pin_fails = 0
         self._pin_locked_until = 0.0
+        self.holidays: dict[str, str] = {}  # 🎌 {"2026-12-25": "1. Weihnachtstag"} aus dem Feiertags-Kalender
+        self._hol_key: tuple[str, str] | None = None  # (Kalender, Tag) – einmal am Tag neu holen reicht
+        self._cal_work: set[str] = set()  # 📅 Tage mit Termin „Arbeiten“ (letzter Abgleich)
+        self._cal_abs: dict[str, str] = {}  # 📅 Tage mit Termin „Urlaub“/„Krank“ im Kalender
 
     # ------------------------------------------------------------------ 💾 Laden & Speichern
     async def async_load(self) -> None:
@@ -588,6 +623,7 @@ class StundenzettelManager:
             "vacation_carry": carry,
             "vacation_left": r2(int(self.settings.get("vacation_days") or 0) + carry - urlaub),
             "sick_days": sum(m["krank"] for m in ym),
+            "child_sick_days": sum(m.get("kind_krank", 0) for m in ym),  # 🧒 Kind krank – getrennt gezählt (Kinderkrankengeld)
             "long_days": sum(m["long"] for m in ym),
             "stamped_in": bool(stamp),
             "stamp_since": stamp.get("in") if stamp else None,
@@ -617,6 +653,8 @@ class StundenzettelManager:
             "pin_off": self.data.get("pin_off") if self.data.get("pin") else None,  # 📴 nie die echte PIN, nur der Offline-Schlüssel
             "app_url": self._app_url(),
             "place_now": self.place_now(),  # 📍 Ort vom Handy – auch für die Offline-App (die sieht keine Sensoren)
+            "holidays": self.holidays,  # 🎌 Feiertage (auch die kommenden) – für Urlaubsplaner und Brückentage
+            "conflicts": self.conflicts(),  # ⚠️ Kalender sagt etwas anderes als der Stundenzettel
         })
         return snap
 
@@ -716,15 +754,29 @@ class StundenzettelManager:
         if kind not in KINDS:
             raise HomeAssistantError(f"Unbekannte Art „{kind}“")
         e: dict[str, Any] = {"kind": kind, "source": op.get("source", "card")}
-        if kind in ("work", "pauschal"):
+        if kind in ("work", "pauschal", "urlaub_halb"):
             a, b = minutes(op.get("start")), minutes(op.get("end"))
             if kind == "work" and (a is None or b is None):
                 raise HomeAssistantError("Bitte Anfang und Ende eintragen")
+            if kind == "urlaub_halb" and (a is None) != (b is None):
+                raise HomeAssistantError("Für die gearbeitete Hälfte bitte Anfang UND Ende eintragen (oder beides leer lassen)")
             if a is not None:
                 e["start"] = hhmm(a)
             if b is not None:
                 e["end"] = hhmm(b)
-        if kind == "work" and op.get("pause") not in (None, ""):
+        if kind == "work" and (op.get("start2") or op.get("end2")):  # ✂️ geteilter Tag: zweiter Zeitblock
+            a1, b1 = minutes(e["start"]), minutes(e["end"])
+            a2, b2 = minutes(op.get("start2")), minutes(op.get("end2"))
+            if a2 is None or b2 is None:
+                raise HomeAssistantError("Für den zweiten Block bitte Anfang und Ende eintragen")
+            if b1 < a1:
+                raise HomeAssistantError("Ein geteilter Tag geht nicht über Mitternacht")
+            if a2 < b1:
+                raise HomeAssistantError("Der zweite Block muss nach dem ersten anfangen")
+            if b2 <= a2:
+                raise HomeAssistantError("Beim zweiten Block muss das Ende nach dem Anfang sein")
+            e["start2"], e["end2"] = hhmm(a2), hhmm(b2)
+        if (kind == "work" or (kind == "urlaub_halb" and "start" in e)) and op.get("pause") not in (None, ""):
             p = num(op.get("pause"))
             if p is None or p < 0 or p > 12:
                 raise HomeAssistantError("Die Pause muss zwischen 0 und 12 Stunden liegen")
@@ -752,8 +804,39 @@ class StundenzettelManager:
             if old and old.get("event_uid"):
                 e["event_uid"] = old["event_uid"]
             days[iso] = e
-            self._log(user, f"✍️ {iso}: {KIND_NAMES[e['kind']]}" + (f" {e.get('start')}–{e.get('end')}" if e["kind"] == "work" else ""))
+            self._log(user, f"✍️ {iso}: {KIND_NAMES[e['kind']]}" + (f" {e.get('start')}–{e.get('end')}" if e["kind"] == "work" else "")
+                      + (f" + {e['start2']}–{e['end2']}" if e.get("start2") else ""))
             self._dirty_cal.add(iso)
+        elif t == "range_set":
+            # 🏖️ Mehrere Tage in einem Rutsch (z. B. Urlaub 3.–14.) – welche Tage, rechnet die Karte aus
+            # (Wochenenden und Feiertage lässt sie weg). Hier wird nur noch geprüft und eingetragen.
+            kind = op.get("kind")
+            if kind not in RANGE_KINDS:
+                raise HomeAssistantError(f"„{kind}“ geht nicht als Zeitraum")
+            isos = sorted({str(x) for x in (op.get("dates") or [])})
+            if not isos:
+                raise HomeAssistantError("Keine Tage im Zeitraum")
+            if len(isos) > MAX_RANGE_DAYS:
+                raise HomeAssistantError(f"Höchstens {MAX_RANGE_DAYS} Tage auf einmal")
+            for iso in isos:
+                if not _DATE_RE.match(iso):
+                    raise HomeAssistantError(f"„{iso}“ ist kein Datum")
+                date.fromisoformat(iso)
+            note = str(op.get("note") or "").strip()[:500]
+            n = 0
+            for iso in isos:
+                old = days.get(iso)
+                if old and old.get("kind") == "feiertag":
+                    continue  # 🎌 Feiertag bleibt Feiertag
+                e = {"kind": kind, "source": "card"}
+                if note:
+                    e["note"] = note
+                if old and old.get("event_uid"):
+                    e["event_uid"] = old["event_uid"]
+                days[iso] = e
+                self._dirty_cal.add(iso)
+                n += 1
+            self._log(user, f"🏖️ {KIND_NAMES[kind]} {isos[0]} bis {isos[-1]} eingetragen ({n} Tage)")
         elif t == "day_delete":
             iso = str(op.get("date", ""))
             if days.pop(iso, None) is not None:
@@ -863,6 +946,8 @@ class StundenzettelManager:
             return out
         if key == "view":
             return {k: bool(v) for k, v in (value or {}).items() if k in ("monat", "jahr", "stat")}
+        if key == "conflict_ok":  # ⚠️ weggeklickte Kalender-Konflikte – nur die letzten 100
+            return [str(x)[:40] for x in (value or []) if re.fullmatch(r"\d{4}-\d{2}-\d{2}:[a-z_]+:[a-z_]+", str(x))][-100:]
         if key == "plan":
             plan = {}
             for wd, se in (value or {}).items():
@@ -941,8 +1026,10 @@ class StundenzettelManager:
                 self.cal_status = {**self.cal_status, "ok": False, "error": f"Kalender {st['calendar']} nicht gefunden"}
             else:
                 try:
-                    events = [e for e in await self._events(ent, start, end) if self._match(e)]
+                    all_events = await self._events(ent, start, end)
+                    events = [e for e in all_events if self._match(e)]
                     self.cal_status = {"ok": True, "last": int(time.time() * 1000), "error": None, "can": self._features(ent)}
+                    self._cal_abs = self._absence_days(all_events, start.date(), end.date())  # ⚠️ für den Konflikt-Hinweis
                     seen_days = set()
                     for ev in events:
                         a, b = _local(ev.start), _local(ev.end)
@@ -954,6 +1041,8 @@ class StundenzettelManager:
                         if cur and cur.get("source") != "calendar":
                             if not cur.get("event_uid") and getattr(ev, "uid", None):
                                 cur["event_uid"] = ev.uid
+                            if st.get("cal_write") and cur.get("kind") in ("urlaub", "krank", "kind_krank", "frei"):
+                                self._dirty_cal.add(iso)  # 📤 Karte ist die Chefin: Arbeits-Termin an einem Urlaubstag wieder raus
                             continue  # ✋ von Hand/gestempelt → Kalender überschreibt nie
                         note, pause = parse_desc(getattr(ev, "description", None))
                         e = {"kind": "work", "start": a.strftime("%H:%M"), "end": b.strftime("%H:%M") if b.date() == a.date() else "23:59", "source": "calendar"}
@@ -969,6 +1058,7 @@ class StundenzettelManager:
                             self.data["days"][iso] = e
                             changed = True
                             res["read"] += 1
+                    self._cal_work = set(seen_days)
                     for iso, cur in list(self.data["days"].items()):  # 🗑️ Termin weg → Tag aus dem Kalender auch weg
                         if cur.get("source") == "calendar" and start.date().isoformat() <= iso < end.date().isoformat() and iso not in seen_days:
                             del self.data["days"][iso]
@@ -982,18 +1072,29 @@ class StundenzettelManager:
                 except Exception as err:  # noqa: BLE001
                     self.cal_status = {**self.cal_status, "ok": False, "error": f"Kalender lesen ging nicht: {err}"}
                     self._err(self.cal_status["error"])
+        if not st.get("holiday_calendar"):
+            self.holidays, self._hol_key = {}, None
         if st.get("holiday_calendar"):
             hent = _cal_entity(self.hass, st["holiday_calendar"])
             if hent is not None:
                 try:
-                    for ev in await self._events(hent, start, end):
-                        d0 = ev.start if isinstance(ev.start, date) and not isinstance(ev.start, datetime) else (_local(ev.start).date() if _local(ev.start) else None)
-                        if d0 is None or d0.isoweekday() > 5:
+                    key = (st["holiday_calendar"], today.isoformat())
+                    if self._hol_key != key:  # 🎌 auch die kommenden Feiertage merken (Urlaubsplaner) – einmal am Tag reicht
+                        far = datetime.combine(today + timedelta(days=HOLIDAY_AHEAD_DAYS), datetime.min.time(), tz)
+                        hol: dict[str, str] = {}
+                        for ev in await self._events(hent, start, far):
+                            d0 = _day_of(ev.start)
+                            if d0 is not None:
+                                hol[d0.isoformat()] = str(ev.summary or "Feiertag")[:80]
+                        self.holidays, self._hol_key = hol, key
+                        changed = True
+                    for iso, name in self.holidays.items():
+                        d0 = date.fromisoformat(iso)
+                        if not start.date() <= d0 < end.date() or d0.isoweekday() > 5:
                             continue
-                        iso = d0.isoformat()
                         cur = self.data["days"].get(iso)
                         if cur is None or cur.get("source") == "calendar":
-                            self.data["days"][iso] = {"kind": "feiertag", "source": "holiday", "note": str(ev.summary or "")[:80]}
+                            self.data["days"][iso] = {"kind": "feiertag", "source": "holiday", "note": name}
                             changed = True
                             res["holidays"] += 1
                 except Exception as err:  # noqa: BLE001
@@ -1002,6 +1103,47 @@ class StundenzettelManager:
             self._save()
         self._flush_calendar()
         return res
+
+    @staticmethod
+    def _absence_days(events: list, first: date, last: date) -> dict[str, str]:
+        """📅 Welche Tage stehen im Kalender als Urlaub/Krank/Kind krank? (auch mehrtägige Termine)"""
+        out: dict[str, str] = {}
+        for ev in events:
+            text = str(getattr(ev, "summary", "") or "").casefold()
+            kind = next((k for w, k in _CAL_ABS if w in text), None)
+            d0, d1 = _day_of(ev.start), _day_of(ev.end)
+            if kind is None or d0 is None:
+                continue
+            allday = not isinstance(ev.start, datetime)
+            end = d1 if d1 and d1 > d0 else d0 + timedelta(days=1)
+            if not allday and d1 and isinstance(ev.end, datetime) and _local(ev.end).time() != datetime.min.time():
+                end = d1 + timedelta(days=1)  # ⏰ Termin mit Uhrzeit: der letzte Tag zählt mit
+            cur = max(d0, first)
+            while cur < min(end, last + timedelta(days=1)):
+                out.setdefault(cur.isoformat(), kind)
+                cur += timedelta(days=1)
+        return out
+
+    def conflicts(self) -> list[dict[str, str]]:
+        """⚠️ Kalender und Stundenzettel passen nicht: Urlaub im Kalender, aber gestempelt – oder Arbeiten im Kalender, aber Urlaub/Krank."""
+        days, today = self.data["days"], self.today().isoformat()
+        ok = set(self.settings.get("conflict_ok") or [])
+        out = []
+        for iso in sorted(self._cal_work | set(self._cal_abs)):
+            cur = days.get(iso)
+            if iso > today or not cur:
+                continue
+            kind = cur.get("kind")
+            if iso in self._cal_abs and kind == "work":
+                c = {"date": iso, "cal": self._cal_abs[iso], "mine": "work"}
+            elif iso in self._cal_work and kind in ("urlaub", "krank", "kind_krank") and not self.settings.get("cal_write"):
+                c = {"date": iso, "cal": "work", "mine": kind}
+            else:
+                continue
+            c["key"] = f"{iso}:{c['cal']}:{c['mine']}"
+            if c["key"] not in ok:
+                out.append(c)
+        return out[-20:]
 
     def cal_write_range(self, first: date, last: date, user: str | None = None) -> int:
         """📤 Alle Arbeitstage von–bis in den Kalender schreiben (läuft im Hintergrund, Tag für Tag)."""
@@ -1047,9 +1189,10 @@ class StundenzettelManager:
             if e and e.get("kind") == "work" and e.get("start") and e.get("end"):
                 h = day_hours(e, st)
                 a = datetime.combine(d0, datetime.min.time(), tz) + timedelta(minutes=minutes(e["start"]))
-                bm = minutes(e["end"])
+                bm = minutes(e.get("end2") or e["end"])  # ✂️ geteilter Tag: Termin bis zum Ende vom zweiten Block
                 b = datetime.combine(d0, datetime.min.time(), tz) + timedelta(minutes=bm if bm >= minutes(e["start"]) else bm + 1440)
-                desc = ((e.get("note") or "").strip() + "\n" + desc_line(h["hours"], h["pause"])).strip()
+                blocks = f"{e['start']}–{e['end']} + {e['start2']}–{e['end2']}" if e.get("start2") else ""
+                desc = ((e.get("note") or "").strip() + ("\n" + blocks if blocks else "") + "\n" + desc_line(h["hours"], h["pause"])).strip()
                 want = {"summary": st.get("event_title") or "Arbeiten", "dtstart": a, "dtend": b, "description": desc}
                 if st.get("location"):
                     want["location"] = st["location"]

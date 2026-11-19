@@ -1,5 +1,5 @@
 {
- "version": "0.2.0-beta.7",
+ "version": "1.0.2-beta.5",
  "settings": {
   "paid_hours": 175.0,
   "paid_until": [],
@@ -49,14 +49,17 @@
   "cal_read": true,
   "cal_write": true,
   "holiday_calendar": "calendar.feiertage_beispiel",
+  "conflict_ok": [],
   "stamp_person": "person.max",
   "stamp_zone": "zone.arbeit",
+  "place_sensor": "",
   "labels": false,
   "log_on": true,
   "mascot": false,
   "veil": false,
   "payslip_hint": true,
   "view": {},
+  "lock_edit": false,
   "lock_all": false
  },
  "days": {
@@ -1051,14 +1054,11 @@
    "pause": 0.5
   },
   "2026-10-20": {
-   "kind": "work",
-   "start": "06:30",
-   "end": "16:00",
-   "source": "calendar",
-   "note": "Musterstadt – Terrasse",
-   "hours": 9.0,
-   "brutto": 9.5,
-   "pause": 0.5
+   "kind": "kind_krank",
+   "source": "card",
+   "hours": 8.0,
+   "brutto": 0.0,
+   "pause": 0.0
   },
   "2026-10-21": {
    "kind": "work",
@@ -1109,13 +1109,15 @@
   },
   "2026-10-28": {
    "kind": "work",
-   "start": "06:30",
-   "end": "15:45",
-   "source": "calendar",
-   "note": "Beispielweg 3 – Carport",
-   "hours": 8.75,
-   "brutto": 9.25,
-   "pause": 0.5
+   "start": "06:00",
+   "end": "11:00",
+   "start2": "13:00",
+   "end2": "17:00",
+   "source": "card",
+   "note": "Musterstadt – Terrasse, nachmittags Zahnarzt",
+   "hours": 9.0,
+   "brutto": 9.0,
+   "pause": 0.0
   },
   "2026-10-29": {
    "kind": "work",
@@ -1127,13 +1129,12 @@
    "pause": 0.5
   },
   "2026-10-30": {
-   "kind": "work",
+   "kind": "urlaub_halb",
    "start": "06:30",
-   "end": "12:00",
-   "source": "stamp",
-   "note": "Lager aufräumen",
-   "hours": 5.25,
-   "brutto": 5.5,
+   "end": "10:30",
+   "source": "card",
+   "hours": 7.75,
+   "brutto": 4.0,
    "pause": 0.25
   },
   "2026-11-02": {
@@ -1165,9 +1166,10 @@
    "adjust": 0.0,
    "old": 12.0,
    "total": 27.5,
-   "urlaub": 0,
+   "urlaub": 0.0,
    "krank": 0,
    "feiertag": 0,
+   "kind_krank": 0,
    "work": 22,
    "long": 18,
    "euro": 0.0,
@@ -1189,9 +1191,10 @@
    "adjust": -10.0,
    "old": 27.5,
    "total": 35.5,
-   "urlaub": 0,
+   "urlaub": 0.0,
    "krank": 1,
    "feiertag": 0,
+   "kind_krank": 0,
    "work": 22,
    "long": 17,
    "euro": 40.0,
@@ -1213,9 +1216,10 @@
    "adjust": 0.0,
    "old": 35.5,
    "total": 34.75,
-   "urlaub": 10,
+   "urlaub": 10.0,
    "krank": 0,
    "feiertag": 0,
+   "kind_krank": 0,
    "work": 11,
    "long": 9,
    "euro": 40.0,
@@ -1237,9 +1241,10 @@
    "adjust": 0.0,
    "old": 34.75,
    "total": 47.75,
-   "urlaub": 0,
+   "urlaub": 0.0,
    "krank": 2,
    "feiertag": 0,
+   "kind_krank": 0,
    "work": 20,
    "long": 17,
    "euro": 0.0,
@@ -1255,17 +1260,18 @@
   },
   {
    "month": "2026-10",
-   "hours": 184.75,
+   "hours": 186.5,
    "paid": 175.0,
-   "diff": 9.75,
+   "diff": 11.5,
    "adjust": 0.0,
    "old": 47.75,
-   "total": 57.5,
-   "urlaub": 0,
+   "total": 59.25,
+   "urlaub": 0.5,
    "krank": 0,
    "feiertag": 0,
-   "work": 22,
-   "long": 17,
+   "kind_krank": 1,
+   "work": 20,
+   "long": 16,
    "euro": 40.0,
    "days": 23,
    "tracked": true,
@@ -1274,8 +1280,8 @@
    "alt": false,
    "calc_old": 47.75,
    "sheet": false,
-   "calc_hours": 184.75,
-   "calc_long": 17
+   "calc_hours": 186.5,
+   "calc_long": 16
   },
   {
    "month": "2026-11",
@@ -1283,11 +1289,12 @@
    "paid": 175.0,
    "diff": -156.25,
    "adjust": 0.0,
-   "old": 57.5,
-   "total": -98.75,
-   "urlaub": 0,
+   "old": 59.25,
+   "total": -97.0,
+   "urlaub": 0.0,
    "krank": 0,
    "feiertag": 0,
+   "kind_krank": 0,
    "work": 2,
    "long": 2,
    "euro": 0.0,
@@ -1296,12 +1303,12 @@
    "note": "",
    "future": false,
    "alt": false,
-   "calc_old": 57.5,
+   "calc_old": 59.25,
    "sheet": false,
    "calc_hours": 18.75,
    "calc_long": 2,
    "paid_today": 25.0,
-   "now": 51.25
+   "now": 53.0
   }
  ],
  "months_meta": {
@@ -1333,11 +1340,33 @@
    "delete"
   ]
  },
+ "holidays": {
+  "2026-10-03": "Tag der Deutschen Einheit",
+  "2026-11-01": "Allerheiligen",
+  "2026-12-25": "1. Weihnachtstag",
+  "2026-12-26": "2. Weihnachtstag",
+  "2027-01-01": "Neujahr",
+  "2027-03-26": "Karfreitag",
+  "2027-03-29": "Ostermontag",
+  "2027-05-01": "Tag der Arbeit",
+  "2027-05-06": "Christi Himmelfahrt",
+  "2027-05-17": "Pfingstmontag",
+  "2027-05-27": "Fronleichnam",
+  "2027-10-03": "Tag der Deutschen Einheit"
+ },
+ "conflicts": [
+  {
+   "date": "2026-10-27",
+   "cal": "urlaub",
+   "mine": "work",
+   "key": "2026-10-27:urlaub:work"
+  }
+ ],
  "summary": {
-  "balance": 51.25,
+  "balance": 53.0,
   "month_hours": 18.75,
   "month_paid": 175.0,
-  "last_month_total": 57.5,
+  "last_month_total": 59.25,
   "vacation_taken": 10,
   "vacation_left": 20,
   "sick_days": 3,

@@ -516,3 +516,88 @@ async def test_zettel_vom_chef_beim_monat(hass: HomeAssistant) -> None:
     assert m.data["months"]["2026-06"]["alt"] == 10.5 and "boss" in m.data["months"]["2026-06"]
     m.apply([{"type": "month_set", "month": "2026-06", "boss": None}])
     assert "boss" not in m.data["months"]["2026-06"]
+
+
+# ---------------------------------------------------------------- 🆕 1.0.2-beta.5
+def test_geteilter_tag():
+    """✂️ 6–11 und 13–17 (dazwischen Arzt): 5 + 4 = 9 Std. – die 2 Std. Lücke sind schon mehr als die Pause."""
+    e = {"kind": "work", "start": "06:00", "end": "11:00", "start2": "13:00", "end2": "17:00"}
+    assert mgr.day_hours(e, ST) == {"hours": 9.0, "brutto": 9.0, "pause": 0.0}
+    # kurze Lücke (15 Min.) → nur der Rest der Pause wird abgezogen: Regel 0,50 − 0,25 Lücke = 0,25
+    e2 = {"kind": "work", "start": "06:30", "end": "10:00", "start2": "10:15", "end2": "15:00"}
+    assert mgr.day_hours(e2, ST)["pause"] == 0.25 and mgr.day_hours(e2, ST)["hours"] == 8.0
+    # nach Uhrzeit beim Gehen: zählt das Ende vom zweiten Block
+    st = {**ST, "pause_by": "ende", "pause_rules": [{"from": 0, "pause": 0.25}, {"from": 12, "pause": 0.5}]}
+    assert mgr.day_hours({"kind": "work", "start": "06:00", "end": "09:00", "start2": "09:00", "end2": "13:00"}, st)["pause"] == 0.5
+
+
+def test_halber_urlaub_und_kind_krank():
+    st = {**ST, "absence_hours": 8}
+    assert mgr.day_hours({"kind": "urlaub_halb"}, st)["hours"] == 4
+    assert mgr.day_hours({"kind": "urlaub_halb", "start": "06:30", "end": "10:30"}, st)["hours"] == 7.75  # 4 + 4 − 0,25 Pause
+    assert mgr.day_hours({"kind": "kind_krank"}, st)["hours"] == 8
+    days = {"2026-10-05": {"kind": "urlaub"}, "2026-10-06": {"kind": "urlaub_halb"}, "2026-10-07": {"kind": "kind_krank"},
+            "2026-10-08": {"kind": "krank"}}
+    okt = mgr.compute_months(days, {}, st, date(2026, 10, 31))[0]
+    assert okt["urlaub"] == 1.5 and okt["kind_krank"] == 1 and okt["krank"] == 1  # 🧒 getrennt gezählt
+
+
+async def test_zeitraum_halber_urlaub_kind_krank(hass: HomeAssistant) -> None:
+    from homeassistant.exceptions import HomeAssistantError
+
+    m = mgr.StundenzettelManager(hass)
+    m.data["days"]["2026-12-25"] = {"kind": "feiertag", "source": "holiday", "note": "1. Weihnachtstag"}
+    dates = ["2026-12-21", "2026-12-22", "2026-12-23", "2026-12-25"]
+    res = m.apply([{"type": "range_set", "kind": "urlaub", "dates": dates, "note": "Ostsee", "op_id": "r1"}])
+    assert res[0]["ok"]
+    assert [m.data["days"][d]["kind"] for d in dates] == ["urlaub", "urlaub", "urlaub", "feiertag"]  # 🎌 bleibt Feiertag
+    assert m.data["days"]["2026-12-21"]["note"] == "Ostsee"
+    assert m.apply([{"type": "range_set", "kind": "pauschal", "dates": dates}])[0]["ok"] is False
+    assert m.apply([{"type": "range_set", "kind": "urlaub", "dates": [f"2027-01-{i:02d}" for i in range(1, 32)] + [f"2027-02-{i:02d}" for i in range(1, 29)] + ["2027-03-01", "2027-03-02", "2027-03-03", "2027-03-04"]}])[0]["ok"] is False
+    # ✂️ geteilter Tag speichern + Prüfungen
+    assert m.apply([{"type": "day_set", "date": "2026-11-03", "kind": "work", "start": "06:00", "end": "11:00", "start2": "13:00", "end2": "17:00"}])[0]["ok"]
+    assert m.snapshot()["days"]["2026-11-03"]["hours"] == 9.0
+    for bad in ({"start2": "10:00", "end2": "12:00"}, {"start2": "13:00"}, {"start2": "14:00", "end2": "13:00"}):
+        r = m.apply([{"type": "day_set", "date": "2026-11-02", "kind": "work", "start": "06:00", "end": "11:00", **bad}])
+        assert r[0]["ok"] is False, bad
+    # ½ Urlaub mit gearbeiteter Hälfte, Kind krank als Sensor-Wert
+    assert m.apply([{"type": "day_set", "date": "2026-11-02", "kind": "urlaub_halb", "start": "06:30", "end": "10:30"}])[0]["ok"]
+    assert m.apply([{"type": "day_set", "date": "2026-11-02", "kind": "urlaub_halb", "start": "06:30"}])[0]["ok"] is False
+    m.apply([{"type": "day_set", "date": "2026-11-04", "kind": "kind_krank"}])
+    s = m.summary()
+    assert s["child_sick_days"] == 1 and s["vacation_taken"] == 3.5  # 3 Tage Dezember + ½ im November
+    with pytest.raises(HomeAssistantError):
+        m._clean_setting("pause_rules", [{"from": "x"}])
+
+
+class FakeCalAllDay(FakeCal):
+    """📅 Pappkalender, der auch ganztägige Termine (Datum statt Uhrzeit) kann."""
+
+    async def async_get_events(self, hass, start, end):
+        return [e for e in self.events if start.date() <= mgr._day_of(e.start) < end.date()]
+
+
+async def test_kalender_konflikt_und_feiertage_voraus(hass: HomeAssistant, monkeypatch) -> None:
+    tz = dt_util.get_default_time_zone()
+    cal, hol = FakeCalAllDay(), FakeCalAllDay()
+    monkeypatch.setattr(mgr, "_cal_entity", lambda hass, eid: hol if eid == "calendar.feiertage" else cal)
+    m = await _setup(hass)
+    at = lambda iso, h: datetime.fromisoformat(f"{iso}T{h}").replace(tzinfo=tz)  # noqa: E731
+    # Kalender: 02.11. „Urlaub“ (ganztägig), 03.11. „Arbeiten“
+    cal.events = [SimpleNamespace(uid="a", recurrence_id=None, start=date(2026, 11, 2), end=date(2026, 11, 3), summary="Urlaub", description=None),
+                  SimpleNamespace(uid="b", recurrence_id=None, start=at("2026-11-03", "06:30"), end=at("2026-11-03", "16:15"), summary="Arbeiten", description=None)]
+    hol.events = [SimpleNamespace(uid="h", recurrence_id=None, start=date(2027, 5, 6), end=date(2027, 5, 7), summary="Christi Himmelfahrt", description=None)]
+    m.apply([{"type": "set", "key": "calendar", "value": "calendar.test"}, {"type": "set", "key": "holiday_calendar", "value": "calendar.feiertage"}])
+    m.apply([{"type": "day_set", "date": "2026-11-02", "kind": "work", "start": "06:30", "end": "16:15"},
+             {"type": "day_set", "date": "2026-11-03", "kind": "urlaub"}])
+    await m.async_sync()
+    await hass.async_block_till_done()
+    keys = {c["key"] for c in m.snapshot()["conflicts"]}
+    assert keys == {"2026-11-02:urlaub:work", "2026-11-03:work:urlaub"}
+    assert m.snapshot()["holidays"].get("2027-05-06") == "Christi Himmelfahrt"  # 🎌 auch weit voraus
+    m.apply([{"type": "set", "key": "conflict_ok", "value": ["2026-11-02:urlaub:work", "quatsch"]}])
+    assert m.settings["conflict_ok"] == ["2026-11-02:urlaub:work"]
+    assert [c["key"] for c in m.conflicts()] == ["2026-11-03:work:urlaub"]
+    # Tag korrigiert → Hinweis ist sofort weg (ohne neuen Abgleich)
+    m.apply([{"type": "day_set", "date": "2026-11-03", "kind": "work", "start": "06:30", "end": "16:15"}])
+    assert m.conflicts() == []
