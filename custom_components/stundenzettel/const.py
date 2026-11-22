@@ -27,12 +27,16 @@ SIGNAL_UPDATE = f"{DOMAIN}_update"
 # 📅 Was für ein Tag war das?
 #   work     = gearbeitet (von–bis, Pause wird abgezogen)
 #   urlaub   = Urlaub (zählt „Stunden pro Abwesenheitstag“)
+#   urlaub_halb = ½ Urlaub (zählt die Hälfte + was du an dem Tag noch gearbeitet hast, ½ Urlaubstag)
 #   krank    = krank (zählt genauso)
+#   kind_krank = Kind krank (zählt wie krank, wird aber getrennt gezählt – fürs Kinderkrankengeld)
 #   feiertag = Feiertag (zählt genauso)
 #   frei     = frei / Wochenende / Überstunden abgebummelt (zählt 0)
 #   pauschal = extra bezahlt (z. B. Samstag mit fester Summe) – zählt NICHT zu den Stunden
-KINDS = ("work", "urlaub", "krank", "feiertag", "frei", "pauschal")
-ABSENCE_KINDS = ("urlaub", "krank", "feiertag")
+KINDS = ("work", "urlaub", "urlaub_halb", "krank", "kind_krank", "feiertag", "frei", "pauschal")
+ABSENCE_KINDS = ("urlaub", "urlaub_halb", "krank", "kind_krank", "feiertag")
+RANGE_KINDS = ("urlaub", "krank", "kind_krank", "frei")  # 🏖️ diese Arten gehen auch „von–bis“ in einem Rutsch
+MAX_RANGE_DAYS = 62   # 🏖️ höchstens so viele Tage auf einmal
 
 DEFAULT_SETTINGS: dict = {
     # ⏱️ Arbeitszeit
@@ -60,9 +64,11 @@ DEFAULT_SETTINGS: dict = {
     "cal_read": True,           # 📥 Termine „Arbeiten“ in die Liste übernehmen
     "cal_write": False,         # 📤 Änderungen aus der Karte in den Kalender schreiben
     "holiday_calendar": "",     # 🎌 z. B. calendar.feiertage_in_deutschland → Feiertage automatisch
+    "conflict_ok": [],          # ⚠️ Kalender-Konflikte, die du mit „Passt so“ weggeklickt hast („2026-11-10:urlaub:work“)
     # 📍 Stempeln per Handy
     "stamp_person": "",         # z. B. person.max
     "stamp_zone": "",           # z. B. zone.arbeit
+    "place_sensor": "",         # 📍 Ort vom Handy: Sensor der HA-App, z. B. sensor.handy_geocoded_location (Attribut locality = Ort)
     # 👁️ Ansicht
     "labels": False,
     "log_on": True,
@@ -76,6 +82,7 @@ DEFAULT_SETTINGS: dict = {
 }
 
 READ_BACK_DAYS = 40   # 📥 so viele Tage schaut der Kalender-Abgleich zurück
+HOLIDAY_AHEAD_DAYS = 400  # 🎌 so weit schaut die Karte nach Feiertagen voraus (Urlaubsplaner & Brückentage)
 SYNC_MINUTES = 15     # 🔁 alle 15 Minuten abgleichen
 MAX_LOG = 300
 MAX_SEEN_OPS = 3000

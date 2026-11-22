@@ -22,16 +22,21 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 - ⏱️ Two fields „Kommen“/„Gehen“ (arrive/leave) under Today – tap, change the time, done. ⏱️ clocks in/out now, or automatically when your phone enters/leaves a zone. Rounding to 5 or 15 minutes.
 - ⚖️ Overtime balance per month: total − paid hours = plus/minus, previous balance + plus/minus + correction = new balance. Current month counts the target only up to today. 💶 Enter the carried-over balance from your payslip each month – the card continues with your boss's number and shows the difference.
 - 📊 Statistics: overtime curve, hours per month with target line, weekdays, vacation & sick per year, records – for one year or all years.
-- 🏖️ Vacation, sick, holiday, day off, flat rate days. Vacation left and sick days per year.
+- 🏖️ Vacation, ½ vacation day, sick, child sick, holiday, day off, flat rate days. Vacation left and sick days per year. ½ vacation counts half (plus what you still worked that day), child sick is counted separately (for the German child sickness benefit).
+- 📆 Vacation as a period: enter “vacation 3rd–14th” in one go – weekends, days off and holidays are skipped. Also for sick, child sick and day off.
+- 🗓️ Vacation planner with bridge days: “take the 2nd–5th and 12 days are left” (across New Year for both years) plus tips where 1 vacation day gets you 4 days off, from your holiday calendar.
+- ✂️ Split day: two time blocks on one day (e.g. 6–11 and 13–17 with the doctor in between) – the gap already counts as a break.
+- 🔍 Note search across all days: “When was I in Lünen?” – tap a hit to jump to the day.
+- ⚠️ Calendar conflict: if your calendar says vacation/sick but you clocked in (or “Arbeiten” in the calendar but vacation in the card), Today shows a note – “View” or “That's fine”.
 - ☕ Break rules by duration or by the time you leave (e.g. until 12:00 → 0.25, later → 0.50), 💶 paid hours per month (with history like „until Dec 2019: 160“), corrections, 🎌 holidays from a holiday calendar.
 - 📄 Compare your employer's timesheet: pick the „Zeitsaldenliste“ PDF in a month – where their hours differ they appear left of yours (green = employer has more, red = fewer), plus their balance; „Saldo Vormonat“ can be taken over as carried-over hours with one tap. Works only with this timesheet type (PDF from a computer, no photos).
 - ⓘ Tap-help: small ⓘ next to the fields in ⚙️ instead of long texts.
 - 📥 Import an old sheet by pasting text. From Google Sheets/Excel the monthly values come along too (total, carried over, balance, 8 hours and more), otherwise „set the balance“ to the value of the paper sheet.
 - 📤 Print & share month or year as PDF (WhatsApp, mail, iPhone printing), print or as text – with ✍️ signature lines for you and your employer at the bottom, 📄 CSV, 💾 backup, 📜 log, 📌 sidebar.
-- 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
+- 📱 Offline app for your phone (⚙️ → App & info → Offline app): clock in and enter days without signal, sent later with the original time – on Android (Chrome) even in the background when the app is closed. Home-screen shortcuts „Kommen“/„Gehen“, fingerprint lock.
 - 📅 Flip through days in Today: ‹ › at the top of the hours tile or swipe.
 - 👥 Several timesheets: for a second person with their own employer simply add the integration again (with its own name) – own entries, own PIN, own sensors. In the card editor you pick which timesheet the card shows.
-- 📝 Quick picker for notes: your places and activities as buttons (learned from your notes), each place on a new line.
+- 📝 Quick picker for notes: your 6 most used places and 6 activities as buttons (learned from your notes), each place on a new line. 📍 **Place from phone**: in ⚙️ → Clock in by phone pick your HA app's “… Geocoded location” sensor – the town you are in (e.g. Lünen) is shown first and preselected.
 - 🔒 PIN lock for ⚙️, for changes in the month and to older days (today and yesterday stay free) or the whole card (checked offline too, relocks after 10 minutes). Forgot it? Devices & services → Stundenzettel → Configure → Reset PIN.
 - ⏰ Mascot: a little alarm clock with moods and seasonal costumes (off by default). 🙈 Veil overtime, ↩️ undo, 🧘 calm mode, hide tabs.
 
@@ -46,7 +51,7 @@ Install via HACS (from Home Assistant 2026.11: Settings > Marketplace).
 
 ## 🤖 Automations
 
-Sensors: `sensor.stundenzettel_ueberstunden`, `sensor.stundenzettel_stunden_diesen_monat`, `sensor.stundenzettel_resturlaub`, `sensor.stundenzettel_kranktage_dieses_jahr`, `binary_sensor.stundenzettel_eingestempelt`.
+Sensors: `sensor.stundenzettel_ueberstunden`, `sensor.stundenzettel_stunden_diesen_monat`, `sensor.stundenzettel_resturlaub`, `sensor.stundenzettel_kranktage_dieses_jahr`, `sensor.stundenzettel_kind_krank_dieses_jahr` (child sick days), `binary_sensor.stundenzettel_eingestempelt`.
 Actions: `stundenzettel.kommen` (clock in), `stundenzettel.gehen` (clock out), `stundenzettel.tag_eintragen` (record a day), `stundenzettel.abgleichen` (sync), `stundenzettel.daten_abrufen` (get data). With several timesheets pick the one you mean in the **Timesheet** field (empty = the first); the sensors of a second timesheet are named after it, e.g. `sensor.stundenzettel_erika_ueberstunden`.
 
 **⏳ When will the next beta come?** To be honest: I build these integrations with the help of Claude (AI). How fast new betas come depends on how much Claude quota (tokens) is available. Once it is used up, I have to wait until it is refilled – no tokens, no betas. 😅 Thank you for your patience and understanding! 🙏

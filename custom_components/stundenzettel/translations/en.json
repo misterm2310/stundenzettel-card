@@ -38,7 +38,9 @@
       "options": {
         "work": "Work",
         "urlaub": "Vacation",
+        "urlaub_halb": "½ vacation day",
         "krank": "Sick",
+        "kind_krank": "Child sick",
         "feiertag": "Holiday",
         "frei": "Day off",
         "pauschal": "Flat rate"
@@ -80,7 +82,7 @@
         },
         "art": {
           "name": "Type",
-          "description": "Work, vacation, sick, holiday, off or flat rate"
+          "description": "Work, vacation, ½ vacation day, sick, child sick, holiday, off or flat rate"
         },
         "von": {
           "name": "From",

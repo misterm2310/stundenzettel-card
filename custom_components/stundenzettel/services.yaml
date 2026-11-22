@@ -26,7 +26,7 @@ tag_eintragen:
       selector:
         select:
           translation_key: art
-          options: [work, urlaub, krank, feiertag, frei, pauschal]
+          options: [work, urlaub, urlaub_halb, krank, kind_krank, feiertag, frei, pauschal]
     von:
       example: "06:30"
       selector:

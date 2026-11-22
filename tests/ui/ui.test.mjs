@@ -198,6 +198,87 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(!errors.length, "keine Fehler in der Konsole" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
+{ // 🆕 1.0.2-beta.5: Kalender-Konflikt, geteilter Tag, ½ Urlaub, Kind krank, Notizen-Suche, Urlaubsplaner
+  const { page, errors } = await open();
+  const txt = async () => card(page).locator("ha-card").innerText();
+  const ops = () => page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  const cbox = await card(page).locator(".conflictbox").innerText();
+  ok(/Kalender und Stundenzettel passen nicht/.test(cbox) && /27\.10\./.test(cbox) && /Urlaub/.test(cbox) && /Arbeit/.test(cbox), "⚠️ Heute: Hinweis, wenn im Kalender Urlaub steht, aber gestempelt wurde");
+  await shot(page, "11-kalender-konflikt");
+  await click(page, '[data-a="cfgo"]');
+  ok(await card(page).locator('form[data-form="day"][data-d="2026-10-27"]').count() === 1 && /Oktober 2026/.test(await txt()), "⚠️ „Ansehen“ öffnet den Tag im Monat");
+  ok(await card(page).locator('.dayrow.conflict').count() === 0, "(Tag ist offen – Formular statt Zeile)");
+  await click(page, '[data-a="close"]');
+  ok(/Kalender: Urlaub/.test(await card(page).locator('.dayrow[data-d="2026-10-27"]').innerText()), "⚠️ Monat: Tag mit Konflikt hat das Schild „⚠️ Kalender: Urlaub“");
+  await click(page, '[data-a="tab"][data-v="heute"]');
+  await click(page, '[data-a="cfok"]');
+  await page.waitForTimeout(150);
+  ok((await ops()).some((o) => o.type === "set" && o.key === "conflict_ok" && o.value.includes("2026-10-27:urlaub:work")) && await card(page).locator(".conflictbox").count() === 0, "⚠️ „Passt so“ blendet den Hinweis aus (für alle Geräte gemerkt)");
+  // ✂️ geteilter Tag
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await page.evaluate(() => { const c = document.getElementById("c1"); c._month = "2026-10"; c._redraw(); });
+  const split = await card(page).locator('.dayrow[data-d="2026-10-28"]').innerText();
+  ok(/06:00–11:00 \+ 13:00–17:00/.test(split) && /9,00/.test(split), `✂️ Geteilter Tag: beide Blöcke, 9,00 Std. („${split.replace(/\s+/g, " ").trim()}“)`);
+  await click(page, '.dayrow[data-d="2026-10-29"]');
+  await click(page, '[data-a="fsplit"][data-v="1"]');
+  const f = card(page).locator('form[data-form="day"]');
+  ok(await f.locator('input[name="start2"]').count() === 1, "✂️ „Zweiter Zeitblock“ zeigt Von/Bis für Block 2");
+  await f.locator('input[name="start"]').fill("06:00"); await f.locator('input[name="end"]').fill("11:00");
+  await f.locator('input[name="start2"]').fill("13:00"); await f.locator('input[name="end2"]').fill("17:00");
+  await shot(page, "12-geteilter-tag");
+  await click(page, 'form[data-form="day"] button[type="submit"]');
+  await page.waitForTimeout(150);
+  ok((await ops()).some((o) => o.type === "day_set" && o.date === "2026-10-29" && o.start2 === "13:00" && o.end2 === "17:00"), "✂️ Speichern schickt beide Blöcke");
+  const half = await card(page).locator('.dayrow[data-d="2026-10-30"]').innerText();
+  ok(/½ Urlaub/.test(half) && /7,75/.test(half), `½ Urlaub mit gearbeiteter Hälfte: 4 + 3,75 = 7,75 („${half.replace(/\s+/g, " ").trim()}“)`);
+  const chips = await card(page).locator(".zchips").innerText();
+  ok(/Kind krank/.test(chips) && /0,5\s*Urlaub/.test(chips), `🧒 Kind krank getrennt, ½ Urlaub zählt halb („${chips.replace(/\s+/g, " ")}“)`);
+  // 🔍 Notizen-Suche
+  await click(page, '[data-a="search"]');
+  await card(page).locator(".nsearch").fill("zahnarzt");
+  await page.waitForTimeout(100);
+  const res = await card(page).locator(".nsres").innerText();
+  ok(/1 Tag/.test(res) && await card(page).locator(".nsres mark").count() >= 1 && await card(page).locator(".nsearch").evaluate((el) => el.getRootNode().activeElement === el), "🔍 Notizen-Suche: Treffer sofort beim Tippen, Tastatur bleibt");
+  await card(page).locator(".nsearch").fill("Musterstadt");
+  await page.waitForTimeout(100);
+  ok(await card(page).locator(".nsres .dayrow").count() >= 5, "🔍 Viele Treffer, das Neueste oben");
+  await shot(page, "13-notizen-suche");
+  await card(page).locator(".nsres .dayrow").first().click(); await page.waitForTimeout(150);
+  ok(/Monat|Oktober|November/.test(await txt()) && await card(page).locator(".dayrow .notetext").count() === 1, "🔍 Treffer antippen springt zum Tag und zeigt die Notiz");
+  // 🏖️ Urlaubsplaner
+  await click(page, '[data-a="tab"][data-v="heute"]');
+  await click(page, '.quick [data-a="vplan"], [data-a="vplan"]');
+  ok(/Urlaub planen/.test(await txt()), "🏖️ „Mehrere Tage“ öffnet den Urlaubsplaner");
+  const vp = card(page).locator('form[data-form="vplan"]');
+  await vp.locator('input[name="from"]').fill("2026-12-21"); await vp.locator('input[name="from"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await vp.locator('input[name="to"]').fill("2027-01-08"); await vp.locator('input[name="to"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  const pt = await card(page).locator(".pagehost").innerText();
+  ok(/13 Tage/.test(pt) && /1\. Weihnachtstag/.test(pt) && /Neujahr/.test(pt) && /Wochenende/.test(pt), "🏖️ 21.12.–08.01.: 13 Arbeitstage, Wochenenden und Feiertage übersprungen");
+  ok(/für 2026/.test(pt) && /für 2027/.test(pt), "🏖️ Über Silvester: Resturlaub für beide Jahre");
+  const br = await card(page).locator('[data-a="vpick"]').allInnerTexts();
+  ok(br.some((t) => /07\.05\./.test(t) && /4 Tage frei/.test(t)) && br.some((t) => /28\.05\./.test(t)), `🌉 Brückentage: Fr nach Himmelfahrt und Fronleichnam (${br.length} Tipps)`);
+  await shot(page, "14-urlaubsplaner");
+  await card(page).locator('[data-a="vpick"]').filter({ hasText: "07.05." }).first().click(); await page.waitForTimeout(150);
+  ok(/1 Tag/.test(await card(page).locator(".vplan .hero").innerText()), "🌉 Brückentag antippen trägt ihn oben ein");
+  await vp.locator('input[name="from"]').fill("2026-12-21"); await vp.locator('input[name="from"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await vp.locator('input[name="to"]').fill("2026-12-31"); await vp.locator('input[name="to"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await click(page, 'form[data-form="vplan"] button[type="submit"]');
+  await page.waitForTimeout(150);
+  const rs = (await ops()).find((o) => o.type === "range_set");
+  ok(rs && rs.kind === "urlaub" && rs.dates.length === 8 && !rs.dates.includes("2026-12-25") && !rs.dates.includes("2026-12-26"), `🏖️ Eintragen schickt einen Zeitraum ohne Wochenenden/Feiertage (${rs?.dates.length} Tage)`);
+  ok(await card(page).locator(".undobar").count() === 1, "🏖️ Danach 8 Sekunden „Rückgängig“");
+  // 📱 Offline: Zeitraum wirkt sofort (Postausgang)
+  await page.evaluate(() => window.setOnline(false));
+  await click(page, '[data-a="tab"][data-v="heute"]');
+  await click(page, '[data-a="vplan"]');
+  await vp.locator('input[name="from"]').fill("2027-02-01"); await vp.locator('input[name="from"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await vp.locator('input[name="to"]').fill("2027-02-05"); await vp.locator('input[name="to"]').dispatchEvent("change"); await page.waitForTimeout(120);
+  await click(page, 'form[data-form="vplan"] button[type="submit"]');
+  ok(await card(page).evaluate((el) => el._d.days["2027-02-03"]?.kind === "urlaub" && el._d.days["2027-02-03"]?.waiting), "📴 Ohne Netz: Zeitraum landet im Postausgang und wirkt sofort");
+  await page.evaluate(() => window.setOnline(true)); await page.waitForTimeout(300);
+  ok(!errors.length, "1.0.2-beta.5: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
 { // 🔒 PIN fürs Zahnrad
   const { page, errors } = await open("#pin");
   await click(page, '[data-a="tab"][data-v="set"]');
@@ -260,6 +341,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '.dayrow[data-a="open"]');
   const chips = await card(page).locator('[data-a="nplace"]').count();
   ok(chips >= 2 && await card(page).locator('[data-a="nact"]').count() >= 2, `Notiz: Schnellwähler mit Orten (${chips}) und Tätigkeiten`);
+  { const acts = await card(page).locator('[data-a="nact"]').count(); ok(chips <= 6 && acts <= 6, `Schnellauswahl schlank: höchstens 6 Orte (${chips}) und 6 Tätigkeiten (${acts})`); }
   const ta = card(page).locator('textarea[name="note"]');
   await ta.fill("");
   const p1 = await card(page).locator('[data-a="nplace"]').first().getAttribute("data-v");
@@ -271,6 +353,41 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(v.split("\n").length === 2 && v.startsWith(p1 + " - ") && /^.+ - .+$/.test(v.split("\n")[0]), `Notiz: jeder Ort in eigener Zeile, Tätigkeit dahinter („${v.replace(/\n/g, " ⏎ ")}“)`);
   await shot(page, "3b-notiz-schnellwahl");
   ok(!errors.length, "Blättern & Schnellwähler: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+
+// 📍 Ort vom Handy: Sensor der HA-App (locality) → Ort steht vorne und ist vorgewählt
+{
+  const { page, errors } = await open();
+  await click(page, '[data-a="tab"][data-v="set"]');
+  await click(page, '[data-a="setgrp"][data-v="Kalender & Stempeln"]');
+  await click(page, '[data-a="sheet"][data-v="stamp"]');
+  const opt = await card(page).locator('select[data-v="place_sensor"] option').allTextContents();
+  ok(opt.length === 2 && /geocoded_location/.test(opt[1]), `⚙️ Ort vom Handy: nur passende Sensoren zur Auswahl (${opt.length - 1})`);
+  await card(page).locator('select[data-v="place_sensor"]').selectOption("sensor.handy_geocoded_location"); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => window.fake.data.settings.place_sensor) === "sensor.handy_geocoded_location", "⚙️ Ort vom Handy gespeichert");
+  await shot(page, "5e-ort-vom-handy");
+  ok(!errors.length, "⚙️ Ort vom Handy: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{
+  const { page, errors } = await open();
+  await page.evaluate(() => { document.getElementById("c1")._d.settings.place_sensor = "sensor.handy_geocoded_location"; });
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-a="open"]');
+  const first = card(page).locator('[data-a="nplace"]').first();
+  ok(await first.getAttribute("data-v") === "Neustadt" && /\bon\b/.test(await first.getAttribute("class")), "📍 Ort vom Handy steht vorne und ist vorgewählt (auch wenn er in keiner Notiz vorkommt)");
+  ok(await card(page).locator('[data-a="gpsmark"]').count() === 0, "📍 „Hier merken“ ist weg");
+  const ta = card(page).locator('textarea[name="note"]');
+  await ta.fill(""); await click(page, '[data-a="nplace"]');
+  ok((await ta.inputValue()).startsWith("Neustadt - "), "📍 Antippen schreibt „Neustadt - “ in die Notiz");
+  await shot(page, "3c-notiz-ort-vom-handy");
+  // 📱 Offline-App: kennt keine Sensoren – der Ort kommt von Home Assistant mit den Daten (place_now)
+  await click(page, '[data-a="close"]');
+  await page.evaluate(() => { const c = document.getElementById("c1"); c._hass = { ...c._hass, states: {} }; c._d.place_now = "Lünen"; });
+  await click(page, '.dayrow[data-a="open"]');
+  ok(await card(page).locator('[data-a="nplace"]').first().getAttribute("data-v") === "Lünen", "📱 Offline-App: Ort kommt mit den Daten (ohne Sensoren)");
+  ok(!errors.length, "Ort vom Handy: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
 { // 🔒 ganze Karte gesperrt
