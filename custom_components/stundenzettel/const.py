@@ -69,6 +69,9 @@ DEFAULT_SETTINGS: dict = {
     "stamp_person": "",         # z. B. person.max
     "stamp_zone": "",           # z. B. zone.arbeit
     "place_sensor": "",         # 📍 Ort vom Handy: Sensor der HA-App, z. B. sensor.handy_geocoded_location (Attribut locality = Ort)
+    # 📝 Notiz-Leiste
+    "note_ph_on": True,         # Platzhalter ersetzen: steht nur dieses Wort in der Notiz, ersetzt der erste Ort es
+    "note_ph": "Baustelle",     # das Platzhalter-Wort (z. B. aus der Kalender-Beschreibung), mehrere mit Komma
     # 👁️ Ansicht
     "labels": False,
     "log_on": True,

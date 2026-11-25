@@ -323,8 +323,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   for (const k of ["1", "2", "3", "4", "✔"]) await click(page, `[data-a="pkey"][data-v="${k}"]`);
   await page.waitForTimeout(150);
   ok(await card(page).locator(".pinpad").count() === 0 && n0 === 0, "Richtige PIN: Tastenfeld weg, vorher wurde nichts geschickt");
-  await click(page, '.dayrow[data-a="open"]');
-  ok(await card(page).locator('form[data-form="day"]').count() === 1, "Nach der PIN: Tag im Monat lässt sich ändern");
+  ok(await card(page).locator('form[data-form="day"]').count() === 1, "🔒 Nach der PIN geht der angetippte Tag sofort auf (nicht nochmal tippen)");
   ok(!errors.length, "Ändern nur mit PIN: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
@@ -353,6 +352,76 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(v.split("\n").length === 2 && v.startsWith(p1 + " - ") && /^.+ - .+$/.test(v.split("\n")[0]), `Notiz: jeder Ort in eigener Zeile, Tätigkeit dahinter („${v.replace(/\n/g, " ⏎ ")}“)`);
   await shot(page, "3b-notiz-schnellwahl");
   ok(!errors.length, "Blättern & Schnellwähler: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+
+{ // 📝 1.0.3: Notiz-Leiste unter Kommen/Gehen, Platzhalter, Art-Auswahl aufgeräumt, „Bis“ im Formular, 8,00
+  const { page, errors } = await open("");
+  const ops = async () => page.evaluate(() => fake.msgs.filter((m) => m.type === "stundenzettel/apply").flatMap((m) => m.ops));
+  ok(await card(page).locator(".notebar").count() === 1 && await card(page).locator('.notebar [data-a="nbplace"]').count() >= 2, "📝 Heute (eingestempelt): Notiz-Leiste mit Orten unter Kommen/Gehen");
+  await page.evaluate(() => { const c = document.getElementById("c1"); c._d.stamp = { ...c._d.stamp, note: "Baustelle" }; c._redraw(); });
+  const p1 = await card(page).locator('.notebar [data-a="nbplace"]').first().getAttribute("data-v");
+  await click(page, '.notebar [data-a="nbplace"]'); await page.waitForTimeout(150);
+  let ns = (await ops()).filter((o) => o.type === "note_set").pop();
+  ok(ns && ns.date === "2026-11-04" && ns.note === `${p1} - `, `📝 1 Tipp auf einen Ort speichert sofort – „Baustelle“ wird ersetzt („${ns?.note}“)`);
+  const a1 = await card(page).locator('.notebar [data-a="nbact"]').first().getAttribute("data-v");
+  await click(page, '.notebar [data-a="nbact"]'); await page.waitForTimeout(150);
+  ns = (await ops()).filter((o) => o.type === "note_set").pop();
+  ok(ns?.note === `${p1} - ${a1}`, `📝 Tätigkeit hängt sich an („${ns?.note}“)`);
+  ok(await card(page).locator(".undobar").count() === 1 && /Rückgängig/.test(await card(page).locator(".undobar").innerText()), "📝 Danach „↩️ Rückgängig“");
+  ok((await card(page).locator(".notebar .notetext").innerText()).includes(`${p1} - ${a1}`), "📝 Leiste zeigt die neue Notiz");
+  await shot(page, "15-notiz-leiste");
+  await click(page, '.notebar [data-a="nbplace"] >> nth=1'); await page.waitForTimeout(150);
+  ns = (await ops()).filter((o) => o.type === "note_set").pop();
+  ok(ns?.note.split("\n").length === 2, "📝 Schon Text drin → zweiter Ort kommt in eine neue Zeile");
+  await click(page, '[data-a="undo"]'); await page.waitForTimeout(150);
+  ns = (await ops()).filter((o) => o.type === "note_set").pop();
+  ok(ns?.note === `${p1} - ${a1}`, "↩️ Rückgängig nimmt die letzte Zeile wieder raus");
+  // 📴 ohne Netz: wirkt sofort am Stempel
+  await page.evaluate(() => window.setOnline(false));
+  await click(page, '.notebar [data-a="nbact"] >> nth=1');
+  ok(await card(page).evaluate((el) => /,/.test(el._d.stamp?.note || "")), "📴 Ohne Netz: Notiz-Leiste wirkt sofort (Postausgang)");
+  await page.evaluate(() => window.setOnline(true)); await page.waitForTimeout(300);
+  // 🧹 Art-Auswahl + Notizfeld je nach Art
+  await click(page, '[data-a="tab"][data-v="monat"]');
+  await click(page, '.dayrow[data-d="2026-11-02"]');
+  const kinds = await card(page).locator('form[data-form="day"] .kinds button').allInnerTexts();
+  ok(kinds.length === 6 && !kinds.some((t) => /½|Kind/.test(t)), `🧹 Art-Auswahl: 6 Arten, ohne ½ Urlaub und Kind krank (${kinds.join(", ")})`);
+  ok(/Notiz \(z\. B\. Baustelle\)/.test(await card(page).locator('form[data-form="day"]').innerText()) && await card(page).locator('[data-a="nplace"]').count() > 0, "📝 Arbeit: „Notiz (z. B. Baustelle)“ mit Orten");
+  await click(page, '[data-a="fkind"][data-v="krank"]');
+  const fk = await card(page).locator('form[data-form="day"]').innerText();
+  ok(!/z\. B\. Baustelle/.test(fk) && await card(page).locator('[data-a="nplace"]').count() === 0, "📝 Krank: nur „Notiz“, keine Orte/Tätigkeiten");
+  ok(await card(page).locator('.subkind [data-v="kind_krank"]').count() === 1 && await card(page).locator('input[name="to"]').count() === 1, "🤒 Krank: „Ich | Kind“ und „Bis“-Feld");
+  await click(page, '[data-a="ftoq"]:has-text("übermorgen")');
+  ok(/3 Tage/.test(await card(page).locator('form[data-form="day"]').innerText()), "📆 „bis übermorgen“ → 3 Tage");
+  await shot(page, "16-krank-mehrere-tage");
+  await click(page, 'form[data-form="day"] button[type="submit"]'); await page.waitForTimeout(150);
+  const rs = (await ops()).filter((o) => o.type === "range_set").pop();
+  ok(rs && rs.kind === "krank" && rs.dates.join() === "2026-11-02,2026-11-03,2026-11-04", `📆 Speichern trägt alle Tage auf einmal ein (${rs?.dates.join(", ")})`);
+  await click(page, '.dayrow[data-d="2026-11-05"]');
+  await click(page, '[data-a="fkind"][data-v="urlaub"]');
+  ok(await card(page).locator('.subkind [data-v="urlaub_halb"]').count() === 1 && await card(page).locator('form[data-form="day"] [data-a="vplan"]').count() === 1, "🏖️ Urlaub: „Ganzer Tag | ½ Tag“ und „Urlaub planen“");
+  await click(page, '.subkind [data-v="urlaub_halb"]');
+  ok(await card(page).locator('input[name="start"]').count() === 1 && await card(page).locator('.kinds button.on').innerText().then((t) => /Urlaub/.test(t)), "🏖️ ½ Tag: „Gearbeitet von/bis“, Urlaub bleibt markiert");
+  await shot(page, "17-urlaub-halber-tag");
+  await click(page, '[data-a="close"]');
+  // 🔢 8,00 statt 8
+  await page.evaluate(() => { const c = document.getElementById("c1"); c._d.days["2026-11-06"] = { kind: "krank", source: "card", hours: 8 }; c._redraw(); });
+  await click(page, '.dayrow[data-d="2026-11-06"]');
+  ok(await card(page).locator('input[name="hours"]').inputValue() === "8,00", "🔢 „Zählt Stunden“ zeigt 8,00");
+  await click(page, '[data-a="close"]');
+  // 🗓️ Jahr ohne „Urlaub planen“
+  await click(page, '[data-a="tab"][data-v="jahr"]');
+  ok(await card(page).locator('[data-a="vplan"]').count() === 0, "🗓️ Reiter Jahr: kein „Urlaub planen“ mehr");
+  // ⚙️ Notizen: Schalter + Wort
+  await click(page, '[data-a="tab"][data-v="set"]');
+  await click(page, '[data-a="setgrp"][data-v="Arbeitszeit"]');
+  await click(page, '[data-a="sheet"][data-v="notes"]');
+  ok(await card(page).locator('input[data-v="note_ph_on"]').isChecked() && await card(page).locator('input[data-v="note_ph"]').inputValue() === "Baustelle", "⚙️ Notizen: Platzhalter-Schalter an, Wort „Baustelle“");
+  await shot(page, "18-einstellungen-notizen");
+  await card(page).locator('input[data-v="note_ph"]').fill("Montage"); await card(page).locator('input[data-v="note_ph"]').dispatchEvent("change"); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => window.fake.data.settings.note_ph) === "Montage", "⚙️ Eigenes Platzhalter-Wort gespeichert");
+  ok(!errors.length, "1.0.3: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
 

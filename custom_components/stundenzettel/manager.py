@@ -842,6 +842,30 @@ class StundenzettelManager:
             if days.pop(iso, None) is not None:
                 self._log(user, f"🗑️ {iso} gelöscht")
                 self._dirty_cal.add(iso)
+        elif t == "note_set":
+            # 📝 Notiz-Leiste: nur die Notiz eines Tages ändern – Uhrzeiten bleiben, wie sie sind
+            iso = str(op.get("date", ""))
+            if not _DATE_RE.match(iso):
+                raise HomeAssistantError("Datum fehlt (so geht's: 2026-11-04)")
+            note = str(op.get("note") or "").strip()[:500]
+            e = days.get(iso)
+            stamp = self.data.get("stamp")
+            if e:
+                if note:
+                    e["note"] = note
+                else:
+                    e.pop("note", None)
+                if e.get("source") == "calendar":
+                    e["note_own"] = True  # ✋ Kalender liefert weiter die Zeiten, die Notiz gehört ab jetzt dir
+                self._dirty_cal.add(iso)
+            elif stamp and stamp.get("date") == iso:
+                if note:
+                    stamp["note"] = note  # ⏱️ eingestempelt, Tag gibt's noch nicht → Notiz wartet am Stempel
+                else:
+                    stamp.pop("note", None)
+            else:
+                raise HomeAssistantError("Für diesen Tag gibt es noch keinen Eintrag – erst Kommen/Gehen eintragen")
+            self._log(user, f"📝 {iso}: Notiz geändert")
         elif t == "stamp_in":
             self._stamp_in(op.get("ts"), "⏱️ Eingestempelt", user)
         elif t == "stamp_out":
@@ -987,6 +1011,8 @@ class StundenzettelManager:
         new = {"kind": "work", "start": hhmm(start), "end": hhmm(max(mins, start)), "source": "stamp"}
         if e and e.get("note"):
             new["note"] = e["note"]
+        elif stamp.get("note"):
+            new["note"] = stamp["note"]  # 📝 Notiz aus der Notiz-Leiste, während du eingestempelt warst
         if e and e.get("event_uid"):
             new["event_uid"] = e["event_uid"]
         self.data["days"][iso] = new
@@ -1050,6 +1076,11 @@ class StundenzettelManager:
                             e["pause"] = pause
                         if note:
                             e["note"] = note
+                        if cur and cur.get("note_own"):  # 📝 Notiz aus der Notiz-Leiste bleibt, der Kalender liefert nur die Zeiten
+                            e.pop("note", None)
+                            if cur.get("note"):
+                                e["note"] = cur["note"]
+                            e["note_own"] = True
                         if getattr(ev, "uid", None):
                             e["event_uid"] = ev.uid
                         if a.date() == today and b > dt_util.now():

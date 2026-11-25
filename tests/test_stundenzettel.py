@@ -601,3 +601,37 @@ async def test_kalender_konflikt_und_feiertage_voraus(hass: HomeAssistant, monke
     # Tag korrigiert → Hinweis ist sofort weg (ohne neuen Abgleich)
     m.apply([{"type": "day_set", "date": "2026-11-03", "kind": "work", "start": "06:30", "end": "16:15"}])
     assert m.conflicts() == []
+
+
+async def test_notiz_leiste(hass: HomeAssistant, monkeypatch):
+    """📝 Notiz-Leiste: nur die Notiz ändern – beim Stempeln, an Kalender-Tagen (Zeiten kommen weiter vom Kalender)."""
+    cal = FakeCal()
+    monkeypatch.setattr(mgr, "_cal_entity", lambda hass, eid: cal)
+    m = await _setup(hass)
+    assert m.settings["note_ph_on"] is True and m.settings["note_ph"] == "Baustelle"
+    # ⏱️ eingestempelt, Tag gibt's noch nicht → Notiz wartet am Stempel und kommt beim Gehen in den Tag
+    base = dt_util.now().replace(hour=6, minute=30, second=0, microsecond=0)
+    today = base.date().isoformat()
+    m.apply([{"type": "stamp_in", "ts": base.timestamp() * 1000}])
+    assert m.apply([{"type": "note_set", "date": today, "note": "Lünen - Fliesen"}])[0]["ok"]
+    assert m.snapshot()["stamp"]["note"] == "Lünen - Fliesen"
+    m.apply([{"type": "stamp_out", "ts": (base + timedelta(hours=8)).timestamp() * 1000}])
+    assert m.data["days"][today]["note"] == "Lünen - Fliesen" and m.data["days"][today]["start"] == "06:30"
+    # 🚫 Ohne Eintrag und ohne Stempel geht es nicht
+    assert not m.apply([{"type": "note_set", "date": "2026-10-20", "note": "x"}])[0]["ok"]
+    # 📅 Kalender-Tag: Notiz gehört dir, Zeiten kommen weiter aus dem Kalender
+    tz = dt_util.get_default_time_zone()
+    d0 = dt_util.now().date() - timedelta(days=2)
+    a = datetime.combine(d0, datetime.min.time(), tz) + timedelta(hours=7)
+    await cal.async_create_event(dtstart=a, dtend=a + timedelta(hours=8), summary="Arbeiten", description="Baustelle")
+    m.apply([{"type": "set", "key": "calendar", "value": "calendar.test"}])
+    await m.async_sync()
+    assert m.data["days"][d0.isoformat()]["note"] == "Baustelle"
+    m.apply([{"type": "note_set", "date": d0.isoformat(), "note": "Lünen - Pflaster"}])
+    cal.events[0].end = a + timedelta(hours=9)  # Chef ändert die Zeit im Kalender
+    await m.async_sync()
+    e = m.data["days"][d0.isoformat()]
+    assert e["source"] == "calendar" and e["end"] == "16:00" and e["note"] == "Lünen - Pflaster" and e["note_own"]
+    # 🔤 Platzhalter einstellbar
+    m.apply([{"type": "set", "key": "note_ph", "value": "Montage"}, {"type": "set", "key": "note_ph_on", "value": False}])
+    assert m.settings["note_ph"] == "Montage" and m.settings["note_ph_on"] is False
