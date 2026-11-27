@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.3-beta.2";
+const SZ_VERSION = "1.0.3-beta.3";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -28,6 +28,7 @@ const SZ_KGROUP = { urlaub_halb: "urlaub", kind_krank: "krank" };
 const szKGroup = (k) => SZ_KGROUP[k] || k;
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.3-beta.3", "🏝️ <b>Urlaubs-Countdown:</b> In „Heute“ steht klein „noch 12 Arbeitstage bis Urlaub (ab Mo 07.12.)“ – gezählt werden nur echte Arbeitstage, ohne Wochenende, Feiertage, Frei und Krank. Kein Urlaub eingetragen? Dann bleibt die Zeile weg · 📥 <b>Download-Zahl in den Credits:</b> Unter 🙏 Credits steht „rund N Downloads (Stand letztes Release)“. Die Zahl kommt beim Release mit in die ZIP – die Karte fragt nie bei GitHub nach · 🐢 <b>Sensoren rechnen nur noch einmal:</b> Die 5 Stundenzettel-Sensoren haben bei jedem Abgleich 10× alles neu gerechnet (HA warnte „took 2.6 seconds“). Jetzt wird einmal gerechnet und gemerkt, bis sich etwas ändert – gleiche Zahlen, viel weniger Arbeit für deinen Pi"],
   ["1.0.3-beta.2", "⭐ <b>Stern-Knopf in den Credits:</b> Gefällt dir die Karte? Unter 🙏 Credits führt „⭐ Gib uns einen Stern“ direkt zu GitHub · 📦 <b>Download-Zähler:</b> Jede neue Version hängt jetzt als fertige ZIP-Datei am Release, HACS lädt diese ZIP – so zählt GitHub endlich mit, wie oft die Karte geladen wird (Schild oben im README). Es wird nichts getrackt und nichts von dir übertragen."],
   ["1.0.3-beta.1", "📝 <b>Notiz-Leiste</b>: unter Kommen/Gehen stehen an Arbeitstagen deine Orte und Tätigkeiten – 1 Tipp, schon steht es in der Notiz (auch beim Stempeln und ohne Netz, mit ↩️ Rückgängig) · 🔤 <b>Platzhalter ersetzen</b>: steht nur „Baustelle“ aus dem Kalender drin, wird es durch den Ort ersetzt (Wort einstellbar unter ⚙️ → Notizen), die Uhrzeiten aus dem Kalender bleiben · 📆 <b>Mehrere Tage direkt im Tag</b>: bei Urlaub, Krank und Frei „Bis“ wählen (z. B. „bis Freitag“), einmal speichern · 🧹 <b>Aufgeräumte Art-Auswahl</b>: ½ Tag steckt unter Urlaub, Kind krank unter Krank, „Urlaub planen“ sitzt jetzt beim Urlaub statt im Reiter Jahr · 📝 Orte/Tätigkeiten und „z. B. Baustelle“ nur noch bei Arbeit · 🔢 Stunden im Formular als „8,00“ statt „8“ · 🔒 Nach der PIN geht jetzt gleich auf, was du angetippt hast"],
   ["1.0.2", "🎉 <b>Version 1.0.2</b>: Alles aus 7 Betas ist jetzt fest drin – danke fürs Testen!"],
@@ -56,6 +57,17 @@ const SZ_NEWS = [
 const SZ_SIGN = ["Datum, Unterschrift Arbeitnehmer", "Datum, Unterschrift Chef"]; // ✍️ Unterschrift-Linien unten im PDF und beim Drucken
 const SZ_NEWS_MAX = 15; // 🆕 so viele Neuerungen zeigt „Was ist neu“ höchstens
 const SZ_CARDS = new Set();
+// 📥 Download-Zahl: steht in downloads.json, die die Release-Automatik beim Release in die ZIP legt.
+// Wird nur vom eigenen Home Assistant geladen (kein Aufruf an GitHub) – und erst, wenn jemand die Credits öffnet.
+let SZ_DL = null, SZ_DL_PROMISE = null;
+function szDownloads() {
+  if (!SZ_DL_PROMISE) SZ_DL_PROMISE = fetch(`/stundenzettel/files/downloads.json?v=${SZ_VERSION}`, { cache: "no-cache" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => { const n = Math.floor(Number(j?.downloads)); SZ_DL = n > 0 ? n : 0; })
+    .catch(() => { SZ_DL = 0; });
+  return SZ_DL_PROMISE;
+}
+const szDlText = (n) => szT(`📥 rund ${n.toLocaleString("de-DE")} Downloads (Stand letztes Release)`);
 
 const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const ic = (name) => `<ha-icon icon="mdi:${name}"></ha-icon>`;
@@ -1418,8 +1430,23 @@ class StundenzettelCard extends HTMLElement {
       <div class="tile ${jahr ? "click" : ""}" ${jahr}><b>${this._mv(`<span class="${bal < 0 ? "vneg" : "vpos"}">${hs(bal)}</span>`, "bal")}</b><span>${ic("scale-balance")}Überstunden-Konto</span></div>
       <div class="tile ${jahr ? "click" : ""}" ${jahr}><b>${dn(s.vacation_left ?? 0)}</b><span>${ic("beach")}Resturlaub ${y}</span></div>
       <div class="tile ${jahr ? "click" : ""}" ${jahr}><b>${s.sick_days ?? 0}</b><span>${ic("emoticon-sick-outline")}Kranktage ${y}</span></div></div>`;
+    if (isToday) h += this._vacCountdown(d);
     h += this._calLine();
     return h;
+  }
+  // 🏝️ „noch 12 Arbeitstage bis Urlaub“ – zählt ab morgen nur echte Arbeitstage (ohne Wochenende/freie Tage aus dem Plan, Feiertage, Frei, Krank)
+  _vacCountdown(d) {
+    const days = d.days || {}, isVac = (iso) => ["urlaub", "urlaub_halb"].includes(days[iso]?.kind);
+    if (isVac(d.today)) return ""; // im Urlaub: kein Countdown
+    const start = Object.keys(days).filter((iso) => iso > d.today && isVac(iso)).sort()[0];
+    if (!start || start > szAddDays(d.today, 400)) return ""; // kein Urlaub eingetragen → Zeile weg
+    const hol = this._holidays();
+    const work = (iso) => this._isWorkday(iso, hol) && !["frei", "krank", "kind_krank", "feiertag"].includes(days[iso]?.kind);
+    let n = 0; // gezählt ab morgen – heute läuft ja schon
+    for (let iso = szAddDays(d.today, 1); iso < start; iso = szAddDays(iso, 1)) if (work(iso)) n++;
+    const when = `${WD[wdOf(start)]} ${dm(start)}`;
+    const txt = n === 0 ? (work(d.today) ? `🏝️ Nur noch heute – ab ${when} ist Urlaub!` : `🏝️ Keine Arbeitstage mehr – ab ${when} ist Urlaub!`) : n === 1 ? `🏝️ noch 1 Arbeitstag bis Urlaub (ab ${when})` : `🏝️ noch ${n} Arbeitstage bis Urlaub (ab ${when})`;
+    return `<p class="small szvac">${txt}</p>`;
   }
   // ⏱️ Zwei Felder „Kommen“ und „Gehen“ – antippen, Uhrzeit ändern, fertig (⏱️ = jetzt)
   _kgHtml(d, iso) {
@@ -2112,6 +2139,10 @@ class StundenzettelCard extends HTMLElement {
     return `${box}<p class="small">Die letzten Neuerungen bis Version <b>${esc(newsVer)}</b> – das Neueste steht oben</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul>`;
   }
   _creditsHtml() {
+    if (SZ_DL === null) szDownloads().then(() => { // 📥 erst beim ersten Öffnen holen, dann die Zeile nachtragen (fehlt die Datei: Zeile bleibt weg)
+      if (!SZ_DL) return;
+      for (const c of SZ_CARDS) c.shadowRoot?.querySelectorAll(".szdl").forEach((el) => { el.textContent = szDlText(SZ_DL); el.hidden = false; });
+    });
     return `<div class="elcredits" translate="no">
       <div class="ellogo"><img src="/stundenzettel/files/mister-m.webp?v=${SZ_VERSION}" alt="Mister-M" loading="lazy"></div>
       <p class="elcv"><b>Stundenzettel</b> v${SZ_VERSION}</p>
@@ -2122,6 +2153,7 @@ class StundenzettelCard extends HTMLElement {
         <a class="elcbtn star" href="${REPO}" target="_blank" rel="noopener">⭐ Gefällt dir die Karte? Gib uns einen Stern</a>
       </div>
       <p class="elcsmall">Auf GitHub oben rechts auf „⭐ Star“ tippen (braucht ein kostenloses GitHub-Konto) – so sehe ich, wie vielen die Karte gefällt, und andere finden sie leichter. Beim Antippen öffnet sich GitHub im Browser; vorher geht nichts ins Internet.</p>
+      <p class="elcsmall szdl" ${SZ_DL ? "" : "hidden"}>${SZ_DL ? esc(szDlText(SZ_DL)) : ""}</p>
       <div class="elcbtns">
         <a class="elcbtn" href="${REPO}" target="_blank" rel="noopener">🐙 GitHub</a>
         <a class="elcbtn" href="${REPO}/discussions" target="_blank" rel="noopener">💡 Idee oder Wunsch</a>

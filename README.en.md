@@ -24,6 +24,7 @@ One click opens it right in your Home Assistant: [![Open in HACS](https://my.hom
 - 📊 Statistics: overtime curve, hours per month with target line, weekdays, vacation & sick per year, records – for one year or all years.
 - 🏖️ Work, vacation, sick, holiday, day off, flat rate days. Vacation left and sick days per year. Under vacation you pick **full day | ½ day** (½ counts half plus what you still worked that day), under sick **me | child** – child sick is counted separately (for the German child sickness benefit).
 - 📆 Several days at once: in a day with vacation, sick or day off just pick **“To”** (e.g. “until Friday”) and save once – or “vacation 3rd–14th” in the vacation planner. Weekends, days off and holidays are skipped.
+- 🏝️ Vacation countdown in Today: “12 more workdays until vacation (from Mon 07.12.)” – counts only real workdays from tomorrow (no weekends, holidays, days off, sick days). No vacation entered → the line stays hidden.
 - 🗓️ Vacation planner with bridge days (in a day under vacation → “Plan vacation” or Today → 📆 Several days): “take the 2nd–5th and 12 days are left” (across New Year for both years) plus tips where 1 vacation day gets you 4 days off, from your holiday calendar.
 - ✂️ Split day: two time blocks on one day (e.g. 6–11 and 13–17 with the doctor in between) – the gap already counts as a break.
 - 🔍 Note search across all days: “When was I in Lünen?” – tap a hit to jump to the day.
@@ -60,7 +61,7 @@ Actions: `stundenzettel.kommen` (clock in), `stundenzettel.gehen` (clock out), `
 
 ⭐ **Like the card? Give us a star:** on [GitHub](https://github.com/misterm2310/stundenzettel-card), tap “⭐ Star” at the top right (free GitHub account needed) – that shows me how many people like the card and helps others find it. The button is also under ⚙️ → Credits.
 
-📊 **Download counter:** the “Downloads” badge at the top counts how often the ready-made ZIP file of the releases (betas and official versions together) was downloaded. Only GitHub counts this, nothing about you is sent.
+📊 **Download counter:** the “Downloads” badge at the top counts how often the ready-made ZIP file of the releases (betas and official versions together) was downloaded. Only GitHub counts this, nothing about you is sent. ⚙️ → Credits shows the same number as “📥 about N downloads (as of last release)”: it is packed into the ZIP at release time, the card never asks GitHub itself.
 
 Free forever. If you like it: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann) ☕
 

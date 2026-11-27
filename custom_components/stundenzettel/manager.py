@@ -449,6 +449,7 @@ class StundenzettelManager:
         self.cal_status: dict[str, Any] = {"ok": None, "last": None, "error": None, "can": []}
         self.errors: list[dict[str, Any]] = []
         self._snap_cache: tuple[int, dict[str, Any]] | None = None
+        self._sum_cache: tuple[int, str, dict[str, Any]] | None = None  # 🐢 summary() nur 1× rechnen statt 10× (5 Sensoren × Wert + Zusatz)
         self._rev = 0
         self._pin_fails = 0
         self._pin_locked_until = 0.0
@@ -466,6 +467,7 @@ class StundenzettelManager:
             d["settings"] = {**DEFAULT_SETTINGS, **(raw.get("settings") or {})}
             d["settings"].pop("place_gps", None)  # 📍 „Hier merken“ aus 1.0.2-beta.2 gibt es nicht mehr
         self.data = d
+        self._rev += 1  # 🧮 Gemerktes (snapshot/summary) gilt nach dem Laden nicht mehr
 
     def _save(self) -> None:
         self._rev += 1
@@ -531,8 +533,10 @@ class StundenzettelManager:
         self._unsubs.clear()
 
     async def _tick(self, _now: datetime | None = None) -> None:
+        rev = self._rev
         await self.async_sync()
-        self._notify()  # 🕒 „Konto heute“ ändert sich auch ohne neue Einträge (neuer Tag)
+        if self._rev == rev:  # 🐢 hat der Abgleich schon gespeichert (= schon gemeldet), nicht ein zweites Mal melden
+            self._notify()  # 🕒 „Konto heute“ ändert sich auch ohne neue Einträge (neuer Tag)
 
     def _watch_person(self) -> None:
         self._watch_place()
@@ -604,6 +608,16 @@ class StundenzettelManager:
         return compute_months(self.data["days"], self.data["months"], self.settings, self.today())
 
     def summary(self) -> dict[str, Any]:
+        """📊 Zahlen für Sensoren + Karte – gemerkt, bis sich etwas ändert (_rev) oder ein neuer Tag beginnt."""
+        day = self.today().isoformat()
+        c = self._sum_cache
+        if c and c[0] == self._rev and c[1] == day:
+            return dict(c[2])
+        s = self._summary()
+        self._sum_cache = (self._rev, day, s)
+        return dict(s)
+
+    def _summary(self) -> dict[str, Any]:
         months = self.months()
         key = self.today().strftime("%Y-%m")
         idx = next((i for i, m in enumerate(months) if m["month"] == key), None)  # 📍 heute zählt – nicht der letzte Monat mit Einträgen

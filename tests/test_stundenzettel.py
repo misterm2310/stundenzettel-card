@@ -635,3 +635,50 @@ async def test_notiz_leiste(hass: HomeAssistant, monkeypatch):
     # 🔤 Platzhalter einstellbar
     m.apply([{"type": "set", "key": "note_ph", "value": "Montage"}, {"type": "set", "key": "note_ph_on", "value": False}])
     assert m.settings["note_ph"] == "Montage" and m.settings["note_ph_on"] is False
+
+
+async def test_summary_wird_gemerkt(hass: HomeAssistant, monkeypatch) -> None:
+    """🐢 5 Sensoren × (Wert + Zusatz) = 10 Abfragen → trotzdem nur 1× rechnen; neuer Eintrag oder neuer Tag rechnet neu."""
+    from custom_components.stundenzettel import manager as mgr
+
+    m = await _setup(hass)
+    calls = {"n": 0}
+    orig = mgr.compute_months
+
+    def zaehlen(*a, **k):
+        calls["n"] += 1
+        return orig(*a, **k)
+
+    monkeypatch.setattr(mgr, "compute_months", zaehlen)
+    m._sum_cache = None
+    for _ in range(10):
+        m.summary()
+    assert calls["n"] == 1
+    m.apply([{"type": "day_set", "date": m.today().isoformat(), "kind": "urlaub"}])
+    s = m.summary()
+    assert calls["n"] == 2 and s["vacation_taken"] >= 1
+    s["vacation_taken"] = 999  # eine Kopie – das Gemerkte bleibt heil
+    assert m.summary()["vacation_taken"] != 999
+    monkeypatch.setattr(m, "today", lambda: date(2099, 1, 1))
+    m.summary()
+    assert calls["n"] == 3
+
+
+async def test_abgleich_meldet_nur_einmal(hass: HomeAssistant, monkeypatch) -> None:
+    """🐢 Speichert der 15-Minuten-Abgleich schon (= meldet), meldet _tick nicht noch ein zweites Mal."""
+    m = await _setup(hass)
+    hits = []
+    m.add_listener(lambda: hits.append(1))
+
+    async def sync_mit_speichern():
+        m._save()
+
+    async def sync_ohne():
+        return None
+
+    monkeypatch.setattr(m, "async_sync", sync_mit_speichern)
+    await m._tick()
+    assert len(hits) == 1
+    monkeypatch.setattr(m, "async_sync", sync_ohne)
+    await m._tick()
+    assert len(hits) == 2

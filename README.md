@@ -25,6 +25,7 @@ Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https:
 - ⚖️ **Überstunden-Konto** wie auf Papier: Summe − Bezahlt = Plus/Minus, Ü.-Alt + Plus/Minus = Ü.-Gesamt. Im laufenden Monat fair: **Soll nur bis heute**. 💶 **Ü.-Alt laut Lohnabrechnung** pro Monat eintragen – die Karte rechnet mit der Zahl vom Chef weiter und zeigt die Abweichung.
 - 🏖️ **Arbeit, Urlaub, Krank, Feiertag, Frei, Pauschal** (z. B. Samstag für feste Euro – zählt nicht zu den Stunden). Resturlaub und Kranktage pro Jahr. Unter Urlaub gibt's **Ganzer Tag | ½ Tag** (½ zählt die Hälfte plus was du an dem Tag noch gearbeitet hast), unter Krank **Ich | Kind** – Kind krank wird getrennt gezählt, fürs Kinderkrankengeld.
 - 📆 **Mehrere Tage auf einmal**: im Tag bei Urlaub, Krank oder Frei einfach **„Bis“** wählen (z. B. „bis Freitag“) und einmal speichern – oder „Urlaub 3.–14.“ über den Urlaubsplaner. Wochenenden, freie Tage und Feiertage werden übersprungen.
+- 🏝️ **Urlaubs-Countdown** in Heute: „noch 12 Arbeitstage bis Urlaub (ab Mo 07.12.)“ – zählt ab morgen nur echte Arbeitstage (ohne Wochenende, Feiertage, Frei, Krank). Kein Urlaub eingetragen → die Zeile bleibt weg.
 - 🗓️ **Urlaubsplaner mit Brückentagen** (im Tag unter Urlaub → „Urlaub planen“ oder Heute → 📆 Mehrere Tage): „Nimmst du 2.–5., bleiben 12 Tage“ (über Silvester für beide Jahre) – dazu Tipps, wo 1 Urlaubstag 4 Tage frei bringt, aus deinem Feiertags-Kalender.
 - ✂️ **Geteilter Tag**: zwei Zeitblöcke an einem Tag (z. B. 6–11 und 13–17, dazwischen Arzt) – die Lücke zählt schon als Pause.
 - 🔍 **Notizen-Suche** über alle Tage: „Wann war ich in Lünen?“ – Treffer antippen springt zum Tag.
@@ -169,7 +170,7 @@ actions:
 
 ⭐ **Gefällt dir die Karte? Gib uns einen Stern:** Auf [GitHub](https://github.com/misterm2310/stundenzettel-card) oben rechts auf „⭐ Star“ tippen (kostenloses GitHub-Konto nötig) – so sehe ich, wie vielen die Karte gefällt, und andere finden sie leichter. Den Knopf gibt es auch unter ⚙️ → Credits.
 
-📊 **Download-Zähler:** Das Schild „Downloads“ oben zählt, wie oft die fertige ZIP-Datei der Releases (Betas und offizielle Versionen zusammen) geladen wurde. Das zählt nur GitHub, von dir wird nichts übertragen.
+📊 **Download-Zähler:** Das Schild „Downloads“ oben zählt, wie oft die fertige ZIP-Datei der Releases (Betas und offizielle Versionen zusammen) geladen wurde. Das zählt nur GitHub, von dir wird nichts übertragen. Unter ⚙️ → Credits steht dieselbe Zahl als „📥 rund N Downloads (Stand letztes Release)“: Sie wird beim Release in die ZIP gepackt, die Karte fragt nie selbst bei GitHub nach.
 
 Er ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig eine kleine Spende per PayPal schicken: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann). Den Link gibt es auch unter ⚙️ → Credits. Der Feierabend-Kaffee geht auf dich. ☕
 

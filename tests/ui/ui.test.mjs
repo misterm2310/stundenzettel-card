@@ -505,6 +505,39 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   ok(!errors.length, "Zweiter Stundenzettel: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
   await page.close();
 }
+{ // 🏝️ Urlaubs-Countdown + 📥 Download-Zahl in den Credits
+  const { page, errors } = await open();
+  ok(await card(page).locator(".szvac").count() === 0, "Urlaubs-Countdown: kein Urlaub eingetragen → keine Zeile");
+  await click(page, '.foot [data-v="guide"]');
+  ok(await card(page).locator(".szdl").count() === 1 && await card(page).locator(".szdl").isHidden(), "Download-Zahl: Platzhalter 0 → Zeile bleibt versteckt");
+  await page.evaluate(() => { for (const iso of ["2026-11-23", "2026-11-24", "2026-11-25"]) fake.data.days[iso] = { kind: "urlaub", source: "card" }; fake.data.days["2026-11-13"] = { kind: "frei", source: "card" }; send(); });
+  await page.waitForTimeout(150);
+  await click(page, '[data-a="tab"][data-v="heute"]');
+  const vac = await card(page).locator(".szvac").innerText().catch(() => "");
+  ok(/noch 11 Arbeitstage bis Urlaub \(ab Mo 23\.11\.\)/.test(vac), `Urlaubs-Countdown: zählt ab morgen nur Arbeitstage, Frei zählt nicht („${vac}“)`);
+  await shot(page, "11-urlaubs-countdown");
+  ok(!errors.length, "Countdown: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
+{
+  const page = await browser.newPage({ viewport: { width: 520, height: 1000 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message)); page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+  const asked = [];
+  page.on("request", (r) => asked.push(r.url()));
+  await page.route("**/stundenzettel/files/downloads.json*", (r) => r.fulfill({ contentType: "application/json", body: '{"downloads": 1234, "stand": "2026-11-27"}' }));
+  await page.clock.setFixedTime(new Date("2026-11-04T10:00:00"));
+  await page.goto(base);
+  await page.waitForFunction(() => window.ready && document.getElementById("c1").shadowRoot?.querySelector(".tabs")); await page.waitForTimeout(300);
+  ok(!asked.some((u) => u.includes("downloads.json")), "Download-Zahl: wird erst geholt, wenn die Credits aufgehen");
+  await click(page, '.foot [data-v="guide"]'); await page.waitForTimeout(200);
+  await card(page).locator("details.elg-sec:has(.elcredits) > summary").click(); await page.waitForTimeout(150);
+  const dl = await card(page).locator(".szdl").innerText().catch(() => "");
+  ok(/rund 1\.234 Downloads \(Stand letztes Release\)/.test(dl), `Credits: „${dl}“`);
+  ok(!asked.some((u) => /github/.test(u)), "Download-Zahl: kein Aufruf an GitHub");
+  if (SHOTS) await card(page).locator("details.elg-sec:has(.elcredits)").screenshot({ path: `${SHOTS}/12-credits-downloads.png` });
+  ok(!errors.length, "Download-Zahl: keine Fehler" + (errors.length ? ": " + errors.join(" | ") : ""));
+  await page.close();
+}
 await browser.close();
 server.close();
 console.log(fails ? `\n❌ ${fails} Prüfungen fehlgeschlagen` : "\n🎉 Alles grün");

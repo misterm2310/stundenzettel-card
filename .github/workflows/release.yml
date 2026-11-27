@@ -30,6 +30,21 @@ jobs:
         id: version
         run: echo "tag=v$(jq -r .version custom_components/stundenzettel/manifest.json)" >> "$GITHUB_OUTPUT"
 
+      - name: Download-Zahl für die Credits merken
+        # 📥 Summe aller ZIP-Downloads aller Releases → www/downloads.json (im Repo steht nur der Platzhalter 0, die echte Zahl kommt in die ZIP).
+        # Die Karte zeigt daraus in den Credits „rund N Downloads (Stand letztes Release)“ – ganz ohne Aufruf an GitHub.
+        # Klappt die Abfrage nicht, fehlt die Datei einfach und die Zeile bleibt weg.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --paginate --jq '.[].assets[] | select(.name | endswith(".zip")) | .download_count' 2>/dev/null | awk '{s+=$1} END {print s+0}') || N=""
+          if [ -n "$N" ]; then
+            printf '{"downloads": %s, "stand": "%s"}\n' "$N" "$(date -u +%F)" > custom_components/stundenzettel/www/downloads.json
+            cat custom_components/stundenzettel/www/downloads.json
+          else
+            echo "Download-Zahl nicht abrufbar – Platzhalter 0 bleibt, Zeile in den Credits bleibt weg."
+          fi
+
       - name: ZIP für HACS packen
         # 📦 Fertig gepackte ZIP fürs Release: Inhalt von custom_components/stundenzettel/ OHNE Unterordner –
         # HACS entpackt sie direkt nach config/custom_components/stundenzettel/. GitHub zählt jeden Download dieser ZIP.
@@ -54,7 +69,14 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             # 📦 Release gibt es schon: fehlt nur die ZIP, wird sie nachgereicht (z. B. per „Run workflow“)
             if gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx "stundenzettel.zip"; then
-              echo "Release $TAG gibt es schon (mit ZIP) – nichts zu tun."
+              # 📥 Alte ZIP ohne Download-Zahl (z. B. von der main-Fassung gepackt)? Dann durch die neue ersetzen.
+              gh release download "$TAG" -p stundenzettel.zip -O alt.zip --clobber
+              ALT=$(unzip -p alt.zip www/downloads.json 2>/dev/null | jq -r '.downloads // 0' 2>/dev/null || echo 0)
+              if [ "${ALT:-0}" -gt 0 ] 2>/dev/null; then
+                echo "Release $TAG gibt es schon (mit ZIP und Download-Zahl $ALT) – nichts zu tun."
+              else
+                gh release upload "$TAG" stundenzettel.zip --clobber
+              fi
             else
               gh release upload "$TAG" stundenzettel.zip
             fi
