@@ -6,7 +6,7 @@
 
 **Schluss mit dem Stundenzettel von Hand.** Die Karte holt sich deine Arbeitszeit aus dem Kalender (oder du stempelst per Knopf bzw. automatisch per Handy), zieht die Pause ab und führt dein **Überstunden-Konto** – genau wie der alte Papier-Zettel: Summe, Bezahlt, Ü.-Alt, Ü.-Gesamt.
 
-Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=stundenzettel-card&category=integration) [![Integration hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=stundenzettel)
+Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=stundenzettel-card&category=integration) [![Integration hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=stundenzettel) [![Downloads](https://img.shields.io/github/downloads/misterm2310/stundenzettel-card/total?label=Downloads)](https://github.com/misterm2310/stundenzettel-card/releases)
 
 ![Vorschau – Stundenzettel (nur ausgedachte Zeiten)](docs/screenshot.png)
 
@@ -166,6 +166,10 @@ actions:
 ---
 
 ## 💙 Gefällt dir der Stundenzettel?
+
+⭐ **Gefällt dir die Karte? Gib uns einen Stern:** Auf [GitHub](https://github.com/misterm2310/stundenzettel-card) oben rechts auf „⭐ Star“ tippen (kostenloses GitHub-Konto nötig) – so sehe ich, wie vielen die Karte gefällt, und andere finden sie leichter. Den Knopf gibt es auch unter ⚙️ → Credits.
+
+📊 **Download-Zähler:** Das Schild „Downloads“ oben zählt, wie oft die fertige ZIP-Datei der Releases (Betas und offizielle Versionen zusammen) geladen wurde. Das zählt nur GitHub, von dir wird nichts übertragen.
 
 Er ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig eine kleine Spende per PayPal schicken: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann). Den Link gibt es auch unter ⚙️ → Credits. Der Feierabend-Kaffee geht auf dich. ☕
 

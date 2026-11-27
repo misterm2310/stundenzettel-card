@@ -104,6 +104,7 @@ const shot = async (page, name) => { if (SHOTS) await card(page).screenshot({ pa
   await click(page, '.foot [data-v="guide"]');
   ok(/So funktioniert der Stundenzettel/.test(await txt()), "Anleitung öffnet sich");
   await shot(page, "6-anleitung");
+  ok(await card(page).locator('a.elcbtn.star[href="https://github.com/misterm2310/stundenzettel-card"]').count() === 1, "Credits: ⭐-Knopf führt zum GitHub-Repo (nur ein Link, nichts wird geschickt)");
   await click(page, '[data-a="tab"][data-v="heute"]');
   await click(page, '[data-a="kgnow"][data-v="end"]');
   await page.waitForTimeout(100);

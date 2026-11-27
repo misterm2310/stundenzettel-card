@@ -6,7 +6,7 @@
 
 **No more handwritten timesheets.** The card takes your working hours from your calendar (or you clock in by button, or automatically by phone zone), subtracts the break and keeps your **overtime balance** – just like the old paper sheet.
 
-One click opens it right in your Home Assistant: [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=stundenzettel-card&category=integration) [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=stundenzettel)
+One click opens it right in your Home Assistant: [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=stundenzettel-card&category=integration) [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=stundenzettel) [![Downloads](https://img.shields.io/github/downloads/misterm2310/stundenzettel-card/total?label=Downloads)](https://github.com/misterm2310/stundenzettel-card/releases)
 
 ![Preview – Stundenzettel (made-up times only)](docs/screenshot.png)
 
@@ -57,6 +57,10 @@ Actions: `stundenzettel.kommen` (clock in), `stundenzettel.gehen` (clock out), `
 **⏳ When will the next beta come?** To be honest: I build these integrations with the help of Claude (AI). How fast new betas come depends on how much Claude quota (tokens) is available. Once it is used up, I have to wait until it is refilled – no tokens, no betas. 😅 Thank you for your patience and understanding! 🙏
 
 ## 💙 Donate
+
+⭐ **Like the card? Give us a star:** on [GitHub](https://github.com/misterm2310/stundenzettel-card), tap “⭐ Star” at the top right (free GitHub account needed) – that shows me how many people like the card and helps others find it. The button is also under ⚙️ → Credits.
+
+📊 **Download counter:** the “Downloads” badge at the top counts how often the ready-made ZIP file of the releases (betas and official versions together) was downloaded. Only GitHub counts this, nothing about you is sent.
 
 Free forever. If you like it: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann) ☕
 

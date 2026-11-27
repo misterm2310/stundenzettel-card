@@ -955,5 +955,7 @@
  "Orte/Tätigkeiten und „z. B. Baustelle“ nur noch bei Arbeit": "Places/activities and “e.g. site” only for Work",
  "Stunden im Formular als „8,00“ statt „8“": "Hours in the form shown as “8.00” instead of “8”",
  "Nach der PIN geht jetzt gleich auf, was du angetippt hast": "After the PIN, whatever you tapped opens right away",
- "Bezahlte Stunden & Konto, Pausen-Regeln, Normaler Tag, Urlaub, Krank & Co., Notizen": "Paid hours & balance, Break rules, Normal day, Vacation, sick & co., Notes"
+ "Bezahlte Stunden & Konto, Pausen-Regeln, Normaler Tag, Urlaub, Krank & Co., Notizen": "Paid hours & balance, Break rules, Normal day, Vacation, sick & co., Notes",
+ "<b>Stern-Knopf in den Credits:</b> Gefällt dir die Karte? Unter 🙏 Credits führt „⭐ Gib uns einen Stern“ direkt zu GitHub": "<b>Star button in the credits:</b> like the card? Under 🙏 Credits, “⭐ Give us a star” takes you straight to GitHub",
+ "<b>Download-Zähler:</b> Jede neue Version hängt jetzt als fertige ZIP-Datei am Release, HACS lädt diese ZIP – so zählt GitHub endlich mit, wie oft die Karte geladen wird (Schild oben im README). Es wird nichts getrackt und nichts von dir übertragen.": "<b>Download counter:</b> every new version now comes as a ready-made ZIP file on the release and HACS downloads that ZIP – so GitHub finally counts how often the card is downloaded (badge at the top of the README). Nothing is tracked and nothing about you is sent."
 }

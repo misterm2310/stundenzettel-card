@@ -3,7 +3,7 @@
  * Alle Daten liegen in deinem Home Assistant (Integration „Stundenzettel“) – die Karte zeigt nur an und schickt Änderungen.
  */
 
-const SZ_VERSION = "1.0.3-beta.1";
+const SZ_VERSION = "1.0.3-beta.2";
 const REPO = "https://github.com/misterm2310/stundenzettel-card";
 const PAYPAL = "https://paypal.me/MarcoStrickmann";
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -28,6 +28,7 @@ const SZ_KGROUP = { urlaub_halb: "urlaub", kind_krank: "krank" };
 const szKGroup = (k) => SZ_KGROUP[k] || k;
 const SOURCE = { calendar: "📅 aus dem Kalender", stamp: "⏱️ gestempelt", card: "✍️ von Hand", import: "📥 Import", holiday: "🎌 Feiertags-Kalender" };
 const SZ_NEWS = [
+  ["1.0.3-beta.2", "⭐ <b>Stern-Knopf in den Credits:</b> Gefällt dir die Karte? Unter 🙏 Credits führt „⭐ Gib uns einen Stern“ direkt zu GitHub · 📦 <b>Download-Zähler:</b> Jede neue Version hängt jetzt als fertige ZIP-Datei am Release, HACS lädt diese ZIP – so zählt GitHub endlich mit, wie oft die Karte geladen wird (Schild oben im README). Es wird nichts getrackt und nichts von dir übertragen."],
   ["1.0.3-beta.1", "📝 <b>Notiz-Leiste</b>: unter Kommen/Gehen stehen an Arbeitstagen deine Orte und Tätigkeiten – 1 Tipp, schon steht es in der Notiz (auch beim Stempeln und ohne Netz, mit ↩️ Rückgängig) · 🔤 <b>Platzhalter ersetzen</b>: steht nur „Baustelle“ aus dem Kalender drin, wird es durch den Ort ersetzt (Wort einstellbar unter ⚙️ → Notizen), die Uhrzeiten aus dem Kalender bleiben · 📆 <b>Mehrere Tage direkt im Tag</b>: bei Urlaub, Krank und Frei „Bis“ wählen (z. B. „bis Freitag“), einmal speichern · 🧹 <b>Aufgeräumte Art-Auswahl</b>: ½ Tag steckt unter Urlaub, Kind krank unter Krank, „Urlaub planen“ sitzt jetzt beim Urlaub statt im Reiter Jahr · 📝 Orte/Tätigkeiten und „z. B. Baustelle“ nur noch bei Arbeit · 🔢 Stunden im Formular als „8,00“ statt „8“ · 🔒 Nach der PIN geht jetzt gleich auf, was du angetippt hast"],
   ["1.0.2", "🎉 <b>Version 1.0.2</b>: Alles aus 7 Betas ist jetzt fest drin – danke fürs Testen!"],
   ["1.0.2-beta.7", "🏷️ <b>Klarerer Name im Monat</b>: aus „Vom Chef (Lohnabrechnung)“ wird „Stunden vom Vormonat (laut Chef)“ und aus „Vom Vormonat“ wird „Stunden vom Vormonat“"],
@@ -601,6 +602,7 @@ a.btn.paypal { background:#0070ba; border-color:#0070ba; color:#fff; }
 .elcbtns { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0; }
 a.elcbtn { color:var(--primary-text-color); background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:12px; padding:10px 14px; text-decoration:none; font-weight:500; }
 a.elcbtn.pp { display:inline-flex; align-items:center; gap:8px; background:#0070BA; color:#fff; border:2px solid #003087; font-weight:700; }
+a.elcbtn.star { background:#fbc02d; color:#3e2723; border:2px solid #f57f17; font-weight:700; }
 .elcbtn.pp svg { width:20px; height:20px; flex:none; }
 .elcsmall { opacity:.7; font-size:.9em; }
 a { color:var(--pc); }
@@ -2116,6 +2118,10 @@ class StundenzettelCard extends HTMLElement {
       <p>Gemacht von <b>Mister-M</b> – mit Hilfe von Claude 🤖</p>
       <p>Ich versuche, Updates und Fehler-Korrekturen zeitnah zu erledigen.</p>
       <p class="elcsmall">📅 Neue offizielle Versionen kommen immer sonntags. An den anderen Tagen gibt es nur Test-Versionen (Beta) – die siehst du in HACS (ab Home Assistant 2026.11: Einstellungen &gt; Marketplace) unter „Beta-Versionen anzeigen“.</p>
+      <div class="elcbtns">
+        <a class="elcbtn star" href="${REPO}" target="_blank" rel="noopener">⭐ Gefällt dir die Karte? Gib uns einen Stern</a>
+      </div>
+      <p class="elcsmall">Auf GitHub oben rechts auf „⭐ Star“ tippen (braucht ein kostenloses GitHub-Konto) – so sehe ich, wie vielen die Karte gefällt, und andere finden sie leichter. Beim Antippen öffnet sich GitHub im Browser; vorher geht nichts ins Internet.</p>
       <div class="elcbtns">
         <a class="elcbtn" href="${REPO}" target="_blank" rel="noopener">🐙 GitHub</a>
         <a class="elcbtn" href="${REPO}/discussions" target="_blank" rel="noopener">💡 Idee oder Wunsch</a>
